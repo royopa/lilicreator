@@ -15,7 +15,6 @@ Func Format_FAT32($drive_letter)
 	UpdateStatus("Formatage de la clé")
 	RunWait3('cmd /c format /Q /X /y /V:MyLinuxLive /FS:FAT32 ' & $drive_letter, @ScriptDir, @SW_HIDE)
 	SendReport("End-Format_FAT32")
-	SendReport("End-Format_FAT32")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -37,38 +36,41 @@ Func Clean_old_installs($drive_letter,$release_in_list)
 	If IniRead($settings_ini, "General", "skip_cleaning", "no") == "yes" Then Return 0
 	
 	UpdateStatus("Nettoyage des installations précédentes ( 2min )")
+	$distribution = ReleaseGetDistribution($release_in_list)
 	
-	; Common Linux Live files
-	DirRemove2($drive_letter & "\isolinux\", 1)
-	DirRemove2($drive_letter & "\syslinux\", 1)
-	FileDelete2($drive_letter & "\autorun.inf")
+	; Only clean for the distribution that will be installed
+	if $distribution = "Ubuntu" Then  
+		; Common Linux Live files
+		DirRemove2($drive_letter & "\isolinux\", 1)
+		DirRemove2($drive_letter & "\syslinux\", 1)
+		
+		; Classic Ubuntu files
+		DirRemove2($drive_letter & "\.disk\", 1)
+		DirRemove2($drive_letter & "\casper\", 1)
+		DirRemove2($drive_letter & "\preseed\", 1)
+		DirRemove2($drive_letter & "\dists\", 1)
+		DirRemove2($drive_letter & "\install\", 1)
+		DirRemove2($drive_letter & "\pics\", 1)
+		DirRemove2($drive_letter & "\pool\", 1)
+		FileDelete2($drive_letter & "\wubi.exe")
+		FileDelete2($drive_letter & "\ubuntu")
+		FileDelete2($drive_letter & "\umenu.exe")
+		FileDelete2($drive_letter & "\casper-rw")
+		FileDelete2($drive_letter & "\md5sum.txt")
+		FileDelete2($drive_letter & "\README.diskdefines")
 	
-	; Classic Ubuntu files
-	DirRemove2($drive_letter & "\.disk\", 1)
-	DirRemove2($drive_letter & "\casper\", 1)
-	DirRemove2($drive_letter & "\preseed\", 1)
-	DirRemove2($drive_letter & "\dists\", 1)
-	DirRemove2($drive_letter & "\install\", 1)
-	DirRemove2($drive_letter & "\pics\", 1)
-	DirRemove2($drive_letter & "\pool\", 1)
-	FileDelete2($drive_letter & "\wubi.exe")
-	FileDelete2($drive_letter & "\ubuntu")
-	FileDelete2($drive_letter & "\umenu.exe")
-	FileDelete2($drive_letter & "\casper-rw")
-	FileDelete2($drive_letter & "\md5sum.txt")
-	FileDelete2($drive_letter & "\README.diskdefines")
-				
-	; Mint files
-	FileDelete2($drive_letter & "\lmmenu.exe")
-	FileDelete2($drive_letter & "\mint4win.exe")
-	DirRemove2($drive_letter & "\drivers\",1)
-	FileDelete2($drive_letter & "\.disc_id")
-	
-	; Fedora files
-	FileDelete2($drive_letter & "\README")
-	FileDelete2($drive_letter & "\GPL")
-	DirRemove2($drive_letter & "\LiveOS\",1)
-	DirRemove2($drive_letter & "\EFI\",1)
+		; Mint files
+		FileDelete2($drive_letter & "\lmmenu.exe")
+		FileDelete2($drive_letter & "\mint4win.exe")
+		DirRemove2($drive_letter & "\drivers\",1)
+		FileDelete2($drive_letter & "\.disc_id")
+	Else 
+		; Fedora files
+		FileDelete2($drive_letter & "\README")
+		FileDelete2($drive_letter & "\GPL")
+		DirRemove2($drive_letter & "\LiveOS\",1)
+		DirRemove2($drive_letter & "\EFI\",1)
+	EndIf
 	SendReport("End-Clean_old_installs")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -204,18 +206,21 @@ EndFunc
 	Input :
 		$drive_letter =  Letter of the drive (pre-formated like "E:" )
 		$iso_file = path to the iso file of a Linux Live CD
+		$release_in_list = number of the release in the compatibility list (-1 if not present)
 	Output : 
 		0 = sucess
 		1 = error see @error
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Func Uncompress_ISO_on_key($drive_letter,$iso_file)
+Func Uncompress_ISO_on_key($drive_letter,$iso_file,$release_in_list)
 	SendReport("Start-Uncompress_ISO_on_key")
 	If IniRead($settings_ini, "General", "skip_copy", "no") == "yes" Then Return 0
 	If ProcessExists("7z.exe") > 0 Then ProcessClose("7z.exe")
 	UpdateStatus(Translate("Décompression de l'ISO sur la clé") & " ( 5-10" & Translate("min") & " )")
-	Run7zip('"' & @ScriptDir & '\tools\7z.exe" x "' & $iso_file & '" -x![BOOT] -r -aoa -o' & $drive_letter, 703)
+	$install_size = ReleaseGetInstallSize($release_in_list)
+	If $install_size < 5 Then $install_size = 703
+	Run7zip('"' & @ScriptDir & '\tools\7z.exe" x "' & $iso_file & '" -x![BOOT] -r -aoa -o' & $drive_letter, $install_size)
 	SendReport("End-Uncompress_ISO_on_key")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -294,27 +299,9 @@ EndFunc
 Func Create_boot_menu($drive_letter,$release_in_list)
 	SendReport("Start-Create_boot_menu")
 	If IniRead($drive_letter, "General", "skip_boot_text", "no") == "yes" Then Return 0
-	
-	If FileExists($drive_letter & "\preseed\kubuntu.seed") Then
-		UpdateStatus(Translate("Détection automatique du type de variante") & " : Kubuntu (KDE)")
-
-	ElseIf FileExists($drive_letter & "\preseed\ubuntu.seed") Then
-		UpdateStatus(Translate("Détection automatique du type de variante") & " : LinuxLive (Gnome)")
-
-	ElseIf FileExists($drive_letter & "\preseed\xubuntu.seed") Then
-		UpdateStatus(Translate("Détection automatique du type de variante") & " : Xubuntu (XFce)")
-
-	ElseIf FileExists($drive_letter & "\preseed\mint.seed") Then
-		UpdateStatus(Translate("Détection automatique du type de variante") & " : Mint")
-
-	ElseIf FileExists($drive_letter & "\preseed\custom.seed") Then
-		UpdateStatus(Translate("Détection automatique du type de variante") & " : Custom")
-
-	Else
-		UpdateStatus(Translate("Cet ISO n'est pas compatible"))
-
-	EndIf
-	WriteTextCFG($drive_letter)
+	$variant = ReleaseGetVariant($release_in_list)
+	UpdateStatus(Translate("Détection automatique du type de variante") & " : " & $variant)
+	WriteTextCFG($drive_letter,$variant)
 	SendReport("End-Create_boot_menu")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -523,23 +510,29 @@ EndFunc
 Func Create_autorun($drive_letter,$release_in_list)
 	SendReport("Start-Create_autorun")
 	If FileExists($drive_letter & "\autorun.inf") Then FileDelete($drive_letter & "\autorun.inf")
+	$codename = ReleaseGetCodename($release_in_list)
 	
-	if $variante == "mint" Then 
+	; Grouping release with same files
+	$group1 = "ubuntu810,xubuntu810,kubuntu810"
+	$group2 = "mint6"
+	$group3 = "ubuntu904,xubuntu904,kubuntu904"
+	
+	if StringInStr($group1, $codename) > 0 Then
+		$icon = "umenu.exe,0"
+		$menu = "umenu.exe"
+	Elseif StringInStr($group2, $codename) > 0 Then
 		$icon = "lmmenu.exe,0"
 		$menu = "lmmenu.exe"
-	Elseif $variante=="custom" Then
+	Elseif StringInStr($group3, $codename) > 0 Then
+		$icon = "wubi.exe,0"
+		$menu = "wubi.exe --cdmenu"
+	Else
+		; others : Fedora, CrunchBang
 		FileCopy(@ScriptDir & "\tools\img\lili.ico", $drive_letter & "\lili.ico",1)
 		RunWait3("cmd /c attrib /D /S +S +H " & $drive_letter & "\lili.ico", @ScriptDir, @SW_HIDE)
 		$icon = "lili.ico"
 		$menu = ""
-	Elseif $jackalope==1 Then
-		$icon = "wubi.exe,0"
-		$menu = "wubi.exe --cdmenu"
-	Else 
-		$icon = "umenu.exe,0"
-		$menu = "umenu.exe"
 	EndIf
-	
 	
 	IniWrite($drive_letter & "\autorun.inf", "autorun", "icon", $icon)
 	IniWrite($drive_letter & "\autorun.inf", "autorun", "open", "")
@@ -610,6 +603,10 @@ Func Final_check()
 	SendReport("End-Final_check")
 EndFunc
 
+Func biou()
+		MsgBox(4096,"BIOU","BIOU")
+		Exit
+EndFunc
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 #cs
@@ -625,30 +622,8 @@ EndFunc
 
 Func Finish_Help($drive_letter)
 	SendReport("Start-Finish_Help")
-	$gui_finish = GUICreate (Translate("Votre clé LinuxLive est maintenant prête !"), 604, 378 , -1, -1)
-	GUICtrlCreatePic(@ScriptDir & "\tools\img\tuto.jpg", 350, 0, 254, 378)
-	$printme = @CRLF & @CRLF& @CRLF & @CRLF& "  " & Translate("Votre clé LinuxLive est maintenant prête !") _
-	& @CRLF & @CRLF & "    "  &Translate("Pour lancer LinuxLive :") _
-	& @CRLF & "    " &Translate("Retirez votre clé et réinsérez-la.") _
-	& @CRLF & "    " &Translate("Allez ensuite dans 'Poste de travail'.") _
-	& @CRLF & "    " &Translate("Faites un clic droit sur votre clé et sélectionnez :") & @CRLF 
-	
-	if FileExists($drive_letter & "\VirtualBox\Virtualize_This_Key.exe") AND FileExists($drive_letter & "VirtualBox\VirtualBox.exe") then
-		$printme &= @CRLF & "    " &"-> "& Translate("'LinuxLive!' pour lancer la clé directement dans windows") 
-		$printme &= @CRLF  & "    " & "-> " &Translate("'VirtualBox Interface' pour lancer l'interface complète de VirtalBox") 
-	EndIf
-	$printme &= @CRLF  & "    " & "-> " &Translate("'CD Menu' pour lancer le menu original du CD")
-	GUICtrlCreateLabel($printme, 0, 0, 370, 378)
-	GUICtrlSetBkColor(-1, 0x0ffffff) 
-	GUICtrlSetFont (-1, 10, 600)
+	Opt("GUIOnEventMode", 1)
 
-    GUISetState()
-    ; Run the GUI until the dialog is closed
-    While 1
-        $msg_finish = GUIGetMsg($gui_finish)
-        If $msg_finish = $GUI_EVENT_CLOSE Then ExitLoop
-	WEnd
-	GUIDelete($gui_finish)
 	SendReport("End-Finish_Help")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

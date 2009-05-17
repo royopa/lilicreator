@@ -27,8 +27,8 @@ Global $GUI,$CONTROL_GUI,$EXIT_BUTTON,$MIN_BUTTON,$DRAW_REFRESH,$DRAW_ISO,$DRAW_
 Global 	$ZEROGraphic,$EXIT_NORM,$EXIT_OVER,$MIN_NORM,$MIN_OVER,$PNG_GUI,$CD_PNG,$CD_HOVER_PNG,$ISO_PNG,$ISO_HOVER_PNG,$DOWNLOAD_PNG,$DOWNLOAD_HOVER_PNG,$LAUNCH_PNG,$LAUNCH_HOVER_PNG,$HELP,$BAD,$GOOD,$WARNING
 
 ; Global variables for releases attributes
-Global Const $R_CODE = 0,$R_NAME=1,$R_DISTRIBUTION=2, $R_VERSION_NUMBER=3,$R_FILENAME=4,$R_FILE_MD5=5,$R_RELEASE_DATE=6,$R_WEB=7,$R_DOWNLOAD_PAGE=8,$R_DOWNLOAD_SIZE=9,$R_INSTALL_SIZE=10,$R_DESCRIPTION=11
-Global Const $R_MIRROR1=12,$R_MIRROR2=13,$R_MIRROR3=14,$R_MIRROR4=15,$R_MIRROR5=16,$R_MIRROR6=17,$R_MIRROR7=18,$R_MIRROR8=19,$R_MIRROR9=20,$R_MIRROR10=21
+Global Const $R_CODE = 0,$R_NAME=1,$R_DISTRIBUTION=2, $R_DISTRIBUTION_VERSION=3,$R_FILENAME=4,$R_FILE_MD5=5,$R_RELEASE_DATE=6,$R_WEB=7,$R_DOWNLOAD_PAGE=8,$R_DOWNLOAD_SIZE=9,$R_INSTALL_SIZE=10,$R_DESCRIPTION=11
+Global Const $R_MIRROR1=12,$R_MIRROR2=13,$R_MIRROR3=14,$R_MIRROR4=15,$R_MIRROR5=16,$R_MIRROR6=17,$R_MIRROR7=18,$R_MIRROR8=19,$R_MIRROR9=20,$R_MIRROR10=21,$R_VARIANT=22,$R_VARIANT_VERSION=23,$R_VISIBLE=24
 Global $MD5_ISO, $compatible_md5, $compatible_filename,$release_number=-1
 
 
@@ -866,13 +866,13 @@ Func GetKbdCode()
 
 EndFunc   ;==>GetKbdCode
 
-Func WriteTextCFG($selected_drive)
+Func WriteTextCFG($selected_drive,$variant)
 	SendReport("Start-WriteTextCFG")
 	Local $boot_text, $kbd_code
 	$boot_text = ""
 	$kbd_code = GetKbdCode()
-	
-	if $variante == "mint" then 
+
+	if $variant = "mint" then 
 		$boot_text = "default vesamenu.c32" _
 		& @LF &  "timeout 100" _
 		& @LF &  "menu background splash.jpg" _
@@ -889,7 +889,7 @@ Func WriteTextCFG($selected_drive)
 		& @LF &  "menu color cmdline 0 #ffffffff #00000000" _
 		& @LF &  "menu hidden" _
 		& @LF &  "menu hiddenrow 5"
-	Elseif $variante == "custom" Then
+	Elseif $variant = "custom" Then
 		$boot_text &=  "DISPLAY isolinux.txt" _
 					 & @LF & "TIMEOUT 300" _
 					 & @LF & "PROMPT 1" _
@@ -900,15 +900,15 @@ Func WriteTextCFG($selected_drive)
 	
 	$boot_text &=  @LF & "label persist" & @LF & "menu label ^" & Translate("Mode Persistant") _
 			 & @LF & "  kernel /casper/vmlinuz" _
-			 & @LF & "  append  " & $kbd_code & "noprompt cdrom-detect/try-usb=true persistent file=/cdrom/preseed/" & $variante & ".seed boot=casper initrd=/casper/initrd.gz splash--" _
+			 & @LF & "  append  " & $kbd_code & "noprompt cdrom-detect/try-usb=true persistent file=/cdrom/preseed/" & $variant & ".seed boot=casper initrd=/casper/initrd.gz splash--" _
 			 & @LF & "label live" _
 			 & @LF & "  menu label ^" & Translate("Mode Live") _
 			 & @LF & "  kernel /casper/vmlinuz" _
-			 & @LF & "  append   " & $kbd_code & "noprompt cdrom-detect/try-usb=true file=/cdrom/preseed/" & $variante & ".seed boot=casper initrd=/casper/initrd.gz splash--" _
+			 & @LF & "  append   " & $kbd_code & "noprompt cdrom-detect/try-usb=true file=/cdrom/preseed/" & $variant & ".seed boot=casper initrd=/casper/initrd.gz splash--" _
 			 & @LF & "label live-install" _
 			 & @LF & "  menu label ^" & Translate("Installer") _
 			 & @LF & "  kernel /casper/vmlinuz" _
-			 & @LF & "  append   " & $kbd_code & "noprompt cdrom-detect/try-usb=true persistent file=/cdrom/preseed/" & $variante & ".seed boot=casper only-ubiquity initrd=/casper/initrd.gz splash --" _
+			 & @LF & "  append   " & $kbd_code & "noprompt cdrom-detect/try-usb=true persistent file=/cdrom/preseed/" & $variant & ".seed boot=casper only-ubiquity initrd=/casper/initrd.gz splash --" _
 			 & @LF & "label check" _
 			 & @LF & "  menu label ^" & Translate("Verification des fichiers") _
 			 & @LF & "  kernel /casper/vmlinuz" _
@@ -920,13 +920,13 @@ Func WriteTextCFG($selected_drive)
 		$file = FileOpen($selected_drive & "\syslinux\text.cfg", 2)
 		FileWrite($file, $boot_text)
 		FileClose($file)
-	if $variante == "mint" OR $variante == "custom" then 
+	if $variant = "mint" OR $variant = "custom" then 
 		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
 		FileWrite($file, $boot_text)
 		FileClose($file)
 	EndIf
 	
-	if $variante == "custom" then 
+	if $variant = "custom" then 
 		FileDelete2($selected_drive & "\syslinux\isolinux.txt")
 		FileCopy(@ScriptDir & "\tools\crunchbang-isolinux.txt", $selected_drive & "\syslinux\isolinux.txt", 1)
 	EndIf
@@ -1391,6 +1391,7 @@ EndFunc
 
 ; Clickable parts of images
 Func GUI_Exit()
+
 	GUIDelete($CONTROL_GUI)
 	GUIDelete($GUI)
 	_GDIPlus_GraphicsDispose($ZEROGraphic)
@@ -1468,6 +1469,7 @@ EndFunc
 
 Func GUI_Refresh_Drives()
 	Refresh_DriveList()
+	Finish_Help("G:")
 EndFunc
 
 Func GUI_Choose_ISO()
@@ -1617,7 +1619,7 @@ Func GUI_Launch_Creation()
 
 			; Uncompressing ou copying files on the key
 			If $file_set_mode = "iso" Then
-				Uncompress_ISO_on_key($selected_drive,$file_set)
+				Uncompress_ISO_on_key($selected_drive,$file_set,$release_number)
 			Else
 				Copy_live_files_on_key($selected_drive,$file_set)
 			EndIf
@@ -1658,7 +1660,30 @@ Func GUI_Launch_Creation()
 			If $virtualbox_check >= 1 Then Final_check()
 			
 			sleep(1000)
-			Finish_Help($virtualbox_check)
+			$gui_finish = GUICreate (Translate("Votre clé LinuxLive est maintenant prête !"), 604, 378 , -1, -1)
+
+			GUICtrlCreatePic(@ScriptDir & "\tools\img\tuto.jpg", 350, 0, 254, 378)
+			$printme = @CRLF & @CRLF& @CRLF & @CRLF& "  " & Translate("Votre clé LinuxLive est maintenant prête !") _
+			& @CRLF & @CRLF & "    "  &Translate("Pour lancer LinuxLive :") _
+			& @CRLF & "    " &Translate("Retirez votre clé et réinsérez-la.") _
+			& @CRLF & "    " &Translate("Allez ensuite dans 'Poste de travail'.") _
+			& @CRLF & "    " &Translate("Faites un clic droit sur votre clé et sélectionnez :") & @CRLF 
+			
+			if FileExists($selected_drive & "\VirtualBox\Virtualize_This_Key.exe") AND FileExists($selected_drive & "VirtualBox\VirtualBox.exe") then
+				$printme &= @CRLF & "    " &"-> "& Translate("'LinuxLive!' pour lancer la clé directement dans windows") 
+				$printme &= @CRLF  & "    " & "-> " &Translate("'VirtualBox Interface' pour lancer l'interface complète de VirtalBox") 
+			EndIf
+			$printme &= @CRLF  & "    " & "-> " &Translate("'CD Menu' pour lancer le menu original du CD")
+			GUICtrlCreateLabel($printme, 0, 0, 370, 378)
+			GUICtrlSetBkColor(-1, 0x0ffffff) 
+			GUICtrlSetFont (-1, 10, 600)
+			$Button_2 = GUICtrlCreateButton("Button Test",10, 30, 100)
+			GUICtrlSetOnEvent($Button_2,"biou")
+			
+			GUISetState(@SW_SHOW)
+			While 1
+				sleep(1000)
+			WEnd
 		Else
 			UpdateStatus("Veuillez valider les étapes 1 à 3")
 		EndIf
@@ -1699,7 +1724,9 @@ Func Get_Compatibility_List()
 		$releases[$i][$R_CODE]=$sections[$i]
 		$releases[$i][$R_NAME]=IniRead($compatibility_ini, $sections[$i], "Name","NotFound")
 		$releases[$i][$R_DISTRIBUTION]=IniRead($compatibility_ini, $sections[$i], "Distribution","NotFound")
-		$releases[$i][$R_VERSION_NUMBER]=IniRead($compatibility_ini, $sections[$i], "Version_Number","NotFound")
+		$releases[$i][$R_DISTRIBUTION_VERSION]=IniRead($compatibility_ini, $sections[$i], "Distribution_Version","NotFound")
+		$releases[$i][$R_VARIANT]=IniRead($compatibility_ini, $sections[$i], "Variant","NotFound")
+		$releases[$i][$R_VARIANT_VERSION]=IniRead($compatibility_ini, $sections[$i], "Variant_Version","NotFound")
 		$releases[$i][$R_FILENAME]=IniRead($compatibility_ini, $sections[$i], "Filename","NotFound")
 		$compatible_filename[$i]=IniRead($compatibility_ini, $sections[$i], "Filename","NotFound")
 		$releases[$i][$R_FILE_MD5]=IniRead($compatibility_ini, $sections[$i], "File_MD5","NotFound")
@@ -1720,34 +1747,37 @@ Func Get_Compatibility_List()
 		$releases[$i][$R_MIRROR8]=IniRead($compatibility_ini, $sections[$i], "Mirror8","NotFound")
 		$releases[$i][$R_MIRROR9]=IniRead($compatibility_ini, $sections[$i], "Mirror9","NotFound")
 		$releases[$i][$R_MIRROR10]=IniRead($compatibility_ini, $sections[$i], "Mirror10","NotFound")
+		$releases[$i][$R_VISIBLE]=IniRead($compatibility_ini, $sections[$i], "Visible","NotFound")
 	Next
 	Return $releases
 EndFunc
 
-Func DisplayRelease($i)
+Func DisplayRelease($release_in_list)
 	Global $releases
-	if $i>0 Then
-		Msgbox(4096,"Release Details" ,  "Name : " & $releases[$i][$R_NAME]  & @CRLF  _
-		& "Distribution : " & $releases[$i][$R_DISTRIBUTION] & @CRLF  _
-		& "Version : " & $releases[$i][$R_VERSION_NUMBER] & @CRLF  _
-		& "Filename : " & $releases[$i][$R_FILENAME] & @CRLF  _
-		& "MD5 : " & $releases[$i][$R_FILE_MD5] & @CRLF  _
-		& "Release Date : " & $releases[$i][$R_RELEASE_DATE] & @CRLF  _
-		& "WebSite : " & $releases[$i][$R_WEB] & @CRLF  _
-		& "Download Page : " & $releases[$i][$R_DOWNLOAD_PAGE] & @CRLF _
-		& "Download Size : " & $releases[$i][$R_DOWNLOAD_SIZE] & @CRLF _
-		& "Installed Size : " & $releases[$i][$R_INSTALL_SIZE] & @CRLF  _
-		& "Description : " & $releases[$i][$R_DESCRIPTION] & @CRLF  _
-		& "Mirror 1 :"  & $releases[$i][$R_MIRROR1] & @CRLF  _
-		& "Mirror 2 : " & $releases[$i][$R_MIRROR2] & @CRLF  _
-		& "Mirror 3 : " & $releases[$i][$R_MIRROR3] & @CRLF  _
-		& "Mirror 4 : " & $releases[$i][$R_MIRROR4] & @CRLF  _
-		& "Mirror 5 : " & $releases[$i][$R_MIRROR5] & @CRLF  _
-		& "Mirror 6 : " & $releases[$i][$R_MIRROR6] & @CRLF  _
-		& "Mirror 7 : " & $releases[$i][$R_MIRROR7] & @CRLF  _
-		& "Mirror 8 : " & $releases[$i][$R_MIRROR8] & @CRLF  _
-		& "Mirror 9 : " & $releases[$i][$R_MIRROR9] & @CRLF  _
-		& "Mirror 10 : " & $releases[$i][$R_MIRROR10])
+	if $release_in_list>0 Then
+		Msgbox(4096,"Release Details" ,  "Name : " & $releases[$release_in_list][$R_NAME]  & @CRLF  _
+		& "Distribution : " & ReleaseGetDistribution($release_in_list) & @CRLF  _
+		& "Distribution Version : " & ReleaseGetDistributionVersion($release_in_list) & @CRLF  _
+		& "Variant : " & ReleaseGetVariant($release_in_list) & @CRLF  _
+		& "Variant Version : " & ReleaseGetVariantVersion($release_in_list) & @CRLF  _
+		& "Filename : " & $releases[$release_in_list][$R_FILENAME] & @CRLF  _
+		& "MD5 : " & $releases[$release_in_list][$R_FILE_MD5] & @CRLF  _
+		& "Release Date : " & $releases[$release_in_list][$R_RELEASE_DATE] & @CRLF  _
+		& "WebSite : " & $releases[$release_in_list][$R_WEB] & @CRLF  _
+		& "Download Page : " & $releases[$release_in_list][$R_DOWNLOAD_PAGE] & @CRLF _
+		& "Download Size : " & $releases[$release_in_list][$R_DOWNLOAD_SIZE] & @CRLF _
+		& "Installed Size : " & $releases[$release_in_list][$R_INSTALL_SIZE] & @CRLF  _
+		& "Description : " & $releases[$release_in_list][$R_DESCRIPTION] & @CRLF  _
+		& "Mirror 1 :"  & $releases[$release_in_list][$R_MIRROR1] & @CRLF  _
+		& "Mirror 2 : " & $releases[$release_in_list][$R_MIRROR2] & @CRLF  _
+		& "Mirror 3 : " & $releases[$release_in_list][$R_MIRROR3] & @CRLF  _
+		& "Mirror 4 : " & $releases[$release_in_list][$R_MIRROR4] & @CRLF  _
+		& "Mirror 5 : " & $releases[$release_in_list][$R_MIRROR5] & @CRLF  _
+		& "Mirror 6 : " & $releases[$release_in_list][$R_MIRROR6] & @CRLF  _
+		& "Mirror 7 : " & $releases[$release_in_list][$R_MIRROR7] & @CRLF  _
+		& "Mirror 8 : " & $releases[$release_in_list][$R_MIRROR8] & @CRLF  _
+		& "Mirror 9 : " & $releases[$release_in_list][$R_MIRROR9] & @CRLF  _
+		& "Mirror 10 : " & $releases[$release_in_list][$R_MIRROR10])
 	EndIf
 EndFunc
 	
@@ -1757,5 +1787,33 @@ Func DisplayAllReleases()
 		DisplayRelease($i)
 	Next
 EndFunc
-	
 
+Func ReleaseGetCodename($release_in_list)
+	if $release_in_list <=0 Then Return "NotFound" 
+	Return $releases[$release_in_list][$R_CODE] 
+EndFunc
+
+Func ReleaseGetDistribution($release_in_list)
+	if $release_in_list <=0 Then Return "NotFound" 
+	Return $releases[$release_in_list][$R_DISTRIBUTION] 
+EndFunc
+
+Func ReleaseGetDistributionVersion($release_in_list)
+	if $release_in_list <=0 Then Return "NotFound" 
+	Return $releases[$release_in_list][$R_DISTRIBUTION_VERSION] 
+EndFunc
+
+Func ReleaseGetVariant($release_in_list)
+	if $release_in_list <=0 Then Return "NotFound" 
+	Return $releases[$release_in_list][$R_VARIANT] 
+EndFunc
+
+Func ReleaseGetVariantVersion($release_in_list)
+	if $release_in_list <=0 Then Return "NotFound" 
+	Return $releases[$release_in_list][$R_VARIANT_VERSION] 
+EndFunc
+
+Func ReleaseGetInstallSize($release_in_list)
+	if $release_in_list <=0 Then Return -1 
+	Return $releases[$release_in_list][$R_INSTALL_SIZE] 
+EndFunc
