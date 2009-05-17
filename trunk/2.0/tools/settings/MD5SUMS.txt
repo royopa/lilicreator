@@ -1,0 +1,16 @@
+24ea1163ea6c9f5dae77de8c49ee7c03 *ubuntu-8.10-desktop-i386.iso
+82c02dc7386dfb6858a9ec09a5059e1e *kubuntu-8.10-desktop-i386.iso
+53c50ff06f4ad659f0abf6474b58c8e6 *xubuntu-8.10-desktop-i386.iso
+42e237abd7b95b3e0a69d6300b7ab291 *ubuntu-8.10-desktop-i386-fr.iso
+03b63dada5e5fce0119a52d822e406a1 *ubuntu-9.04-beta-desktop-i386.iso
+fa23af9d08c277dfc9da308b926af898 *xubuntu-9.04-beta-desktop-i386.iso
+bc7d00c29ee99d0db40d77ae32ec9ba8 *ubuntu-9.04-rc-desktop-i386.iso
+0702c28192a3b5e43fd0c809e1817fab *xubuntu-9.04-rc-desktop-i386.iso
+be40343b5426980eda5456d5ed635cbd *kubuntu-9.04-rc-desktop-i386.iso
+57bd2cbe7ed9bc09d62118ea08707119 *crunchbang-8.10.02.i386.iso
+484121e3f4ade5eb28b1358de05f2c1e *LinuxMint-6.iso
+
+
+
+
+
