@@ -11,7 +11,11 @@
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Format_FAT32($drive_letter)
+	SendReport("Start-Format_FAT32")
+	UpdateStatus("Formatage de la clé")
 	RunWait3('cmd /c format /Q /X /y /V:MyLinuxLive /FS:FAT32 ' & $drive_letter, @ScriptDir, @SW_HIDE)
+	SendReport("End-Format_FAT32")
+	SendReport("End-Format_FAT32")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -22,12 +26,16 @@ EndFunc
 	Description : Clean previous Linux Live installs
 	Input :
 		$drive_letter = Letter of the drive (pre-formated like "E:" )
+		$release_in_list = number of the release in the compatibility list (-1 if not present)
 	Output : 
 		0 = sucess
 		1 = error see @error
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-Func Clean_old_installs($drive_letter)
+Func Clean_old_installs($drive_letter,$release_in_list)
+	SendReport("Start-Clean_old_installs")
+	If IniRead($settings_ini, "General", "skip_cleaning", "no") == "yes" Then Return 0
+	
 	UpdateStatus("Nettoyage des installations précédentes ( 2min )")
 	
 	; Common Linux Live files
@@ -61,6 +69,7 @@ Func Clean_old_installs($drive_letter)
 	FileDelete2($drive_letter & "\GPL")
 	DirRemove2($drive_letter & "\LiveOS\",1)
 	DirRemove2($drive_letter & "\EFI\",1)
+	SendReport("End-Clean_old_installs")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -81,6 +90,7 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Download_virtualBox()
+	SendReport("Start-Download_virtualBox")
 				UpdateStatus("Mise en place de la virtualisation")
 				$no_internet = 0
 				$virtualbox_size = -1
@@ -180,6 +190,7 @@ Func Download_virtualBox()
 					$check_vbox = 0
 				EndIf
 				Sleep(2000)
+				SendReport("End-Download_virtualBox")
 				Return $check_vbox
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -199,7 +210,13 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Func Uncompress_ISO_on_key()
+Func Uncompress_ISO_on_key($drive_letter,$iso_file)
+	SendReport("Start-Uncompress_ISO_on_key")
+	If IniRead($settings_ini, "General", "skip_copy", "no") == "yes" Then Return 0
+	If ProcessExists("7z.exe") > 0 Then ProcessClose("7z.exe")
+	UpdateStatus(Translate("Décompression de l'ISO sur la clé") & " ( 5-10" & Translate("min") & " )")
+	Run7zip('"' & @ScriptDir & '\tools\7z.exe" x "' & $iso_file & '" -x![BOOT] -r -aoa -o' & $drive_letter, 703)
+	SendReport("End-Uncompress_ISO_on_key")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -220,7 +237,12 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Func Copy_live_files_on_key()
+Func Copy_live_files_on_key($drive_letter,$path_to_cd)
+	SendReport("Start-Copy_live_files_on_key")
+	If IniRead($settings_ini, "General", "skip_copy", "no") == "yes" Then Return 0
+	UpdateStatus(Translate("Copie des fichiers vers la clé") & " ( 5-10" & Translate("min") & " )")
+	_FileCopy2($path_to_cd & "\*.*", $drive_letter & "\")
+	SendReport("End-Copy_live_files_on_key")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -234,14 +256,24 @@ EndFunc
 	Description : Rename and move some file in order to work on an USB key
 	Input :
 		$drive_letter = Letter of the drive (pre-formated like "E:" )
-		$linux_version = Pre-formated version of linux (like ubuntu_8.10)
+		$release_in_list = number of the release in the compatibility list (-1 if not present)
 	Output : 
 		0 = sucess
 		1 = error see @error
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Func Rename_and_move_files()
+Func Rename_and_move_files($drive_letter, $release_in_list)
+	SendReport("Start-Rename_and_move_files")
+	If IniRead($settings_ini, "General", "skip_moving_renaming", "no") == "yes" Then Return 0
+	UpdateStatus(Translate("Renommage et déplacement de quelques fichiers"))
+	RunWait3("cmd /c rename " & $drive_letter & "\isolinux syslinux", @ScriptDir, @SW_HIDE)
+	RunWait3("cmd /c rename " & $drive_letter & "\syslinux\isolinux.cfg syslinux.cfg", @ScriptDir, @SW_HIDE)
+	RunWait3("cmd /c rename " & $drive_letter & "\syslinux\text.cfg text.orig", @ScriptDir, @SW_HIDE)
+	RunWait3("cmd /c copy /Y " & $drive_letter & "\syslinux\syslinux.cfg " & $drive_letter & "\syslinux.cfg", @ScriptDir, @SW_HIDE)
+	FileDelete2($drive_letter & "\ubuntu")
+	FileDelete2($drive_letter & "\autorun.inf")
+	SendReport("End-Rename_and_move_files")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -253,13 +285,37 @@ EndFunc
 	Description : Create files for custom boot menu (including persistence options)
 	Input :
 		$drive_letter = Letter of the drive (pre-formated like "E:" )
-		$linux_version = Pre-formated version of linux (like ubuntu_8.10)
+		$release_in_list = number of the release in the compatibility list (-1 if not present)
 	Output : 
 		0 = sucess
 		1 = error see @error
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-Func Create_boot_menu()
+Func Create_boot_menu($drive_letter,$release_in_list)
+	SendReport("Start-Create_boot_menu")
+	If IniRead($drive_letter, "General", "skip_boot_text", "no") == "yes" Then Return 0
+	
+	If FileExists($drive_letter & "\preseed\kubuntu.seed") Then
+		UpdateStatus(Translate("Détection automatique du type de variante") & " : Kubuntu (KDE)")
+
+	ElseIf FileExists($drive_letter & "\preseed\ubuntu.seed") Then
+		UpdateStatus(Translate("Détection automatique du type de variante") & " : LinuxLive (Gnome)")
+
+	ElseIf FileExists($drive_letter & "\preseed\xubuntu.seed") Then
+		UpdateStatus(Translate("Détection automatique du type de variante") & " : Xubuntu (XFce)")
+
+	ElseIf FileExists($drive_letter & "\preseed\mint.seed") Then
+		UpdateStatus(Translate("Détection automatique du type de variante") & " : Mint")
+
+	ElseIf FileExists($drive_letter & "\preseed\custom.seed") Then
+		UpdateStatus(Translate("Détection automatique du type de variante") & " : Custom")
+
+	Else
+		UpdateStatus(Translate("Cet ISO n'est pas compatible"))
+
+	EndIf
+	WriteTextCFG($drive_letter)
+	SendReport("End-Create_boot_menu")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -279,6 +335,9 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Hide_live_files($drive_letter)
+	SendReport("Start-Hide_live_files")
+	If IniRead($settings_ini, "General", "skip_hiding", "no") == "yes" Then return 0
+	
 	UpdateStatus("Masquage des fichiers")
 	
 	; Common Linux Live files
@@ -312,6 +371,7 @@ Func Hide_live_files($drive_letter)
 	HideFile($drive_letter & "\GPL")
 	HideFile($drive_letter & "\LiveOS\")
 	HideFile($drive_letter & "\EFI\")
+	SendReport("End-Hide_live_files")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -325,39 +385,35 @@ EndFunc
 	Description : Create a persistence file
 	Input :
 		$drive_letter = Letter of the drive (pre-formated like "E:" )
-		$linux_version = Pre-formated version of linux (like "ubuntu_8.10")
+		$release_in_list = number of the release in the compatibility list (-1 if not present)
+		$persistence_size = size of persistence file in MB
+		$hide_it = state of user checkbox about hiding file or not 
 	Output : 
 		0 = sucess
 		1 = error see @error
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-Func Create_persistence_file()
+Func Create_persistence_file($drive_letter,$release_in_list,$persistence_size,$hide_it)
+	SendReport("Start-Create_persistence_file")
+	If IniRead($settings_ini, "General", "skip_persistence", "no") == "no" Then Return 0
+	If $persistence_size > 0 Then
+		UpdateStatus("Création du fichier de persistance")
+		Sleep(1000)
+		RunDD(@ScriptDir & '\tools\dd.exe if=/dev/zero of=' & $drive_letter & '\casper-rw count=' & $persistence_size & ' bs=1024k', $persistence_size)
+		If ( $hide_it == $GUI_CHECKED) Then HideFile($drive_letter & "\casper-rw")
+		$time_to_format=3
+		if ($persistence_size >= 1000) Then $time_to_format=6
+		if ($persistence_size >= 2000) Then $time_to_format=10
+		if ($persistence_size >= 3000) Then $time_to_format=15
+		UpdateStatus(Translate("Formatage du fichier de persistance") & " ( ±"& $time_to_format & " " & Translate("min") & " )")
+		RunMke2fs()
+		Else
+			UpdateStatus("Mode Live : pas de fichier de persistance")
+		EndIf
+	SendReport("End-Create_persistence_file")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-
-
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-#cs
-	Description : Format a persistence file
-	Input :
-		$path_to_persistence_file = path to the persistent file (like "E:\casper-rw")
-	Output : 
-		0 = sucess
-		1 = error see @error
-#ce
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-Func Format_persistence_file()
-EndFunc
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
 
 
 
@@ -373,11 +429,49 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Func Install_boot_sectors()
+Func Install_boot_sectors($drive_letter)
+	SendReport("Start-Install_boot_sectors")
+	If IniRead($settings_ini, "General", "skip_bootsector", "no") == "no" Then
+		UpdateStatus("Installation des secteurs de boot")
+		If (IniRead($settings_ini, "General", "safe_syslinux", "no") == "yes") Then
+			$sysarg = " -s"
+		Else
+			$sysarg = " "
+		EndIf
+		RunWait3(@ScriptDir & '\tools\syslinux.exe -m -a' & $sysarg & ' -d ' & $drive_letter & '\syslinux ' & $drive_letter, @ScriptDir, @SW_HIDE)
+	EndIf
+	SendReport("End-Install_boot_sectors")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+#cs
+	Description : Check if VirtualBox download is OK
+	Input :
+	Output : 
+		0 = sucess
+		1 = error see @error
+#ce
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+Func Check_virtualbox_download()
+	SendReport("Start-Check_virtualbox_download")
+	Global $virtualbox_size
+	While @InetGetActive
+		$prog = Int((100 * @InetGetBytesRead / $virtualbox_size))
+		UpdateStatusNoLog(Translate("Téléchargement de VirtualBox") & "  : " & $prog & "% ( " & Round(@InetGetBytesRead / (1024 * 1024), 1) & "/" & Round($virtualbox_size / (1024 * 1024), 1) & " " & Translate("Mo") & " )")
+		Sleep(300)
+	WEnd
+	UpdateStatus("Le téléchargement est maintenant fini")
+	SendReport("End-Check_virtualbox_download")
+EndFunc
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 
@@ -394,6 +488,7 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Func Uncompress_virtualbox_on_key($drive_letter)
+	SendReport("Start-Uncompress_virtualbox_on_key")
 	; Cleaning previous install of VBox
 	UpdateStatus("Nettoyage d'anciennes installations de VirtualBox")
 	DirRemove2($drive_letter & "\VirtualBox\", 1)
@@ -403,6 +498,7 @@ Func Uncompress_virtualbox_on_key($drive_letter)
 	Run7zip2('"' & @ScriptDir & '\tools\7z.exe" x "' & @ScriptDir & "\tools\" & '" -r -aoa -o' & $drive_letter, 76)
 	
 	; maybe check after ?
+	SendReport("End-Uncompress_virtualbox_on_key")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -418,14 +514,14 @@ EndFunc
 	Description : Create Autorun.inf
 	Input :
 		$drive_letter = Letter of the drive (pre-formated like "E:" )
-		$linux_version = Pre-formated version of linux (like ubuntu_8.10)
-		$virtualbox_installed =  0 or 1 if virtualbox is well installed
+		$release_in_list = number of the release in the compatibility list (-1 if not present)
 	Output : 
 		0 = sucess
 		1 = error see @error
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-Func Create_autorun($drive_letter,$linux_version)
+Func Create_autorun($drive_letter,$release_in_list)
+	SendReport("Start-Create_autorun")
 	If FileExists($drive_letter & "\autorun.inf") Then FileDelete($drive_letter & "\autorun.inf")
 	
 	if $variante == "mint" Then 
@@ -459,6 +555,7 @@ Func Create_autorun($drive_letter,$linux_version)
 	IniWrite($drive_letter  & "\autorun.inf", "autorun", "shell\linuxlive3", "----> LinuxLive Menu")
 	IniWrite($drive_letter & "\autorun.inf", "autorun", "shell\linuxlive3\command", $menu)
 	HideFile($drive_letter & "\autorun.inf")
+	SendReport("End-Create_autorun")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -478,10 +575,11 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Func Setup_RAM_for_VM()
+		SendReport("Start-Setup_RAM_for_VM")
+		SendReport("End-Setup_RAM_for_VM")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 
 
@@ -490,8 +588,6 @@ EndFunc
 #cs
 	Description : Post-install check, will alert user if some requirements are not met
 	Input :
-		$linux_version = Pre-formated version of linux (like ubuntu_8.10)
-		$virtualbox_installed =  0 or 1 if virtualbox is well installed
 	Output : 
 		0 = sucess
 		1 = error see @error
@@ -499,11 +595,20 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Func Final_check()
+	SendReport("Start-Final_check")
+	$mem = MemGetStats()
+	$avert_mem = ""
+	$avert_admin = ""
+	
+	; If not admin and virtaulbox option has been selected => WARNING
+	If Not IsAdmin() Then $avert_admin = Translate("Vous n'avez pas les droits suffisants pour démarrer VirtualBox sur cette machine.") & @CRLF & Translate("Enregistrez-vous sur le compte administrateur ou lancez le logiciel avec les droits d'administrateur pour qu'il fonctionne.")
+
+	; If not enough RAM => WARNING
+	If Round($mem[2] / 1024) < 256 Then $avert_mem = Translate("Vous avez moins de 256Mo de mémoire vive disponible.") & @CRLF & Translate("Cela ne suffira pas pour lancer LinuxLive directement sous windows.")
+
+	If $avert_admin <> "" Or $avert_mem <> "" Then MsgBox(64, Translate("Attention"), $avert_admin & @CRLF & $avert_mem)
+	SendReport("End-Final_check")
 EndFunc
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -519,6 +624,7 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Func Finish_Help($drive_letter)
+	SendReport("Start-Finish_Help")
 	$gui_finish = GUICreate (Translate("Votre clé LinuxLive est maintenant prête !"), 604, 378 , -1, -1)
 	GUICtrlCreatePic(@ScriptDir & "\tools\img\tuto.jpg", 350, 0, 254, 378)
 	$printme = @CRLF & @CRLF& @CRLF & @CRLF& "  " & Translate("Votre clé LinuxLive est maintenant prête !") _
@@ -543,6 +649,7 @@ Func Finish_Help($drive_letter)
         If $msg_finish = $GUI_EVENT_CLOSE Then ExitLoop
 	WEnd
 	GUIDelete($gui_finish)
+	SendReport("End-Finish_Help")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

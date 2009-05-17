@@ -29,7 +29,7 @@ Global 	$ZEROGraphic,$EXIT_NORM,$EXIT_OVER,$MIN_NORM,$MIN_OVER,$PNG_GUI,$CD_PNG,
 ; Global variables for releases attributes
 Global Const $R_CODE = 0,$R_NAME=1,$R_DISTRIBUTION=2, $R_VERSION_NUMBER=3,$R_FILENAME=4,$R_FILE_MD5=5,$R_RELEASE_DATE=6,$R_WEB=7,$R_DOWNLOAD_PAGE=8,$R_DOWNLOAD_SIZE=9,$R_INSTALL_SIZE=10,$R_DESCRIPTION=11
 Global Const $R_MIRROR1=12,$R_MIRROR2=13,$R_MIRROR3=14,$R_MIRROR4=15,$R_MIRROR5=16,$R_MIRROR6=17,$R_MIRROR7=18,$R_MIRROR8=19,$R_MIRROR9=20,$R_MIRROR10=21
-
+Global $MD5_ISO, $compatible_md5, $compatible_filename,$release_number=-1
 
 
 Opt("GUIOnEventMode", 1)
@@ -819,31 +819,6 @@ EndFunc   ;==>Step3_Check
 ; ///////////////////////////////// Creating boot menu                             ///////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Func CreateBootText($selected_drive)
-	SendReport("Start-CreateBootText")
-	If FileExists($selected_drive & "\preseed\kubuntu.seed") Then
-		UpdateStatus(Translate("Détection automatique du type de variante") & " : Kubuntu (KDE)")
-		$variante = "kubuntu"
-	ElseIf FileExists($selected_drive & "\preseed\ubuntu.seed") Then
-		UpdateStatus(Translate("Détection automatique du type de variante") & " : LinuxLive (Gnome)")
-		$variante = "ubuntu"
-	ElseIf FileExists($selected_drive & "\preseed\xubuntu.seed") Then
-		UpdateStatus(Translate("Détection automatique du type de variante") & " : Xubuntu (XFce)")
-		$variante = "xubuntu"
-	ElseIf FileExists($selected_drive & "\preseed\mint.seed") Then
-		UpdateStatus(Translate("Détection automatique du type de variante") & " : Mint")
-		$variante = "mint"
-	ElseIf FileExists($selected_drive & "\preseed\custom.seed") Then
-		UpdateStatus(Translate("Détection automatique du type de variante") & " : Custom")
-		$variante = "custom"
-	Else
-		UpdateStatus(Translate("Cet ISO n'est pas compatible"))
-		$variante = "custom"
-	EndIf
-	WriteTextCFG($selected_drive)
-	SendReport("End-CreateBootText")
-EndFunc   ;==>CreateBootText
-
 Func GetKbdCode()
 	SendReport("Start-GetKbdCode")
 	Select
@@ -1627,7 +1602,6 @@ Func GUI_Launch_Creation()
 			$annuler = 0
 			$annuler = MsgBox(49, Translate("Attention") & "!!!", Translate("Voulez-vous vraiment continuer et formater le disque suivant ?") & @CRLF & @CRLF & "       " & Translate("Nom") & " : ( " & $selected_drive & " ) " & DriveGetLabel($selected_drive) & @CRLF & "       " & Translate("Taille") & " : " & Round(DriveSpaceTotal($selected_drive) / 1024, 1) & " " & Translate("Go") & @CRLF & "       " & Translate("Formatage") & " : " & DriveGetFileSystem($selected_drive) & @CRLF)
 			If $annuler = 1 Then
-				UpdateStatus("Formatage de la clé")
 				Format_FAT32($selected_drive)
 			EndIf
 		EndIf
@@ -1635,97 +1609,43 @@ Func GUI_Launch_Creation()
 		; Starting creation if not cancelled
 		If $annuler <> 2 Then
 
-			If ProcessExists("7z.exe") > 0 Then ProcessClose("7z.exe")
 			UpdateStatus("Etape 1 à 3 valides")
 
-			If GUICtrlRead($formater) <> $GUI_CHECKED And IniRead($settings_ini, "General", "skip_cleaning", "no") == "no" Then Clean_old_installs($selected_drive)
+			If GUICtrlRead($formater) <> $GUI_CHECKED  Then Clean_old_installs($selected_drive,$release_number)
 
 			If GUICtrlRead($virtualbox) == $GUI_CHECKED Then $virtualbox_check = Download_virtualBox()
 
 			; Uncompressing ou copying files on the key
-			If IniRead($settings_ini, "General", "skip_copy", "no") == "no" Then
-				If $file_set_mode = "iso" Then
-					UpdateStatus(Translate("Décompression de l'ISO sur la clé") & " ( 5-10" & Translate("min") & " )")
-					Run7zip('"' & @ScriptDir & '\tools\7z.exe" x "' & $file_set & '" -x![BOOT] -r -aoa -o' & $selected_drive, 703)
-				Else
-					UpdateStatus(Translate("Copie des fichiers vers la clé") & " ( 5-10" & Translate("min") & " )")
-					_FileCopy2($file_set & "\*.*", $selected_drive & "\")
-				EndIf
-
-				UpdateStatus(Translate("Renommage et déplacement de quelques fichiers"))
-				RunWait3("cmd /c rename " & $selected_drive & "\isolinux syslinux", @ScriptDir, @SW_HIDE)
-				RunWait3("cmd /c rename " & $selected_drive & "\syslinux\isolinux.cfg syslinux.cfg", @ScriptDir, @SW_HIDE)
-				RunWait3("cmd /c rename " & $selected_drive & "\syslinux\text.cfg text.orig", @ScriptDir, @SW_HIDE)
-				RunWait3("cmd /c copy /Y " & $selected_drive & "\syslinux\syslinux.cfg " & $selected_drive & "\syslinux.cfg", @ScriptDir, @SW_HIDE)
-				FileDelete2($selected_drive & "\ubuntu")
-				FileDelete2($selected_drive & "\autorun.inf")
-			EndIf
-
-			If IniRead($settings_ini, "General", "skip_boot_text", "no") == "no" Then
-				CreateBootText($selected_drive)
-			EndIf
-
-
-
-			If IniRead($settings_ini, "General", "skip_persistence", "no") == "no" Then
-				If GUICtrlRead($slider_visual) > 0 Then
-					UpdateStatus("Création du fichier de persistance")
-					Sleep(1000)
-					RunDD(@ScriptDir & '\tools\dd.exe if=/dev/zero of=' & $selected_drive & '\casper-rw count=' & GUICtrlRead($slider_visual) & ' bs=1024k', GUICtrlRead($slider_visual))
-					If (GUICtrlRead($hide_files) == $GUI_CHECKED) Then
-						RunWait3("cmd /c attrib /D /S +S +H " & $selected_drive & "\casper-rw", @ScriptDir, @SW_HIDE)
-					EndIf
-					
-					$time_to_format=3
-					if (GUICtrlRead($slider_visual) >= 1000) Then $time_to_format=6
-					if (GUICtrlRead($slider_visual) >= 2000) Then $time_to_format=10
-					if (GUICtrlRead($slider_visual) >= 3000) Then $time_to_format=15
-					UpdateStatus(Translate("Formatage du fichier de persistance") & " ( ±"& $time_to_format & " " & Translate("min") & " )")
-					RunMke2fs()
-				Else
-					UpdateStatus("Mode Live : pas de fichier de persistance")
-
-				EndIf
-			EndIf
-
-			If IniRead($settings_ini, "General", "skip_bootsector", "no") == "no" Then
-
-				UpdateStatus("Installation des secteurs de boot")
-				If (IniRead($settings_ini, "General", "safe_syslinux", "no") == "yes") Then
-					$sysarg = " -s"
-				Else
-					$sysarg = " "
-				EndIf
-
-				RunWait3(@ScriptDir & '\tools\syslinux.exe -m -a' & $sysarg & ' -d ' & $selected_drive & '\syslinux ' & $selected_drive, @ScriptDir, @SW_HIDE)
+			If $file_set_mode = "iso" Then
+				Uncompress_ISO_on_key($selected_drive,$file_set)
+			Else
+				Copy_live_files_on_key($selected_drive,$file_set)
 			EndIf
 			
-			If (GUICtrlRead($hide_files) == $GUI_CHECKED) And IniRead($settings_ini, "General", "skip_hiding", "no") == "no" Then
-				Hide_live_files($selected_drive)
-			EndIf
+			Rename_and_move_files($selected_drive, $release_number)
+		
+			Create_boot_menu($selected_drive,$release_number)
+
+			Create_persistence_file($selected_drive,$release_number,GUICtrlRead($slider_visual),GUICtrlRead($hide_files)) 
+
+			Install_boot_sectors($selected_drive)
+			
+			If (GUICtrlRead($hide_files) == $GUI_CHECKED) Then Hide_live_files($selected_drive)
+
 
 			If GUICtrlRead($virtualbox) == $GUI_CHECKED And $virtualbox_check >= 1 Then
 				
-				If $virtualbox_check <> 2 Then
-					While @InetGetActive
-						$prog = Int((100 * @InetGetBytesRead / $virtualbox_size))
-						UpdateStatusNoLog(Translate("Téléchargement de VirtualBox") & "  : " & $prog & "% ( " & Round(@InetGetBytesRead / (1024 * 1024), 1) & "/" & Round($virtualbox_size / (1024 * 1024), 1) & " " & Translate("Mo") & " )")
-						Sleep(300)
-					WEnd
-					UpdateStatus("Le téléchargement est maintenant fini")
-				EndIf
+				If $virtualbox_check <> 2 Then Check_virtualbox_download()
 				
 				; maybe check downloaded file ?
 				
 				; Next step : uncompressing vbox on the key
 				Uncompress_virtualbox_on_key($selected_drive)
 				
-				
 				;UpdateStatus("Configuration de VirtualBox Portable")
 				;SetupVirtualBox($selected_drive & "\Portable-VirtualBox", $selected_drive)
 				
 				;Run($selected_drive & "\Portable-VirtualBox\Launch_usb.exe", @ScriptDir, @SW_HIDE)
-
 
 			EndIf
 			
@@ -1735,20 +1655,8 @@ Func GUI_Launch_Creation()
 			; Creation is now done
 			UpdateStatus("Votre clé LinuxLive est maintenant prête !")
 
-			If $virtualbox_check >= 1 Then
-				$mem = MemGetStats()
-				$avert_mem = ""
-				$avert_admin = ""
-				; If not admin and virtaulbox option has been selected => WARNING
-				If Not IsAdmin() Then $avert_admin = Translate("Vous n'avez pas les droits suffisants pour démarrer VirtualBox sur cette machine.") & @CRLF & Translate("Enregistrez-vous sur le compte administrateur ou lancez le logiciel avec les droits d'administrateur pour qu'il fonctionne.")
-
-				; If not enough RAM => WARNING
-				If Round($mem[2] / 1024) < 256 Then $avert_mem = Translate("Vous avez moins de 256Mo de mémoire vive disponible.") & @CRLF & Translate("Cela ne suffira pas pour lancer LinuxLive directement sous windows.")
-
-				If $avert_admin <> "" Or $avert_mem <> "" Then
-					MsgBox(64, "Attention", $avert_admin & @CRLF & $avert_mem)
-				EndIf
-			EndIf
+			If $virtualbox_check >= 1 Then Final_check()
+			
 			sleep(1000)
 			Finish_Help($virtualbox_check)
 		Else
@@ -1817,6 +1725,7 @@ Func Get_Compatibility_List()
 EndFunc
 
 Func DisplayRelease($i)
+	Global $releases
 	if $i>0 Then
 		Msgbox(4096,"Release Details" ,  "Name : " & $releases[$i][$R_NAME]  & @CRLF  _
 		& "Distribution : " & $releases[$i][$R_DISTRIBUTION] & @CRLF  _
