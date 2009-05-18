@@ -20,7 +20,7 @@ Global $log_dir =  @ScriptDir & "\logs\"
 Global $help_file_name = "Help.chm"
 Global $help_available_langs = "en,fr,sp"
 Global $lang, $anonymous_id
-
+Global $downloaded_virtualbox_filename
 ; Global variables used for the onEvent Functions
 ; Globals images and GDI+ elements
 Global $GUI,$CONTROL_GUI,$EXIT_BUTTON,$MIN_BUTTON,$DRAW_REFRESH,$DRAW_ISO,$DRAW_CD,$DRAW_DOWNLOAD,$DRAW_LAUNCH,$HELP_STEP1,$HELP_STEP2,$HELP_STEP3,$HELP_STEP4,$HELP_STEP5
@@ -866,6 +866,18 @@ Func GetKbdCode()
 
 EndFunc   ;==>GetKbdCode
 
+
+Func Get_Disk_UUID($drive_letter)
+	Dim $oWMIService = ObjGet("winmgmts:{impersonationLevel=impersonate}!\\.\root\cimv2")
+	$o_ColListOfProcesses = $oWMIService.ExecQuery ("SELECT * FROM Win32_LogicalDisk WHERE Name = '" & $drive_letter & "'")
+	For $o_ObjProcess in $o_ColListOfProcesses
+		$uuid = $o_ObjProcess.VolumeSerialNumber
+	Next
+	if StringLen($uuid) < 5 Then $uuid = "802B84D8"
+	Return $uuid
+EndFunc
+
+
 Func WriteTextCFG($selected_drive,$variant)
 	SendReport("Start-WriteTextCFG")
 	Local $boot_text, $kbd_code
@@ -931,7 +943,7 @@ Func WriteTextCFG($selected_drive,$variant)
 		FileCopy(@ScriptDir & "\tools\crunchbang-isolinux.txt", $selected_drive & "\syslinux\isolinux.txt", 1)
 	EndIf
 	
-		$file = FileOpen($selected_drive & "\syslinux.cfg", 2)
+		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
 		FileWrite($file, $boot_text)
 		FileClose($file)
 	SendReport("End-WriteTextCFG")
