@@ -129,7 +129,7 @@ Func Download_virtualBox()
 					UpdateLog("No working mirror !")
 				EndIf
 
-				
+
 				$downloaded_virtualbox_filename = unix_path_to_name($VirtualBoxUrl)
 				$virtualbox_already_downloaded = 0
 
@@ -273,11 +273,8 @@ Func Rename_and_move_files($drive_letter, $release_in_list)
 	If IniRead($settings_ini, "General", "skip_moving_renaming", "no") == "yes" Then Return 0
 	UpdateStatus(Translate("Renommage et déplacement de quelques fichiers"))
 	RunWait3("cmd /c rename " & $drive_letter & "\isolinux syslinux", @ScriptDir, @SW_HIDE)
-	RunWait3("cmd /c rename " & $drive_letter & "\syslinux\isolinux.cfg syslinux.cfg", @ScriptDir, @SW_HIDE)
+	RunWait3("cmd /c rename " & $drive_letter & "\syslinux\isolinux.cfg isolinux.cfg-old", @ScriptDir, @SW_HIDE)
 	RunWait3("cmd /c rename " & $drive_letter & "\syslinux\text.cfg text.orig", @ScriptDir, @SW_HIDE)
-	RunWait3("cmd /c copy /Y " & $drive_letter & "\syslinux\syslinux.cfg " & $drive_letter & "\syslinux.cfg", @ScriptDir, @SW_HIDE)
-	FileDelete2($drive_letter & "\ubuntu")
-	FileDelete2($drive_letter & "\autorun.inf")
 	SendReport("End-Rename_and_move_files")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -482,7 +479,7 @@ Func Uncompress_virtualbox_on_key($drive_letter)
 	
 	; Unzipping to the key
 	UpdateStatus(Translate("Décompression de Virtualbox sur la clé") & " ( 4" & Translate("min") & " )")
-	Run7zip2('"' & @ScriptDir & '\tools\7z.exe" x "' & @ScriptDir & "\tools\" & '" -r -aoa -o' & $drive_letter, 76)
+	Run7zip2('"' & @ScriptDir & '\tools\7z.exe" x "' & @ScriptDir & "\tools\" & $downloaded_virtualbox_filename & '" -r -aoa -o' & $drive_letter, 76)
 	
 	; maybe check after ?
 	SendReport("End-Uncompress_virtualbox_on_key")
