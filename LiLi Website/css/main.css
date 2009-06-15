@@ -248,9 +248,16 @@ border-bottom:1px solid #ddd;
 
 #BottomRapidLinks {
 	width: 950px;
-	height: 20px;
+	height: 50px;
 	position: fixed;
 	bottom:0px;
+	background-image:url(../images/bottom-bar.png);
+	background-repeat: no-repeat;
+	background-position: top;
+}
+
+.marge {
+	margin-left:60px;
 }
 
 

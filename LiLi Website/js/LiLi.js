@@ -5,10 +5,10 @@ window.addEvent('domready', function(){
 			this.set('tween', {
 				duration: 1000,
 				transition: Fx.Transitions.Bounce.easeOut 
-			}).tween('height', '150px');
+			}).tween('height', '105px');
 		},
 		'mouseleave': function(){
-			this.set('tween', {}).tween('height', '20px');
+			this.set('tween', {}).tween('height', '50px');
 		}
 	});
 });
