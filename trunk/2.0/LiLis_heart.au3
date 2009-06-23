@@ -5,7 +5,7 @@
 	Description : Format a specified drive letter to FAT32
 	Input :
 		$drive_letter = Letter of the drive (pre-formated like "E:" )
-	Output : 
+	Output :
 		0 = sucess
 		1 = error see @error
 #ce
@@ -26,7 +26,7 @@ EndFunc
 	Input :
 		$drive_letter = Letter of the drive (pre-formated like "E:" )
 		$release_in_list = number of the release in the compatibility list (-1 if not present)
-	Output : 
+	Output :
 		0 = sucess
 		1 = error see @error
 #ce
@@ -34,16 +34,16 @@ EndFunc
 Func Clean_old_installs($drive_letter,$release_in_list)
 	SendReport("Start-Clean_old_installs")
 	If IniRead($settings_ini, "General", "skip_cleaning", "no") == "yes" Then Return 0
-	
+
 	UpdateStatus("Nettoyage des installations précédentes ( 2min )")
 	$distribution = ReleaseGetDistribution($release_in_list)
-	
+
 	; Only clean for the distribution that will be installed
-	if $distribution = "Ubuntu" Then  
+	if $distribution = "Ubuntu" Then
 		; Common Linux Live files
 		DirRemove2($drive_letter & "\isolinux\", 1)
 		DirRemove2($drive_letter & "\syslinux\", 1)
-		
+
 		; Classic Ubuntu files
 		DirRemove2($drive_letter & "\.disk\", 1)
 		DirRemove2($drive_letter & "\casper\", 1)
@@ -58,13 +58,13 @@ Func Clean_old_installs($drive_letter,$release_in_list)
 		FileDelete2($drive_letter & "\casper-rw")
 		FileDelete2($drive_letter & "\md5sum.txt")
 		FileDelete2($drive_letter & "\README.diskdefines")
-	
+
 		; Mint files
 		FileDelete2($drive_letter & "\lmmenu.exe")
 		FileDelete2($drive_letter & "\mint4win.exe")
 		DirRemove2($drive_letter & "\drivers\",1)
 		FileDelete2($drive_letter & "\.disc_id")
-	Else 
+	Else
 		; Fedora files
 		FileDelete2($drive_letter & "\README")
 		FileDelete2($drive_letter & "\GPL")
@@ -83,9 +83,9 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 #cs
 	Description : Download last Portable-VirtualBox as a background task
-	Input : 
+	Input :
 		No input
-	Output : 
+	Output :
 		0 = No Vbox install can be done
 		1 = Vbox is being downloaded
 		2 = Vbox is already downloaded
@@ -104,7 +104,7 @@ Func Download_virtualBox()
 				; Testing download mirrors
 				$virtualbox_size1 = InetGetSize($VirtualBoxUrl1)
 				$virtualbox_size2 = InetGetSize($VirtualBoxUrl2)
-				
+
 				; Selecting mirror
 				Global $virtualbox_size
 				If $virtualbox_size1 <= 0 Then
@@ -119,10 +119,10 @@ Func Download_virtualBox()
 					$virtualbox_size = $virtualbox_size1
 				EndIf
 
-				
+
 				UpdateLog("Found Mirror 1 : " & $VirtualBoxUrl1 & " with VirtualBox size : " & $virtualbox_size1 )
 				UpdateLog("Found Mirror 2 : " & $VirtualBoxUrl2 & " with VirtualBox size : " & $virtualbox_size2 )
-				
+
 				; No mirror working we should log that
 				If $virtualbox_size <= 0 Then
 					$no_internet = 1
@@ -207,7 +207,7 @@ EndFunc
 		$drive_letter =  Letter of the drive (pre-formated like "E:" )
 		$iso_file = path to the iso file of a Linux Live CD
 		$release_in_list = number of the release in the compatibility list (-1 if not present)
-	Output : 
+	Output :
 		0 = sucess
 		1 = error see @error
 #ce
@@ -219,7 +219,10 @@ Func Uncompress_ISO_on_key($drive_letter,$iso_file,$release_in_list)
 	If ProcessExists("7z.exe") > 0 Then ProcessClose("7z.exe")
 	UpdateStatus(Translate("Décompression de l'ISO sur la clé") & " ( 5-10" & Translate("min") & " )")
 	$install_size = ReleaseGetInstallSize($release_in_list)
-	If $install_size < 5 Then $install_size = 703
+
+	; Just in case ...
+	If $install_size < 5 Then $install_size = 730
+
 	Run7zip('"' & @ScriptDir & '\tools\7z.exe" x "' & $iso_file & '" -x![BOOT] -r -aoa -o' & $drive_letter, $install_size)
 	SendReport("End-Uncompress_ISO_on_key")
 EndFunc
@@ -236,7 +239,7 @@ EndFunc
 	Input :
 		$drive_letter = Letter of the drive (pre-formated like "E:" )
 		$path_to_cd = path to the CD or folder containing the Linux Live CD files
-	Output : 
+	Output :
 		0 = sucess
 		1 = error see @error
 #ce
@@ -262,7 +265,7 @@ EndFunc
 	Input :
 		$drive_letter = Letter of the drive (pre-formated like "E:" )
 		$release_in_list = number of the release in the compatibility list (-1 if not present)
-	Output : 
+	Output :
 		0 = sucess
 		1 = error see @error
 #ce
@@ -288,7 +291,7 @@ EndFunc
 	Input :
 		$drive_letter = Letter of the drive (pre-formated like "E:" )
 		$release_in_list = number of the release in the compatibility list (-1 if not present)
-	Output : 
+	Output :
 		0 = sucess
 		1 = error see @error
 #ce
@@ -297,8 +300,14 @@ Func Create_boot_menu($drive_letter,$release_in_list)
 	SendReport("Start-Create_boot_menu")
 	If IniRead($drive_letter, "General", "skip_boot_text", "no") == "yes" Then Return 0
 	$variant = ReleaseGetVariant($release_in_list)
+	$distribution = ReleaseGetDistribution($release_in_list)
 	UpdateStatus(Translate("Détection automatique du type de variante") & " : " & $variant)
-	WriteTextCFG($drive_letter,$variant)
+	if $distribution == "Ubuntu" Then
+		Ubuntu_WriteTextCFG($drive_letter,$variant)
+	Else
+		; Fedora
+		Fedora_WriteTextCFG($drive_letter)
+	EndIf
 	SendReport("End-Create_boot_menu")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -313,7 +322,7 @@ EndFunc
 	Description : Hide files if user choose to
 	Input :
 		$drive_letter = Letter of the drive (pre-formated like "E:" )
-	Output : 
+	Output :
 		0 = sucess
 		1 = error see @error
 #ce
@@ -321,14 +330,14 @@ EndFunc
 Func Hide_live_files($drive_letter)
 	SendReport("Start-Hide_live_files")
 	If IniRead($settings_ini, "General", "skip_hiding", "no") == "yes" Then return 0
-	
+
 	UpdateStatus("Masquage des fichiers")
-	
+
 	; Common Linux Live files
 	HideFile($drive_letter & "\isolinux\")
 	HideFile($drive_letter & "\syslinux\")
 	HideFile($drive_letter & "\autorun.inf")
-	
+
 	; Classic Ubuntu files
 	HideFile($drive_letter & "\.disk\")
 	HideFile($drive_letter & "\casper\")
@@ -343,13 +352,13 @@ Func Hide_live_files($drive_letter)
 	HideFile($drive_letter & "\casper-rw")
 	HideFile($drive_letter & "\md5sum.txt")
 	HideFile($drive_letter & "\README.diskdefines")
-				
+
 	; Mint files
 	HideFile($drive_letter & "\lmmenu.exe")
 	HideFile($drive_letter & "\mint4win.exe")
 	HideFile($drive_letter & "\drivers\")
 	HideFile($drive_letter & "\.disc_id")
-	
+
 	; Fedora files
 	HideFile($drive_letter & "\README")
 	HideFile($drive_letter & "\GPL")
@@ -371,29 +380,40 @@ EndFunc
 		$drive_letter = Letter of the drive (pre-formated like "E:" )
 		$release_in_list = number of the release in the compatibility list (-1 if not present)
 		$persistence_size = size of persistence file in MB
-		$hide_it = state of user checkbox about hiding file or not 
-	Output : 
+		$hide_it = state of user checkbox about hiding file or not
+	Output :
 		0 = sucess
 		1 = error see @error
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Create_persistence_file($drive_letter,$release_in_list,$persistence_size,$hide_it)
 	SendReport("Start-Create_persistence_file")
-	If IniRead($settings_ini, "General", "skip_persistence", "no") == "no" Then Return 0
+	If IniRead($settings_ini, "General", "skip_persistence", "no") == "yes" Then Return 0
 	If $persistence_size > 0 Then
 		UpdateStatus("Création du fichier de persistance")
 		Sleep(1000)
-		RunDD(@ScriptDir & '\tools\dd.exe if=/dev/zero of=' & $drive_letter & '\casper-rw count=' & $persistence_size & ' bs=1024k', $persistence_size)
-		If ( $hide_it == $GUI_CHECKED) Then HideFile($drive_letter & "\casper-rw")
+
+		$distribe = ReleaseGetDistribution($release_in_list)
+
+		if $distribe =="Ubuntu" Then
+			$persistence_file= $drive_letter & '\casper-rw'
+		Else
+			; fedora
+			$persistence_file= $drive_letter & '\LiveOS\overlay-' & StringReplace(DriveGetLabel($drive_letter)," ", "_") & '-' & Get_Disk_UUID($drive_letter)
+			Msgbox(4096,"Persistence File ",$persistence_file)
+		Endif
+
+		Create_Empty_File($persistence_file, $persistence_size)
+		If ( $hide_it == $GUI_CHECKED) Then HideFile($persistence_file)
 		$time_to_format=3
 		if ($persistence_size >= 1000) Then $time_to_format=6
 		if ($persistence_size >= 2000) Then $time_to_format=10
 		if ($persistence_size >= 3000) Then $time_to_format=15
 		UpdateStatus(Translate("Formatage du fichier de persistance") & " ( ±"& $time_to_format & " " & Translate("min") & " )")
-		RunMke2fs()
-		Else
-			UpdateStatus("Mode Live : pas de fichier de persistance")
-		EndIf
+		EXT2_Format_File($persistence_file)
+	Else
+		UpdateStatus("Mode Live : pas de fichier de persistance")
+	EndIf
 	SendReport("End-Create_persistence_file")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -407,7 +427,7 @@ EndFunc
 	Description : Build and install boot sectors in order to make the key bootable
 	Input :
 		$drive_letter = Letter of the drive (pre-formated like "E:" )
-	Output : 
+	Output :
 		0 = sucess
 		1 = error see @error
 #ce
@@ -415,7 +435,7 @@ EndFunc
 
 Func Install_boot_sectors($drive_letter)
 	SendReport("Start-Install_boot_sectors")
-	If IniRead($settings_ini, "General", "skip_bootsector", "no") == "no" Then
+	If IniRead($settings_ini, "General", "skip_bootsector", "no") == "yes" Then Return 0
 		UpdateStatus("Installation des secteurs de boot")
 		If (IniRead($settings_ini, "General", "safe_syslinux", "no") == "yes") Then
 			$sysarg = " -s"
@@ -423,7 +443,7 @@ Func Install_boot_sectors($drive_letter)
 			$sysarg = " "
 		EndIf
 		RunWait3(@ScriptDir & '\tools\syslinux.exe -m -a' & $sysarg & ' -d ' & $drive_letter & '\syslinux ' & $drive_letter, @ScriptDir, @SW_HIDE)
-	EndIf
+
 	SendReport("End-Install_boot_sectors")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -437,7 +457,7 @@ EndFunc
 #cs
 	Description : Check if VirtualBox download is OK
 	Input :
-	Output : 
+	Output :
 		0 = sucess
 		1 = error see @error
 #ce
@@ -465,7 +485,7 @@ EndFunc
 	Description : Uncompress Portable-Virtualbox directly to the key
 	Input :
 		$drive_letter = Letter of the drive (pre-formated like "E:" )
-	Output : 
+	Output :
 		0 = sucess
 		1 = error see @error
 #ce
@@ -476,11 +496,11 @@ Func Uncompress_virtualbox_on_key($drive_letter)
 	; Cleaning previous install of VBox
 	UpdateStatus("Nettoyage d'anciennes installations de VirtualBox")
 	DirRemove2($drive_letter & "\VirtualBox\", 1)
-	
+
 	; Unzipping to the key
 	UpdateStatus(Translate("Décompression de Virtualbox sur la clé") & " ( 4" & Translate("min") & " )")
 	Run7zip2('"' & @ScriptDir & '\tools\7z.exe" x "' & @ScriptDir & "\tools\" & $downloaded_virtualbox_filename & '" -r -aoa -o' & $drive_letter, 76)
-	
+
 	; maybe check after ?
 	SendReport("End-Uncompress_virtualbox_on_key")
 EndFunc
@@ -499,7 +519,7 @@ EndFunc
 	Input :
 		$drive_letter = Letter of the drive (pre-formated like "E:" )
 		$release_in_list = number of the release in the compatibility list (-1 if not present)
-	Output : 
+	Output :
 		0 = sucess
 		1 = error see @error
 #ce
@@ -508,12 +528,12 @@ Func Create_autorun($drive_letter,$release_in_list)
 	SendReport("Start-Create_autorun")
 	If FileExists($drive_letter & "\autorun.inf") Then FileDelete($drive_letter & "\autorun.inf")
 	$codename = ReleaseGetCodename($release_in_list)
-	
+
 	; Grouping release with same files
 	$group1 = "ubuntu810,xubuntu810,kubuntu810"
 	$group2 = "mint6"
 	$group3 = "ubuntu904,xubuntu904,kubuntu904"
-	
+
 	if StringInStr($group1, $codename) > 0 Then
 		$icon = "umenu.exe,0"
 		$menu = "umenu.exe"
@@ -530,11 +550,11 @@ Func Create_autorun($drive_letter,$release_in_list)
 		$icon = "lili.ico"
 		$menu = ""
 	EndIf
-	
+
 	IniWrite($drive_letter & "\autorun.inf", "autorun", "icon", $icon)
 	IniWrite($drive_letter & "\autorun.inf", "autorun", "open", "")
 	IniWrite($drive_letter & "\autorun.inf", "autorun", "label", "LinuxLive Key")
-	
+
 	; If virtualbox is installed
 	if FileExists($drive_letter & "\VirtualBox\Virtualize_This_Key.exe") AND FileExists($drive_letter & "VirtualBox\VirtualBox.exe") Then
 		IniWrite($drive_letter & "\autorun.inf", "autorun", "shell\linuxlive", "----> LinuxLive!")
@@ -542,8 +562,10 @@ Func Create_autorun($drive_letter,$release_in_list)
 		IniWrite($drive_letter &"\autorun.inf", "autorun", "shell\linuxlive2", "----> VirtualBox Interface")
 		IniWrite($drive_letter & "\autorun.inf", "autorun", "shell\linuxlive2\command", "VirtualBox\VirtualBox.exe")
 	EndIf
-	IniWrite($drive_letter  & "\autorun.inf", "autorun", "shell\linuxlive3", "----> LinuxLive Menu")
-	IniWrite($drive_letter & "\autorun.inf", "autorun", "shell\linuxlive3\command", $menu)
+	if $menu <> "" Then
+		IniWrite($drive_letter  & "\autorun.inf", "autorun", "shell\linuxlive3", "----> LinuxLive Menu")
+		IniWrite($drive_letter & "\autorun.inf", "autorun", "shell\linuxlive3\command", $menu)
+	EndIf
 	HideFile($drive_letter & "\autorun.inf")
 	SendReport("End-Create_autorun")
 EndFunc
@@ -558,7 +580,7 @@ EndFunc
 	Input :
 		$drive_letter = Letter of the drive (pre-formated like "E:" )
 		$linux_version = Pre-formated version of linux (like ubuntu_8.10)
-	Output : 
+	Output :
 		0 = sucess
 		1 = error see @error
 #ce
@@ -578,7 +600,7 @@ EndFunc
 #cs
 	Description : Post-install check, will alert user if some requirements are not met
 	Input :
-	Output : 
+	Output :
 		0 = sucess
 		1 = error see @error
 #ce
@@ -589,7 +611,7 @@ Func Final_check()
 	$mem = MemGetStats()
 	$avert_mem = ""
 	$avert_admin = ""
-	
+
 	; If not admin and virtaulbox option has been selected => WARNING
 	If Not IsAdmin() Then $avert_admin = Translate("Vous n'avez pas les droits suffisants pour démarrer VirtualBox sur cette machine.") & @CRLF & Translate("Enregistrez-vous sur le compte administrateur ou lancez le logiciel avec les droits d'administrateur pour qu'il fonctionne.")
 
@@ -611,7 +633,7 @@ EndFunc
 	Input :
 		$drive_letter = Letter of the drive (pre-formated like "E:" )
 		$linux_version = Pre-formated version of linux (like ubuntu_8.10)
-	Output : 
+	Output :
 		0 = sucess
 		1 = error see @error
 #ce

@@ -109,13 +109,13 @@ If @Compiled == 1 Then
 	$LAUNCH_HOVER_PNG = _ResourceGetAsImage("LAUNCH_HOVER_PNG")
 	$REFRESH_PNG = _ResourceGetAsImage("REFRESH_PNG")
 	$PNG_GUI = _ResourceGetAsImage("PNG_GUI_" & $lang)
-Else 
+Else
 #ce
 	; Loading PNG Files
 	$EXIT_NORM = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\close.PNG")
 	$EXIT_OVER = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\close_hover.PNG")
-	$MIN_NORM = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\min.PNG")
-	$MIN_OVER = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\min_hover.PNG")
+	$MIN_NORM = "";_GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\min.PNG")
+	$MIN_OVER = "" ;_GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\min_hover.PNG")
 	$BAD = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\bad.png")
 	$WARNING = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\warning.png")
 	$GOOD = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\good.png")
@@ -157,9 +157,9 @@ $offsety0=23
 $EXIT_AREA = GUICtrlCreateLabel("", 335+$offsetx0, -20+$offsety0, 20, 20)
 GUICtrlSetCursor(-1, 0)
 GUICtrlSetOnEvent(-1, "GUI_Exit")
-$MIN_AREA = GUICtrlCreateLabel("", 135+$offsetx0, -3+$offsety0, 20, 20)
-GUICtrlSetCursor(-1, 0)
-GUICtrlSetOnEvent(-1, "GUI_Minimize")
+$MIN_AREA = "";GUICtrlCreateLabel("", 135+$offsetx0, -3+$offsety0, 20, 20)
+;GUICtrlSetCursor(-1, 0)
+;GUICtrlSetOnEvent(-1, "GUI_Minimize")
 $REFRESH_AREA = GUICtrlCreateLabel("", 300+$offsetx0, 145+$offsety0, 20, 20)
 GUICtrlSetCursor(-1, 0)
 GUICtrlSetOnEvent(-1, "GUI_Refresh_Drives")
@@ -199,7 +199,7 @@ GUISetState(@SW_SHOW, $CONTROL_GUI)
 
 $ZEROGraphic = _GDIPlus_GraphicsCreateFromHWND($CONTROL_GUI)
 
-; Firt display (initialization) of images 
+; Firt display (initialization) of images
 $EXIT_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $EXIT_NORM, 0, 0, 20, 20, 335+$offsetx0, -20+$offsety0, 20, 20)
 $MIN_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $MIN_NORM, 0, 0, 20, 20, 135+$offsetx0, -3+$offsety0, 20, 20)
 $DRAW_REFRESH = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $REFRESH_PNG, 0, 0, 20, 20, 300+$offsetx0, 145+$offsety0, 20, 20)
@@ -333,9 +333,9 @@ SendReport(LogSystemConfig())
 
 ; initialize list of compatible releases
 Get_Compatibility_List()
-	
+
 ; Hovering Buttons
-AdlibEnable ( "Control_Hover", 150 ) 
+AdlibEnable ( "Control_Hover", 150 )
 
 ; Main part
 While 1
@@ -344,7 +344,7 @@ While 1
 		GUICtrlSetData($combo, GUICtrlRead($combo))
 		$combo_updated = 1
 	EndIf
-	
+
 	sleep(60000)
 WEnd
 
@@ -391,7 +391,7 @@ Func Redraw_Traffic_Lights()
 					Step3_Check("warning")
 			EndSelect
 EndFunc
-			
+
 
 Func Control_Hover()
 	Global $previous_hovered_control
@@ -411,7 +411,7 @@ Func Control_Hover()
 			case $LAUNCH_AREA
 				$DRAW_LAUNCH = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $LAUNCH_PNG, 0, 0, 22, 43, 35+$offsetx0, 600+$offsety0, 22, 43)
 		EndSwitch
-		
+
 		Switch $CursorCtrl[4]
 			case $EXIT_AREA
 				$EXIT_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $EXIT_OVER, 0, 0, 20, 20, 335+$offsetx0, -20+$offsety0, 20, 20)
@@ -447,7 +447,7 @@ Func DirRemove2($arg1, $arg2)
 		EndIf
 	EndIf
 	SendReport("End-DirRemove2")
-EndFunc   
+EndFunc
 
 Func FileDelete2($arg1)
 	SendReport("Start-FileDelete2 ( " & $arg1 & " )")
@@ -462,9 +462,9 @@ Func FileDelete2($arg1)
 		EndIf
 	EndIf
 	SendReport("End-FileDelete2")
-EndFunc 
+EndFunc
 
-Func HideFile($file_or_folder) 
+Func HideFile($file_or_folder)
 	SendReport("Start-HideFile ( " & $file_or_folder & " )")
 	UpdateLog("Hiding file : " & $file_or_folder)
 	If FileSetAttrib($file_or_folder,"+SH") == 1 Then
@@ -486,14 +486,14 @@ Func _FileCopy($fromFile, $tofile)
 	$winShell = ObjCreate("shell.application")
 	$winShell.namespace($tofile).CopyHere($fromFile, $FOF_RESPOND_YES)
 	SendReport("End-_FileCopy")
-EndFunc  
+EndFunc
 
 Func _FileCopy2($arg1, $arg2)
 	SendReport("Start-_FileCopy2 ( " & $arg1 & " -> " & $arg2 & " )")
 	_FileCopy($arg1, $arg2)
 	UpdateLog("Copying folder " & $arg1 & " to " & $arg2)
 	SendReport("End-_FileCopy2")
-EndFunc   
+EndFunc
 
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////// Launching third party tools                       ///////////////////////////////////////////////////////////////////////////////
@@ -503,12 +503,12 @@ Func Run7zip($cmd, $taille)
 	Local $foo, $percentage, $line
 	$initial = DriveSpaceFree($selected_drive)
 	SendReport("Start-Run7zip ( " & $cmd & " )")
-	
+
 	UpdateLog($cmd)
 	If ProcessExists("7z.exe") > 0 Then ProcessClose("7z.exe")
 	$foo = Run($cmd, @ScriptDir, @SW_HIDE, $STDIN_CHILD + $STDOUT_CHILD)
 	$line = @CRLF
-	
+
 	While ProcessExists($foo) > 0
 		$percentage = Round((($initial - DriveSpaceFree($selected_drive)) * 100 / $taille), 0)
 		If $percentage > 0 And $percentage < 101 Then
@@ -520,7 +520,7 @@ Func Run7zip($cmd, $taille)
 	WEnd
 	UpdateLog($line)
 	SendReport("End-Run7zip")
-EndFunc   
+EndFunc
 
 Func Run7zip2($cmd, $taille)
 	Local $foo, $percentage, $line
@@ -542,32 +542,33 @@ Func Run7zip2($cmd, $taille)
 	WEnd
 	UpdateLog($line)
 	SendReport("End-Run7zip2")
-EndFunc  
+EndFunc
 
-Func RunDD($cmd, $taille)
-	SendReport("Start-RunDD ( " & $cmd & " )")
-	Local $foo, $line
+Func Create_Empty_File($file_to_create, $size)
+	SendReport("Start-Create_Empty_File ( " & $file_to_create & " )")
+	Local $cmd, $foo, $line
+	$cmd = @ScriptDir & '\tools\dd.exe if=/dev/zero of=' & $file_to_create & ' count=' & $size & ' bs=1024k'
 	UpdateLog($cmd)
 	If ProcessExists("dd.exe") > 0 Then ProcessClose("dd.exe")
 	$foo = Run($cmd, @ScriptDir, @SW_HIDE, $STDIN_CHILD + $STDOUT_CHILD + $STDERR_CHILD)
 	$line = @CRLF
 	While 1
 
-		UpdateStatusNoLog(Translate("Création du fichier de persistance") & " ( " & Round(FileGetSize($selected_drive & "\casper-rw") / 1048576, 0) & "/" & Round($taille, 0) & " Mo )")
+		UpdateStatusNoLog(Translate("Création du fichier de persistance") & " ( " & Round(FileGetSize($file_to_create) / 1048576, 0) & "/" & Round($size, 0) & " Mo )")
 		$line &= StderrRead($foo)
 		;UpdateStatus2($line)
 		If @error Then ExitLoop
 		Sleep(500)
 	WEnd
 	UpdateLog($line)
-	SendReport("End-RunDD")
-EndFunc   
+	SendReport("End-Create_Empty_File")
+EndFunc
 
-Func RunMke2fs()
+Func EXT2_Format_File($persistence_file)
 	Local $foo, $line
 	If ProcessExists("mke2fs.exe") > 0 Then ProcessClose("mke2fs.exe")
-	$cmd = @ScriptDir & '\tools\mke2fs.exe -b 1024 ' & $selected_drive & '\casper-rw'
-	SendReport("Start-RunMke2fs ( " & $cmd & " )")
+	$cmd = @ScriptDir & '\tools\mke2fs.exe -b 1024 ' & $persistence_file
+	SendReport("Start-EXT2_Format_File ( " & $cmd & " )")
 	UpdateLog($cmd)
 	$foo = Run($cmd, @ScriptDir, @SW_HIDE, $STDERR_CHILD + $STDOUT_CHILD + $STDIN_CHILD)
 	$line = @CRLF
@@ -578,8 +579,8 @@ Func RunMke2fs()
 		Sleep(500)
 	WEnd
 	UpdateLog($line)
-	SendReport("End-RunMke2fs")
-EndFunc   
+	SendReport("End-EXT2_Format_File")
+EndFunc
 
 Func RunWait3($soft, $arg1, $arg2)
 	SendReport("Start-RunWait3 ( " & $soft & " )")
@@ -593,7 +594,7 @@ Func RunWait3($soft, $arg1, $arg2)
 	WEnd
 	UpdateLog("                   " & $line)
 	SendReport("End-RunWait3")
-EndFunc   
+EndFunc
 
 
 Func Run2($soft, $arg1, $arg2)
@@ -610,7 +611,7 @@ Func Run2($soft, $arg1, $arg2)
 	WEnd
 	UpdateLog("                   " & $line)
 	SendReport("End-Run2")
-EndFunc  
+EndFunc
 
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////// Disks Management                              ///////////////////////////////////////////////////////////////////////////////
@@ -851,7 +852,7 @@ Func GetKbdCode()
 			UpdateLog(Translate("Détection du clavier") & " : " & Translate("Portugais"))
 			SendReport("End-GetKbdCode")
 			Return "locale=pt_BR bootkbd=qwerty/br-abnt2 console-setup/layoutcode=br console-setup/variantcode=nodeadkeys "
-			
+
 		Case StringInStr("0410,0810", @OSLang)
 			; Italien
 			UpdateLog(Translate("Détection du clavier") & " : " & Translate("Italian"))
@@ -868,23 +869,23 @@ EndFunc   ;==>GetKbdCode
 
 
 Func Get_Disk_UUID($drive_letter)
+	Local $uuid="802B-84D8"
 	Dim $oWMIService = ObjGet("winmgmts:{impersonationLevel=impersonate}!\\.\root\cimv2")
 	$o_ColListOfProcesses = $oWMIService.ExecQuery ("SELECT * FROM Win32_LogicalDisk WHERE Name = '" & $drive_letter & "'")
 	For $o_ObjProcess in $o_ColListOfProcesses
 		$uuid = $o_ObjProcess.VolumeSerialNumber
 	Next
-	if StringLen($uuid) < 5 Then $uuid = "802B84D8"
-	Return $uuid
+	Return StringTrimRight($uuid, 4)&"-"&StringTrimLeft($uuid, 4)
 EndFunc
 
 
-Func WriteTextCFG($selected_drive,$variant)
-	SendReport("Start-WriteTextCFG")
+Func Ubuntu_WriteTextCFG($selected_drive,$variant)
+	SendReport("Start-Ubuntu_WriteTextCFG")
 	Local $boot_text, $kbd_code
 	$boot_text = ""
 	$kbd_code = GetKbdCode()
 
-	if $variant = "mint" then 
+	if $variant = "mint" then
 		$boot_text = "default vesamenu.c32" _
 		& @LF &  "timeout 100" _
 		& @LF &  "menu background splash.jpg" _
@@ -905,11 +906,11 @@ Func WriteTextCFG($selected_drive,$variant)
 		$boot_text &=  "DISPLAY isolinux.txt" _
 					 & @LF & "TIMEOUT 300" _
 					 & @LF & "PROMPT 1" _
-					 & @LF & "default persist" 
+					 & @LF & "default persist"
 	Else
-		$boot_text &=  @LF & "default persist" 
+		$boot_text &=  @LF & "default persist"
 	EndIf
-	
+
 	$boot_text &=  @LF & "label persist" & @LF & "menu label ^" & Translate("Mode Persistant") _
 			 & @LF & "  kernel /casper/vmlinuz" _
 			 & @LF & "  append  " & $kbd_code & "noprompt cdrom-detect/try-usb=true persistent file=/cdrom/preseed/" & $variant & ".seed boot=casper initrd=/casper/initrd.gz splash--" _
@@ -928,26 +929,67 @@ Func WriteTextCFG($selected_drive,$variant)
 			 & @LF & "label memtest" _
 			 & @LF & "  menu label ^" & Translate("Test de la RAM") _
 			 & @LF & "  kernel /install/mt86plus"
-	UpdateLog("Creating syslinux config file :" & @CRLF & $boot_text) 
+	UpdateLog("Creating syslinux config file :" & @CRLF & $boot_text)
 		$file = FileOpen($selected_drive & "\syslinux\text.cfg", 2)
 		FileWrite($file, $boot_text)
 		FileClose($file)
-	if $variant = "mint" OR $variant = "custom" then 
+	if $variant = "mint" OR $variant = "custom" then
 		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
 		FileWrite($file, $boot_text)
 		FileClose($file)
 	EndIf
-	
-	if $variant = "custom" then 
+
+	if $variant = "custom" then
 		FileDelete2($selected_drive & "\syslinux\isolinux.txt")
 		FileCopy(@ScriptDir & "\tools\crunchbang-isolinux.txt", $selected_drive & "\syslinux\isolinux.txt", 1)
 	EndIf
-	
+
 		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
 		FileWrite($file, $boot_text)
 		FileClose($file)
-	SendReport("End-WriteTextCFG")
+	SendReport("End-Ubuntu_WriteTextCFG")
 EndFunc   ;==>WriteTextCFG
+
+Func Fedora_WriteTextCFG($drive_letter)
+	SendReport("Start-Fedora_WriteTextCFG")
+	Local $boot_text="",$uuid
+	$uuid=Get_Disk_UUID($drive_letter)
+	$boot_text &= @LF & "default vesamenu.c32" _
+		& @LF &  "timeout 100" _
+		& @LF &  "menu background splash.jpg" _
+		& @LF &  "menu title Welcome to Fedora !" _
+		& @LF &  "menu color border 0 #ffffffff #00000000" _
+		& @LF &  "menu color sel 7 #ffffffff #ff000000" _
+		& @LF &  "menu color title 0 #ffffffff #00000000" _
+		& @LF &  "menu color tabmsg 0 #ffffffff #00000000" _
+		& @LF &  "menu color unsel 0 #ffffffff #00000000" _
+		& @LF &  "menu color hotsel 0 #ff000000 #ffffffff" _
+		& @LF &  "menu color hotkey 7 #ffffffff #ff000000" _
+		& @LF &  "menu color timeout_msg 0 #ffffffff #00000000" _
+		& @LF &  "menu color timeout 0 #ffffffff #00000000" _
+		& @LF &  "menu color cmdline 0 #ffffffff #00000000" _
+		& @LF &  "menu hidden" _
+		& @LF &  "menu hiddenrow 5" _
+		& @LF &  "label linux0" _
+  		& @LF &  "  menu label " & Translate("Mode Persistant") _
+  		& @LF &  "  kernel vmlinuz0" _
+  		& @LF &  "  append initrd=initrd0.img root=UUID="&$uuid&" rootfstype=vfat rw liveimg overlay=UUID="&$uuid&" quiet  rhgb " _
+  		& @LF &  "menu default" _
+  		& @LF &  "label check0" _
+  		& @LF &  "  menu label "& Translate("Verification des fichiers") _
+  		& @LF &  "  kernel vmlinuz0" _
+  		& @LF &  "  append initrd=initrd0.img root=UUID="&$uuid&" rootfstype=vfat rw liveimg overlay=UUID="&$uuid&"quiet  rhgb check" _
+  		& @LF &  "label memtest" _
+   		& @LF &  " menu label "& Translate("Test de la RAM") _
+  		& @LF &  "  kernel memtest" _
+  		& @LF &  "label local" _
+  		& @LF &  "  menu label Boot from local drive" _
+   		& @LF &  "  localboot 0xffff"
+		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
+		FileWrite($file, $boot_text)
+		FileClose($file)
+  		SendReport("End-Fedora_WriteTextCFG")
+EndFunc
 
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////// Graphical Part                                ///////////////////////////////////////////////////////////////////////////////
@@ -1110,14 +1152,14 @@ Func Check_iso_integrity($linux_live_file)
 	SendReport("Start-MD5_ISO")
 	$MD5_ISO = MD5_ISO($linux_live_file)
 	SendReport("End-MD5_ISO")
-	$temp_index = _ArraySearch($compatible_md5,$MD5_ISO) 
-	
-	if  $temp_index > 0 Then 
+	$temp_index = _ArraySearch($compatible_md5,$MD5_ISO)
+
+	if  $temp_index > 0 Then
 		; Good version -> COMPATIBLE
 		MsgBox(4096, Translate("Vérification") & " OK", Translate("La version est compatible et le fichier est valide"))
 		Step2_Check("good")
 		$release_number=$temp_index
-	Else 
+	Else
 		$temp_index = _ArraySearch($compatible_filename,$shortname)
 		if $temp_index > 0 Then
 			; Filename is known but MD5 not OK -> COMPATIBLE BUT ERROR
@@ -1190,7 +1232,7 @@ Func Check_folder_integrity($folder)
 		FileClose($info_file)
 		If Check_if_version_non_grata($version_in_file) Then Return ""
 	EndIf
-	
+
 	Global $progression_foldermd5
 	$file = FileOpen($folder & "\md5sum.txt", 0)
 	If $file = -1 Then
@@ -1273,25 +1315,25 @@ Func _Language()
 	#cs
 		Case StringInStr("0413,0813", @OSLang)
 		Return "Dutch"
-		
+
 		Case StringInStr("0409,0809,0c09,1009,1409,1809,1c09,2009, 2409,2809,2c09,3009,3409", @OSLang)
 		Return "English"
-		
+
 		Case StringInStr("0410,0810", @OSLang)
 		Return "Italian"
-		
+
 		Case StringInStr("0414,0814", @OSLang)
 		Return "Norwegian"
-		
+
 		Case StringInStr("0415", @OSLang)
 		Return "Polish"
-		
+
 		Case StringInStr("0416,0816", @OSLang)
 		Return "Portuguese";
-		
+
 		Case StringInStr("040a,080a,0c0a,100a,140a,180a,1c0a,200a,240a,280a,2c0a,300a,340a,380a,3c0a,400a, 440a,480a,4c0a,500a", @OSLang)
 		Return "Spanish"
-		
+
 		Case StringInStr("041d,081d", @OSLang)
 		Return "Swedish"
 	#ce
@@ -1312,9 +1354,9 @@ Func _Language()
 			Return "Spanish"
 		Case StringInStr("0407,0807,0c07,1007,1407,0413,0813", @OSLang)
 			SendReport("End-_Language (GE)")
-			Return "German"	
+			Return "German"
 		Case StringInStr("0410,0810", @OSLang)
-			Return "Italian"			
+			Return "Italian"
 		Case Else
 			SendReport("End-_Language (EN)")
 			Return "English"
@@ -1383,13 +1425,13 @@ Func UnlockHelp()
 		IniWrite($help_file_name&":Zone.Identifier", "ZoneTransfer", "ZoneId", 5)
 	EndIf
 EndFunc
-	
+
 ; Open help file with right page and locale
 Func OpenHelpPage($page)
 	Global $help_file_name, $lang
 	$short_lang = StringLower(StringLeft($lang,2))
-	if StringInStr($help_available_langs,$short_lang)==0 then $short_lang = "en" 
-		
+	if StringInStr($help_available_langs,$short_lang)==0 then $short_lang = "en"
+
 	If FileExists($help_file_name) Then
 		Run(@ComSpec & " /c " & 'hh.exe mk:@MSITStore:' & $help_file_name & '::/' & $page & '_' & $short_lang & '.html', "", @SW_HIDE)
 	Else
@@ -1429,7 +1471,7 @@ Func GUI_Exit()
 EndFunc
 
 Func GUI_Minimize()
-	GUISetState(@SW_MINIMIZE,$GUI) 
+	GUISetState(@SW_MINIMIZE,$GUI)
 EndFunc
 
 Func GUI_Choose_Drive()
@@ -1499,7 +1541,8 @@ Func GUI_Choose_ISO()
 		Check_iso_integrity($file_set)
 		SendReport(LogSystemConfig())
 	EndIf
-	SendReport("End-ISO_AREA")	
+	; for debug Create_persistence_file($selected_drive,$release_number,"300",$GUI_CHECKED)
+	SendReport("End-ISO_AREA")
 EndFunc
 
 Func GUI_Choose_CD()
@@ -1594,20 +1637,21 @@ Func GUI_NoVirtualization()
 EndFunc
 
 Func GUI_Launch_Creation()
-			SendReport("Start-LAUNCH_AREA")
+		SendReport("Start-LAUNCH_AREA")
 		SendReport(LogSystemConfig())
+		; Disable the controls and re-enable after creation
 
 		$selected_drive = StringLeft(GUICtrlRead($combo), 2)
 
 		UpdateStatus("Début de la création du LinuxLive USB")
-		
+
 		If $STEP1_OK >= 1 And $STEP2_OK >= 1 And $STEP3_OK >= 1 Then
 			$annuler = 0
 		Else
 			$annuler = 2
 			UpdateStatus("Veuillez valider les étapes 1 à 3")
 		EndIf
-		
+
 		; Initializing log file
 		InitLog()
 
@@ -1635,42 +1679,42 @@ Func GUI_Launch_Creation()
 			Else
 				Copy_live_files_on_key($selected_drive,$file_set)
 			EndIf
-			
+
 			Rename_and_move_files($selected_drive, $release_number)
-		
+
 			Create_boot_menu($selected_drive,$release_number)
 
-			Create_persistence_file($selected_drive,$release_number,GUICtrlRead($slider_visual),GUICtrlRead($hide_files)) 
+			Create_persistence_file($selected_drive,$release_number,GUICtrlRead($slider_visual),GUICtrlRead($hide_files))
 
 			Install_boot_sectors($selected_drive)
-			
+
 			If (GUICtrlRead($hide_files) == $GUI_CHECKED) Then Hide_live_files($selected_drive)
 
 
 			If GUICtrlRead($virtualbox) == $GUI_CHECKED And $virtualbox_check >= 1 Then
-				
+
 				If $virtualbox_check <> 2 Then Check_virtualbox_download()
-				
+
 				; maybe check downloaded file ?
-				
+
 				; Next step : uncompressing vbox on the key
 				Uncompress_virtualbox_on_key($selected_drive)
-				
+
 				;UpdateStatus("Configuration de VirtualBox Portable")
 				;SetupVirtualBox($selected_drive & "\Portable-VirtualBox", $selected_drive)
-				
+
 				;Run($selected_drive & "\Portable-VirtualBox\Launch_usb.exe", @ScriptDir, @SW_HIDE)
 
 			EndIf
-			
+
 			; Create Autorun menu
 			Create_autorun($selected_drive,"test")
-			
+
 			; Creation is now done
 			UpdateStatus("Votre clé LinuxLive est maintenant prête !")
 
 			If $virtualbox_check >= 1 Then Final_check()
-			
+
 			sleep(1000)
 			$gui_finish = GUICreate (Translate("Votre clé LinuxLive est maintenant prête !"), 604, 378 , -1, -1)
 
@@ -1679,19 +1723,19 @@ Func GUI_Launch_Creation()
 			& @CRLF & @CRLF & "    "  &Translate("Pour lancer LinuxLive :") _
 			& @CRLF & "    " &Translate("Retirez votre clé et réinsérez-la.") _
 			& @CRLF & "    " &Translate("Allez ensuite dans 'Poste de travail'.") _
-			& @CRLF & "    " &Translate("Faites un clic droit sur votre clé et sélectionnez :") & @CRLF 
-			
+			& @CRLF & "    " &Translate("Faites un clic droit sur votre clé et sélectionnez :") & @CRLF
+
 			if FileExists($selected_drive & "\VirtualBox\Virtualize_This_Key.exe") AND FileExists($selected_drive & "VirtualBox\VirtualBox.exe") then
-				$printme &= @CRLF & "    " &"-> "& Translate("'LinuxLive!' pour lancer la clé directement dans windows") 
-				$printme &= @CRLF  & "    " & "-> " &Translate("'VirtualBox Interface' pour lancer l'interface complète de VirtalBox") 
+				$printme &= @CRLF & "    " &"-> "& Translate("'LinuxLive!' pour lancer la clé directement dans windows")
+				$printme &= @CRLF  & "    " & "-> " &Translate("'VirtualBox Interface' pour lancer l'interface complète de VirtalBox")
 			EndIf
 			$printme &= @CRLF  & "    " & "-> " &Translate("'CD Menu' pour lancer le menu original du CD")
 			GUICtrlCreateLabel($printme, 0, 0, 370, 378)
-			GUICtrlSetBkColor(-1, 0x0ffffff) 
+			GUICtrlSetBkColor(-1, 0x0ffffff)
 			GUICtrlSetFont (-1, 10, 600)
 			$Button_2 = GUICtrlCreateButton("Button Test",10, 30, 100)
 			GUICtrlSetOnEvent($Button_2,"biou")
-			
+
 			GUISetState(@SW_SHOW)
 			While 1
 				sleep(1000)
@@ -1720,7 +1764,7 @@ Func GUI_Help_Step4()
 EndFunc
 
 Func GUI_Help_Step5()
-	_About(Translate("A propos"), "LiLi USB Creator", "Copyright © " & @YEAR & " Thibaut Lauzière. All rights reserved.", $software_version, Translate("Guide d'utilisation"), "User_Guide", Translate("Homepage"), "http://www.linuxliveusb.com", Translate("Faire un don"), "https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=1195284", @AutoItExe, 0x0000FF, 0xFFFFFF, -1, -1, -1, -1, $CONTROL_GUI)	
+	_About(Translate("A propos"), "LiLi USB Creator", "Copyright © " & @YEAR & " Thibaut Lauzière. All rights reserved.", $software_version, Translate("Guide d'utilisation"), "User_Guide", Translate("Homepage"), "http://www.linuxliveusb.com", Translate("Faire un don"), "https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=1195284", @AutoItExe, 0x0000FF, 0xFFFFFF, -1, -1, -1, -1, $CONTROL_GUI)
 EndFunc
 
 Func Get_Compatibility_List()
@@ -1729,9 +1773,9 @@ Func Get_Compatibility_List()
 		MsgBox(32,"","Le fichier de releases "&$compatibility_ini&" est introuvable ou vide.")
 		GUI_Exit()
 	EndIf
-	
+
 	Global $releases[$sections[0]+1][30],$compatible_md5[$sections[0]+1],$compatible_filename[$sections[0]+1]
-	
+
 	For $i=1 to $sections[0]
 		$releases[$i][$R_CODE]=$sections[$i]
 		$releases[$i][$R_NAME]=IniRead($compatibility_ini, $sections[$i], "Name","NotFound")
@@ -1792,7 +1836,7 @@ Func DisplayRelease($release_in_list)
 		& "Mirror 10 : " & $releases[$release_in_list][$R_MIRROR10])
 	EndIf
 EndFunc
-	
+
 Func DisplayAllReleases()
 	$sections = IniReadSectionNames($compatibility_ini)
 	For $i=1 to $sections[0]
@@ -1801,31 +1845,31 @@ Func DisplayAllReleases()
 EndFunc
 
 Func ReleaseGetCodename($release_in_list)
-	if $release_in_list <=0 Then Return "NotFound" 
-	Return $releases[$release_in_list][$R_CODE] 
+	if $release_in_list <=0 Then Return "NotFound"
+	Return $releases[$release_in_list][$R_CODE]
 EndFunc
 
 Func ReleaseGetDistribution($release_in_list)
-	if $release_in_list <=0 Then Return "NotFound" 
-	Return $releases[$release_in_list][$R_DISTRIBUTION] 
+	if $release_in_list <=0 Then Return "NotFound"
+	Return $releases[$release_in_list][$R_DISTRIBUTION]
 EndFunc
 
 Func ReleaseGetDistributionVersion($release_in_list)
-	if $release_in_list <=0 Then Return "NotFound" 
-	Return $releases[$release_in_list][$R_DISTRIBUTION_VERSION] 
+	if $release_in_list <=0 Then Return "NotFound"
+	Return $releases[$release_in_list][$R_DISTRIBUTION_VERSION]
 EndFunc
 
 Func ReleaseGetVariant($release_in_list)
-	if $release_in_list <=0 Then Return "NotFound" 
-	Return $releases[$release_in_list][$R_VARIANT] 
+	if $release_in_list <=0 Then Return "NotFound"
+	Return $releases[$release_in_list][$R_VARIANT]
 EndFunc
 
 Func ReleaseGetVariantVersion($release_in_list)
-	if $release_in_list <=0 Then Return "NotFound" 
-	Return $releases[$release_in_list][$R_VARIANT_VERSION] 
+	if $release_in_list <=0 Then Return "NotFound"
+	Return $releases[$release_in_list][$R_VARIANT_VERSION]
 EndFunc
 
 Func ReleaseGetInstallSize($release_in_list)
-	if $release_in_list <=0 Then Return -1 
-	Return $releases[$release_in_list][$R_INSTALL_SIZE] 
+	if $release_in_list <=0 Then Return -1
+	Return $releases[$release_in_list][$R_INSTALL_SIZE]
 EndFunc
