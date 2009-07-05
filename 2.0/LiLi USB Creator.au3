@@ -15,7 +15,6 @@
 
 Global $lang_ini = @ScriptDir & "\tools\settings\langs.ini"
 Global $settings_ini = @ScriptDir & "\tools\settings\settings.ini"
-Global $compatibility_ini = @ScriptDir & "\tools\settings\compatibility_list.ini"
 Global $log_dir =  @ScriptDir & "\logs\"
 Global $help_file_name = "Help.chm"
 Global $help_available_langs = "en,fr,sp"
@@ -25,10 +24,8 @@ Global $downloaded_virtualbox_filename
 ; Globals images and GDI+ elements
 Global $GUI,$CONTROL_GUI,$EXIT_BUTTON,$MIN_BUTTON,$DRAW_REFRESH,$DRAW_ISO,$DRAW_CD,$DRAW_DOWNLOAD,$DRAW_LAUNCH,$HELP_STEP1,$HELP_STEP2,$HELP_STEP3,$HELP_STEP4,$HELP_STEP5
 Global 	$ZEROGraphic,$EXIT_NORM,$EXIT_OVER,$MIN_NORM,$MIN_OVER,$PNG_GUI,$CD_PNG,$CD_HOVER_PNG,$ISO_PNG,$ISO_HOVER_PNG,$DOWNLOAD_PNG,$DOWNLOAD_HOVER_PNG,$LAUNCH_PNG,$LAUNCH_HOVER_PNG,$HELP,$BAD,$GOOD,$WARNING
+Global $GUI
 
-; Global variables for releases attributes
-Global Const $R_CODE = 0,$R_NAME=1,$R_DISTRIBUTION=2, $R_DISTRIBUTION_VERSION=3,$R_FILENAME=4,$R_FILE_MD5=5,$R_RELEASE_DATE=6,$R_WEB=7,$R_DOWNLOAD_PAGE=8,$R_DOWNLOAD_SIZE=9,$R_INSTALL_SIZE=10,$R_DESCRIPTION=11
-Global Const $R_MIRROR1=12,$R_MIRROR2=13,$R_MIRROR3=14,$R_MIRROR4=15,$R_MIRROR5=16,$R_MIRROR6=17,$R_MIRROR7=18,$R_MIRROR8=19,$R_MIRROR9=20,$R_MIRROR10=21,$R_VARIANT=22,$R_VARIANT_VERSION=23,$R_VISIBLE=24
 Global $MD5_ISO, $compatible_md5, $compatible_filename,$release_number=-1
 
 
@@ -76,6 +73,8 @@ UnlockHelp()
 #include <INet.au3>
 #include <ErrorHandler.au3>
 #include <Ressources.au3>
+#include <Graphics.au3>
+#include <Releases.au3>
 #include <LiLis_heart.au3>
 
 ;                                   Version
@@ -991,147 +990,7 @@ Func Fedora_WriteTextCFG($drive_letter)
   		SendReport("End-Fedora_WriteTextCFG")
 EndFunc
 
-; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-; ///////////////////////////////// Graphical Part                                ///////////////////////////////////////////////////////////////////////////////
-; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Func GetVertOffset($hgui)
-;Const $SM_CYCAPTION = 4
-    Const $SM_CXFIXEDFRAME = 7
-    Local $wtitle, $wclient, $wsize,$wside,$ans
-    $wclient = WinGetClientSize($hgui)
-    $wsize = WinGetPos($hgui)
-    $wtitle = DllCall('user32.dll', 'int', 'GetSystemMetrics', 'int', $SM_CYCAPTION)
-    $wside = DllCall('user32.dll', 'int', 'GetSystemMetrics', 'int', $SM_CXFIXEDFRAME)
-    $ans = $wsize[3] - $wclient[1] - $wtitle[0] - 2 * $wside[0] +25
-    Return $ans
-EndFunc  ;==>GetVertOffset
-
-Func WM_NCHITTEST($hWnd, $iMsg, $iwParam, $ilParam)
-	If ($hWnd = $GUI) And ($iMsg = $WM_NCHITTEST) Then Return $HTCAPTION
-EndFunc   ;==>WM_NCHITTEST
-
-Func SetBitmap($hGUI, $hImage, $iOpacity)
-	Local $hScrDC, $hMemDC, $hBitmap, $hOld, $pSize, $tSize, $pSource, $tSource, $pBlend, $tBlend
-
-	$hScrDC = _WinAPI_GetDC(0)
-	$hMemDC = _WinAPI_CreateCompatibleDC($hScrDC)
-	$hBitmap = _GDIPlus_BitmapCreateHBITMAPFromBitmap($hImage)
-	$hOld = _WinAPI_SelectObject($hMemDC, $hBitmap)
-	$tSize = DllStructCreate($tagSIZE)
-	$pSize = DllStructGetPtr($tSize)
-	DllStructSetData($tSize, "X", _GDIPlus_ImageGetWidth($hImage))
-	DllStructSetData($tSize, "Y", _GDIPlus_ImageGetHeight($hImage))
-	$tSource = DllStructCreate($tagPOINT)
-	$pSource = DllStructGetPtr($tSource)
-	$tBlend = DllStructCreate($tagBLENDFUNCTION)
-	$pBlend = DllStructGetPtr($tBlend)
-	DllStructSetData($tBlend, "Alpha", $iOpacity)
-	DllStructSetData($tBlend, "Format", $AC_SRC_ALPHA)
-	_WinAPI_UpdateLayeredWindow($hGUI, $hScrDC, 0, $pSize, $hMemDC, $pSource, 0, $pBlend, $ULW_ALPHA)
-	_WinAPI_ReleaseDC(0, $hScrDC)
-	_WinAPI_SelectObject($hMemDC, $hOld)
-	_WinAPI_DeleteObject($hBitmap)
-	_WinAPI_DeleteDC($hMemDC)
-EndFunc   ;==>SetBitmap
-
-
-
-Global Const $LWA_ALPHA = 0x2
-Global Const $LWA_COLORKEY = 0x1
-
-;############# EndExample #########
-
-;===============================================================================
-;
-; Function Name: _WinAPI_SetLayeredWindowAttributes
-; Description:: Sets Layered Window Attributes:) See MSDN for more informaion
-; Parameter(s):
-; $hwnd - Handle of GUI to work on
-; $i_transcolor - Transparent color
-; $Transparency - Set Transparancy of GUI
-; $isColorRef - If True, $i_transcolor is a COLORREF( 0x00bbggrr ), else an RGB-Color
-; Requirement(s): Layered Windows
-; Return Value(s): Success: 1
-; Error: 0
-; @error: 1 to 3 - Error from DllCall
-; @error: 4 - Function did not succeed - use
-; _WinAPI_GetLastErrorMessage or _WinAPI_GetLastError to get more information
-; Author(s): Prog@ndy
-;
-; Link : @@MsdnLink@@ SetLayeredWindowAttributes
-; Example : Yes
-;===============================================================================
-;
-Func _WinAPI_SetLayeredWindowAttributes($hWnd, $i_transcolor, $Transparency = 255, $dwFlages = 0x03, $isColorRef = False)
-	; #############################################
-	; You are NOT ALLOWED to remove the following lines
-	; Function Name: _WinAPI_SetLayeredWindowAttributes
-	; Author(s): Prog@ndy
-	; #############################################
-	If $dwFlages = Default Or $dwFlages = "" Or $dwFlages < 0 Then $dwFlages = 0x03
-
-	If Not $isColorRef Then
-		$i_transcolor = Hex(String($i_transcolor), 6)
-		$i_transcolor = Execute('0x00' & StringMid($i_transcolor, 5, 2) & StringMid($i_transcolor, 3, 2) & StringMid($i_transcolor, 1, 2))
-	EndIf
-	Local $Ret = DllCall("user32.dll", "int", "SetLayeredWindowAttributes", "hwnd", $hWnd, "long", $i_transcolor, "byte", $Transparency, "long", $dwFlages)
-	Select
-		Case @error
-			Return SetError(@error, 0, 0)
-		Case $Ret[0] = 0
-			Return SetError(4, _WinAPI_GetLastError(), 0)
-		Case Else
-			Return 1
-	EndSelect
-EndFunc   ;==>_WinAPI_SetLayeredWindowAttributes
-
-;===============================================================================
-;
-; Function Name: _WinAPI_GetLayeredWindowAttributes
-; Description:: Gets Layered Window Attributes:) See MSDN for more informaion
-; Parameter(s):
-; $hwnd - Handle of GUI to work on
-; $i_transcolor - Returns Transparent color ( dword as 0x00bbggrr or string "0xRRGGBB")
-; $Transparency - Returns Transparancy of GUI
-; $isColorRef - If True, $i_transcolor will be a COLORREF( 0x00bbggrr ), else an RGB-Color
-; Requirement(s): Layered Windows
-; Return Value(s): Success: Usage of LWA_ALPHA and LWA_COLORKEY (use BitAnd)
-; Error: 0
-; @error: 1 to 3 - Error from DllCall
-; @error: 4 - Function did not succeed
-; - use _WinAPI_GetLastErrorMessage or _WinAPI_GetLastError to get more information
-; - @extended contains _WinAPI_GetLastError
-; Author(s): Prog@ndy
-;
-; Link : @@MsdnLink@@ GetLayeredWindowAttributes
-; Example : Yes
-;===============================================================================
-;
-Func _WinAPI_GetLayeredWindowAttributes($hWnd, ByRef $i_transcolor, ByRef $Transparency, $asColorRef = False)
-	; #############################################
-	; You are NOT ALLOWED to remove the following lines
-	; Function Name: _WinAPI_SetLayeredWindowAttributes
-	; Author(s): Prog@ndy
-	; #############################################
-	$i_transcolor = -1
-	$Transparency = -1
-	Local $Ret = DllCall("user32.dll", "int", "GetLayeredWindowAttributes", "hwnd", $hWnd, "long*", $i_transcolor, "byte*", $Transparency, "long*", 0)
-	Select
-		Case @error
-			Return SetError(@error, 0, 0)
-		Case $Ret[0] = 0
-			Return SetError(4, _WinAPI_GetLastError(), 0)
-		Case Else
-			If Not $asColorRef Then
-				$Ret[2] = Hex(String($Ret[2]), 6)
-				$Ret[2] = '0x' & StringMid($Ret[2], 5, 2) & StringMid($Ret[2], 3, 2) & StringMid($Ret[2], 1, 2)
-			EndIf
-			$i_transcolor = $Ret[2]
-			$Transparency = $Ret[3]
-			Return $Ret[4]
-	EndSelect
-EndFunc   ;==>_WinAPI_GetLayeredWindowAttributes
 
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////// Checking ISO/File MD5 Hashes                  ///////////////////////////////////////////////////////////////////////////////
@@ -1296,76 +1155,6 @@ Func MD5_FOLDER($FileName)
 	Return StringTrimLeft($hash, 2)
 EndFunc   ;==>MD5_FOLDER
 
-Func path_to_name($filepath)
-	$short_name = StringSplit($filepath, '\')
-	Return ($short_name[$short_name[0]])
-EndFunc   ;==>path_to_name
-
-Func unix_path_to_name($filepath)
-	$short_name = StringSplit($filepath, '/')
-	Return ($short_name[$short_name[0]])
-EndFunc   ;==>unix_path_to_name
-
-; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-; ///////////////////////////////// Locales management                            ///////////////////////////////////////////////////////////////////////////////
-; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-Func _Language()
-	SendReport("Start-_Language")
-	#cs
-		Case StringInStr("0413,0813", @OSLang)
-		Return "Dutch"
-
-		Case StringInStr("0409,0809,0c09,1009,1409,1809,1c09,2009, 2409,2809,2c09,3009,3409", @OSLang)
-		Return "English"
-
-		Case StringInStr("0410,0810", @OSLang)
-		Return "Italian"
-
-		Case StringInStr("0414,0814", @OSLang)
-		Return "Norwegian"
-
-		Case StringInStr("0415", @OSLang)
-		Return "Polish"
-
-		Case StringInStr("0416,0816", @OSLang)
-		Return "Portuguese";
-
-		Case StringInStr("040a,080a,0c0a,100a,140a,180a,1c0a,200a,240a,280a,2c0a,300a,340a,380a,3c0a,400a, 440a,480a,4c0a,500a", @OSLang)
-		Return "Spanish"
-
-		Case StringInStr("041d,081d", @OSLang)
-		Return "Swedish"
-	#ce
-
-	$force_lang = IniRead($settings_ini, "General", "force_lang", "no")
-	$temp = IniReadSectionNames($lang_ini)
-	$available_langs = _ArrayToString($temp)
-	If $force_lang <> "no" And (StringInStr( $available_langs, $force_lang) > 0) Then
-		SendReport("End-_Language (Force Lang)")
-		Return $force_lang
-	EndIf
-	Select
-		Case StringInStr("040c,080c,0c0c,100c,140c,180c", @OSLang)
-			SendReport("End-_Language (FR)")
-			Return "French"
-		Case StringInStr("0403,040a,080a,0c0a,100a,140a,180a,1c0a,200a,240a,280a,2c0a,300a,340a,380a,3c0a,400a,440a,480a,4c0a,500a", @OSLang)
-			SendReport("End-_Language (SP)")
-			Return "Spanish"
-		Case StringInStr("0407,0807,0c07,1007,1407,0413,0813", @OSLang)
-			SendReport("End-_Language (GE)")
-			Return "German"
-		Case StringInStr("0410,0810", @OSLang)
-			Return "Italian"
-		Case Else
-			SendReport("End-_Language (EN)")
-			Return "English"
-	EndSelect
-EndFunc   ;==>_Language
-
-Func Translate($txt)
-	Return IniRead($lang_ini, $lang, $txt, $txt)
-EndFunc   ;==>Translate
 
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////// Statistics                                  ///////////////////////////////////////////////////////////////////////////////
@@ -1523,7 +1312,6 @@ EndFunc
 
 Func GUI_Refresh_Drives()
 	Refresh_DriveList()
-	Finish_Help("G:")
 EndFunc
 
 Func GUI_Choose_ISO()
@@ -1564,7 +1352,15 @@ Func GUI_Choose_CD()
 EndFunc
 
 Func GUI_Download()
-	ShellExecute(Translate("http://www.ubuntu-fr.org/telechargement"))
+	RunWait(@ScriptDir & "\Download Linux.exe")
+
+	; Only one ISO is present so we can't be wrong, it's the downloaded one
+	If CountISO() = 1 AND @error = 0  Then
+		$iso_file=_FileListToArray(@ScriptDir,"*.iso",1)
+		$file_set = @ScriptDir & "\" & $iso_file[1]
+		$file_set_mode = "iso"
+		Check_iso_integrity($file_set)
+	EndIf
 EndFunc
 
 Func GUI_Persistence_Slider()
@@ -1716,8 +1512,19 @@ Func GUI_Launch_Creation()
 			If $virtualbox_check >= 1 Then Final_check()
 
 			sleep(1000)
-			$gui_finish = GUICreate (Translate("Votre clé LinuxLive est maintenant prête !"), 604, 378 , -1, -1)
+			Final_Help($selected_drive)
 
+		Else
+			UpdateStatus("Veuillez valider les étapes 1 à 3")
+		EndIf
+		SendReport("End-LAUNCH_AREA")
+EndFunc
+
+Func Final_Help($selected_drive)
+			$gui_finish = GUICreate (Translate("Votre clé LinuxLive est maintenant prête !"), 604, 378 , -1, -1)
+			GUISetOnEvent($GUI_EVENT_CLOSE, "GUI_Events")
+			GUISetOnEvent($GUI_EVENT_MINIMIZE, "GUI_Events")
+			GUISetOnEvent($GUI_EVENT_RESTORE, "GUI_Events")
 			GUICtrlCreatePic(@ScriptDir & "\tools\img\tuto.jpg", 350, 0, 254, 378)
 			$printme = @CRLF & @CRLF& @CRLF & @CRLF& "  " & Translate("Votre clé LinuxLive est maintenant prête !") _
 			& @CRLF & @CRLF & "    "  &Translate("Pour lancer LinuxLive :") _
@@ -1733,19 +1540,20 @@ Func GUI_Launch_Creation()
 			GUICtrlCreateLabel($printme, 0, 0, 370, 378)
 			GUICtrlSetBkColor(-1, 0x0ffffff)
 			GUICtrlSetFont (-1, 10, 600)
-			$Button_2 = GUICtrlCreateButton("Button Test",10, 30, 100)
-			GUICtrlSetOnEvent($Button_2,"biou")
-
 			GUISetState(@SW_SHOW)
-			While 1
-				sleep(1000)
-			WEnd
-		Else
-			UpdateStatus("Veuillez valider les étapes 1 à 3")
-		EndIf
-		SendReport("End-LAUNCH_AREA")
 EndFunc
 
+Func GUI_Events()
+    Select
+        Case @GUI_CtrlId = $GUI_EVENT_CLOSE
+			GUIDelete(@GUI_WinHandle)
+        Case @GUI_CtrlId = $GUI_EVENT_MINIMIZE
+			GUISetState(@SW_MINIMIZE,@GUI_WinHandle)
+        Case @GUI_CtrlId = $GUI_EVENT_RESTORE
+			GUISetState(@SW_SHOW,@GUI_WinHandle)
+
+    EndSelect
+EndFunc
 
 Func GUI_Help_Step1()
 	OpenHelpPage("etape1")
@@ -1767,109 +1575,64 @@ Func GUI_Help_Step5()
 	_About(Translate("A propos"), "LiLi USB Creator", "Copyright © " & @YEAR & " Thibaut Lauzière. All rights reserved.", $software_version, Translate("Guide d'utilisation"), "User_Guide", Translate("Homepage"), "http://www.linuxliveusb.com", Translate("Faire un don"), "https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=1195284", @AutoItExe, 0x0000FF, 0xFFFFFF, -1, -1, -1, -1, $CONTROL_GUI)
 EndFunc
 
-Func Get_Compatibility_List()
-	$sections = IniReadSectionNames($compatibility_ini)
-	If (Not IsArray($sections)) Or (Not FileExists($compatibility_ini)) Then
-		MsgBox(32,"","Le fichier de releases "&$compatibility_ini&" est introuvable ou vide.")
-		GUI_Exit()
+; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+; ///////////////////////////////// Locales management                            ///////////////////////////////////////////////////////////////////////////////
+; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Func _Language()
+	SendReport("Start-_Language")
+	#cs
+		Case StringInStr("0413,0813", @OSLang)
+		Return "Dutch"
+
+		Case StringInStr("0409,0809,0c09,1009,1409,1809,1c09,2009, 2409,2809,2c09,3009,3409", @OSLang)
+		Return "English"
+
+		Case StringInStr("0410,0810", @OSLang)
+		Return "Italian"
+
+		Case StringInStr("0414,0814", @OSLang)
+		Return "Norwegian"
+
+		Case StringInStr("0415", @OSLang)
+		Return "Polish"
+
+		Case StringInStr("0416,0816", @OSLang)
+		Return "Portuguese";
+
+		Case StringInStr("040a,080a,0c0a,100a,140a,180a,1c0a,200a,240a,280a,2c0a,300a,340a,380a,3c0a,400a, 440a,480a,4c0a,500a", @OSLang)
+		Return "Spanish"
+
+		Case StringInStr("041d,081d", @OSLang)
+		Return "Swedish"
+	#ce
+
+	$force_lang = IniRead($settings_ini, "General", "force_lang", "no")
+	$temp = IniReadSectionNames($lang_ini)
+	$available_langs = _ArrayToString($temp)
+	If $force_lang <> "no" And (StringInStr( $available_langs, $force_lang) > 0) Then
+		SendReport("End-_Language (Force Lang)")
+		Return $force_lang
 	EndIf
+	Select
+		Case StringInStr("040c,080c,0c0c,100c,140c,180c", @OSLang)
+			SendReport("End-_Language (FR)")
+			Return "French"
+		Case StringInStr("0403,040a,080a,0c0a,100a,140a,180a,1c0a,200a,240a,280a,2c0a,300a,340a,380a,3c0a,400a,440a,480a,4c0a,500a", @OSLang)
+			SendReport("End-_Language (SP)")
+			Return "Spanish"
+		Case StringInStr("0407,0807,0c07,1007,1407,0413,0813", @OSLang)
+			SendReport("End-_Language (GE)")
+			Return "German"
+		Case StringInStr("0410,0810", @OSLang)
+			Return "Italian"
+		Case Else
+			SendReport("End-_Language (EN)")
+			Return "English"
+	EndSelect
+EndFunc   ;==>_Language
 
-	Global $releases[$sections[0]+1][30],$compatible_md5[$sections[0]+1],$compatible_filename[$sections[0]+1]
+Func Translate($txt)
+	Return IniRead($lang_ini, $lang, $txt, $txt)
+EndFunc   ;==>Translate
 
-	For $i=1 to $sections[0]
-		$releases[$i][$R_CODE]=$sections[$i]
-		$releases[$i][$R_NAME]=IniRead($compatibility_ini, $sections[$i], "Name","NotFound")
-		$releases[$i][$R_DISTRIBUTION]=IniRead($compatibility_ini, $sections[$i], "Distribution","NotFound")
-		$releases[$i][$R_DISTRIBUTION_VERSION]=IniRead($compatibility_ini, $sections[$i], "Distribution_Version","NotFound")
-		$releases[$i][$R_VARIANT]=IniRead($compatibility_ini, $sections[$i], "Variant","NotFound")
-		$releases[$i][$R_VARIANT_VERSION]=IniRead($compatibility_ini, $sections[$i], "Variant_Version","NotFound")
-		$releases[$i][$R_FILENAME]=IniRead($compatibility_ini, $sections[$i], "Filename","NotFound")
-		$compatible_filename[$i]=IniRead($compatibility_ini, $sections[$i], "Filename","NotFound")
-		$releases[$i][$R_FILE_MD5]=IniRead($compatibility_ini, $sections[$i], "File_MD5","NotFound")
-		$compatible_md5[$i]=IniRead($compatibility_ini, $sections[$i], "File_MD5","NotFound")
-		$releases[$i][$R_RELEASE_DATE]=IniRead($compatibility_ini, $sections[$i], "Release_Date","NotFound")
-		$releases[$i][$R_WEB]=IniRead($compatibility_ini, $sections[$i], "Web","NotFound")
-		$releases[$i][$R_DOWNLOAD_PAGE]=IniRead($compatibility_ini, $sections[$i], "Download_page","NotFound")
-		$releases[$i][$R_DOWNLOAD_SIZE]=IniRead($compatibility_ini, $sections[$i], "Donwload_Size","NotFound")
-		$releases[$i][$R_INSTALL_SIZE]=IniRead($compatibility_ini, $sections[$i], "Install_Size","NotFound")
-		$releases[$i][$R_DESCRIPTION]=IniRead($compatibility_ini, $sections[$i], "Description","NotFound")
-		$releases[$i][$R_MIRROR1]=IniRead($compatibility_ini, $sections[$i], "Mirror1","NotFound")
-		$releases[$i][$R_MIRROR2]=IniRead($compatibility_ini, $sections[$i], "Mirror2","NotFound")
-		$releases[$i][$R_MIRROR3]=IniRead($compatibility_ini, $sections[$i], "Mirror3","NotFound")
-		$releases[$i][$R_MIRROR4]=IniRead($compatibility_ini, $sections[$i], "Mirror4","NotFound")
-		$releases[$i][$R_MIRROR5]=IniRead($compatibility_ini, $sections[$i], "Mirror5","NotFound")
-		$releases[$i][$R_MIRROR6]=IniRead($compatibility_ini, $sections[$i], "Mirror6","NotFound")
-		$releases[$i][$R_MIRROR7]=IniRead($compatibility_ini, $sections[$i], "Mirror7","NotFound")
-		$releases[$i][$R_MIRROR8]=IniRead($compatibility_ini, $sections[$i], "Mirror8","NotFound")
-		$releases[$i][$R_MIRROR9]=IniRead($compatibility_ini, $sections[$i], "Mirror9","NotFound")
-		$releases[$i][$R_MIRROR10]=IniRead($compatibility_ini, $sections[$i], "Mirror10","NotFound")
-		$releases[$i][$R_VISIBLE]=IniRead($compatibility_ini, $sections[$i], "Visible","NotFound")
-	Next
-	Return $releases
-EndFunc
-
-Func DisplayRelease($release_in_list)
-	Global $releases
-	if $release_in_list>0 Then
-		Msgbox(4096,"Release Details" ,  "Name : " & $releases[$release_in_list][$R_NAME]  & @CRLF  _
-		& "Distribution : " & ReleaseGetDistribution($release_in_list) & @CRLF  _
-		& "Distribution Version : " & ReleaseGetDistributionVersion($release_in_list) & @CRLF  _
-		& "Variant : " & ReleaseGetVariant($release_in_list) & @CRLF  _
-		& "Variant Version : " & ReleaseGetVariantVersion($release_in_list) & @CRLF  _
-		& "Filename : " & $releases[$release_in_list][$R_FILENAME] & @CRLF  _
-		& "MD5 : " & $releases[$release_in_list][$R_FILE_MD5] & @CRLF  _
-		& "Release Date : " & $releases[$release_in_list][$R_RELEASE_DATE] & @CRLF  _
-		& "WebSite : " & $releases[$release_in_list][$R_WEB] & @CRLF  _
-		& "Download Page : " & $releases[$release_in_list][$R_DOWNLOAD_PAGE] & @CRLF _
-		& "Download Size : " & $releases[$release_in_list][$R_DOWNLOAD_SIZE] & @CRLF _
-		& "Installed Size : " & $releases[$release_in_list][$R_INSTALL_SIZE] & @CRLF  _
-		& "Description : " & $releases[$release_in_list][$R_DESCRIPTION] & @CRLF  _
-		& "Mirror 1 :"  & $releases[$release_in_list][$R_MIRROR1] & @CRLF  _
-		& "Mirror 2 : " & $releases[$release_in_list][$R_MIRROR2] & @CRLF  _
-		& "Mirror 3 : " & $releases[$release_in_list][$R_MIRROR3] & @CRLF  _
-		& "Mirror 4 : " & $releases[$release_in_list][$R_MIRROR4] & @CRLF  _
-		& "Mirror 5 : " & $releases[$release_in_list][$R_MIRROR5] & @CRLF  _
-		& "Mirror 6 : " & $releases[$release_in_list][$R_MIRROR6] & @CRLF  _
-		& "Mirror 7 : " & $releases[$release_in_list][$R_MIRROR7] & @CRLF  _
-		& "Mirror 8 : " & $releases[$release_in_list][$R_MIRROR8] & @CRLF  _
-		& "Mirror 9 : " & $releases[$release_in_list][$R_MIRROR9] & @CRLF  _
-		& "Mirror 10 : " & $releases[$release_in_list][$R_MIRROR10])
-	EndIf
-EndFunc
-
-Func DisplayAllReleases()
-	$sections = IniReadSectionNames($compatibility_ini)
-	For $i=1 to $sections[0]
-		DisplayRelease($i)
-	Next
-EndFunc
-
-Func ReleaseGetCodename($release_in_list)
-	if $release_in_list <=0 Then Return "NotFound"
-	Return $releases[$release_in_list][$R_CODE]
-EndFunc
-
-Func ReleaseGetDistribution($release_in_list)
-	if $release_in_list <=0 Then Return "NotFound"
-	Return $releases[$release_in_list][$R_DISTRIBUTION]
-EndFunc
-
-Func ReleaseGetDistributionVersion($release_in_list)
-	if $release_in_list <=0 Then Return "NotFound"
-	Return $releases[$release_in_list][$R_DISTRIBUTION_VERSION]
-EndFunc
-
-Func ReleaseGetVariant($release_in_list)
-	if $release_in_list <=0 Then Return "NotFound"
-	Return $releases[$release_in_list][$R_VARIANT]
-EndFunc
-
-Func ReleaseGetVariantVersion($release_in_list)
-	if $release_in_list <=0 Then Return "NotFound"
-	Return $releases[$release_in_list][$R_VARIANT_VERSION]
-EndFunc
-
-Func ReleaseGetInstallSize($release_in_list)
-	if $release_in_list <=0 Then Return -1
-	Return $releases[$release_in_list][$R_INSTALL_SIZE]
-EndFunc
