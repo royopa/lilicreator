@@ -159,8 +159,3 @@ Func unix_path_to_name($filepath)
 	$short_name = StringSplit($filepath, '/')
 	Return ($short_name[$short_name[0]])
 EndFunc   ;==>unix_path_to_name
-
-Func CountISO()
-	$iso_files=_FileListToArray(@ScriptDir,"*.iso",1)
-	Return $iso_files[0]
-EndFunc

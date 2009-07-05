@@ -758,6 +758,7 @@ EndFunc   ;==>_Progress_CallBack_Init
 ; Internal Function, do not use !
 ; Author(s):       Prog@ndy
 Func _Progress_CallBack_Free($Force = False)
+	Control_Hover()
 	$_Progress_ahCallBack[2] -= 1
 	If $_Progress_ahCallBack[2] < 0 Then
 		$_Progress_ahCallBack[2] = 0
@@ -796,6 +797,7 @@ Func _Progress_CallBack_Free($Force = False)
 	ConsoleWrite("! $_Progress_ahCallBack[0]" & $_Progress_ahCallBack[1] & @CRLF)
 	ConsoleWrite("! $_Progress_ahCallBack[1]" & $_Progress_ahCallBack[1] & @CRLF)
 	ConsoleWrite("!----------------------------------" & @CRLF)
+
 EndFunc   ;==>_Progress_CallBack_Free
 
 

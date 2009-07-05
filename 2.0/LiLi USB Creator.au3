@@ -22,9 +22,9 @@ Global $lang, $anonymous_id
 Global $downloaded_virtualbox_filename
 ; Global variables used for the onEvent Functions
 ; Globals images and GDI+ elements
-Global $GUI,$CONTROL_GUI,$EXIT_BUTTON,$MIN_BUTTON,$DRAW_REFRESH,$DRAW_ISO,$DRAW_CD,$DRAW_DOWNLOAD,$DRAW_LAUNCH,$HELP_STEP1,$HELP_STEP2,$HELP_STEP3,$HELP_STEP4,$HELP_STEP5
+Global $GUI,$CONTROL_GUI,$EXIT_BUTTON,$MIN_BUTTON,$DRAW_REFRESH,$DRAW_ISO,$DRAW_CD,$DRAW_DOWNLOAD,$DRAW_LAUNCH,$HELP_STEP1,$HELP_STEP2,$HELP_STEP3,$HELP_STEP4,$HELP_STEP5,$label_iso,$label_cd,$label_download,$label_step2_status
 Global 	$ZEROGraphic,$EXIT_NORM,$EXIT_OVER,$MIN_NORM,$MIN_OVER,$PNG_GUI,$CD_PNG,$CD_HOVER_PNG,$ISO_PNG,$ISO_HOVER_PNG,$DOWNLOAD_PNG,$DOWNLOAD_HOVER_PNG,$LAUNCH_PNG,$LAUNCH_HOVER_PNG,$HELP,$BAD,$GOOD,$WARNING
-Global $GUI
+Global $download_menu_active = 0
 
 Global $MD5_ISO, $compatible_md5, $compatible_filename,$release_number=-1
 
@@ -71,6 +71,7 @@ UnlockHelp()
 #include <File.au3>
 #include <md5.au3>
 #include <INet.au3>
+#include <IE.au3>
 #include <ErrorHandler.au3>
 #include <Ressources.au3>
 #include <Graphics.au3>
@@ -220,16 +221,16 @@ Step3_Check("bad")
 SendReport("Creating GUI (buttons)")
 
 ; Text for step 2
-GUICtrlCreateLabel("ISO", 65+$offsetx0, 304+$offsety0, 20, 50)
+$label_iso = GUICtrlCreateLabel("ISO", 65+$offsetx0, 304+$offsety0, 20, 50)
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
 
 
-GUICtrlCreateLabel("CD", 175+$offsetx0, 304+$offsety0, 20, 50)
+$label_cd = GUICtrlCreateLabel("CD", 175+$offsetx0, 304+$offsety0, 20, 50)
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
 
-GUICtrlCreateLabel(Translate("Télécharger"), 262+$offsetx0, 304+$offsety0, 70, 20)
+$label_download = GUICtrlCreateLabel(Translate("Télécharger"), 262+$offsetx0, 304+$offsety0, 70, 20)
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
 
@@ -350,9 +351,9 @@ WEnd
 Func DrawAll()
 		$EXIT_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $EXIT_NORM, 0, 0, 20, 20, 335+$offsetx0, -20+$offsety0, 20, 20)
 		$MIN_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $MIN_NORM, 0, 0, 20, 20, 135+$offsetx0, -3+$offsety0, 20, 20)
-		$DRAW_CD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $CD_PNG, 0, 0, 75, 75, 146+$offsetx0, 231+$offsety0, 75, 75)
-		$DRAW_DOWNLOAD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $DOWNLOAD_PNG, 0, 0, 75, 75, 260+$offsetx0, 230+$offsety0, 75, 75)
-		$DRAW_ISO = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $ISO_PNG, 0, 0, 75, 75, 38+$offsetx0, 231+$offsety0, 75, 75)
+		if $download_menu_active = 0 Then $DRAW_CD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $CD_PNG, 0, 0, 75, 75, 146+$offsetx0, 231+$offsety0, 75, 75)
+		if $download_menu_active = 0 Then $DRAW_DOWNLOAD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $DOWNLOAD_PNG, 0, 0, 75, 75, 260+$offsetx0, 230+$offsety0, 75, 75)
+		if $download_menu_active = 0 Then $DRAW_ISO = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $ISO_PNG, 0, 0, 75, 75, 38+$offsetx0, 231+$offsety0, 75, 75)
 		$DRAW_LAUNCH = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $LAUNCH_PNG, 0, 0, 22, 43, 35+$offsetx0, 600+$offsety0, 22, 43)
 
 		$HELP_STEP1 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335+$offsetx0, 105+$offsety0, 20, 20)
@@ -399,14 +400,15 @@ Func Control_Hover()
 		Switch $previous_hovered_control
 			case $EXIT_AREA
 				$EXIT_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $EXIT_NORM, 0, 0, 20, 20, 335+$offsetx0, -20+$offsety0, 20, 20)
+				if $CursorCtrl[2] == 1 Then GUI_Exit()
 			case $MIN_AREA
 				$MIN_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $MIN_NORM, 0, 0, 20, 20, 135+$offsetx0, -3+$offsety0, 20, 20)
 			case $ISO_AREA
-				$DRAW_ISO = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $ISO_PNG, 0, 0, 75, 75, 38+$offsetx0, 231+$offsety0, 75, 75)
+				if $download_menu_active = 0 Then $DRAW_ISO = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $ISO_PNG, 0, 0, 75, 75, 38+$offsetx0, 231+$offsety0, 75, 75)
 			case $CD_AREA
-				$DRAW_CD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $CD_PNG, 0, 0, 75, 75, 146+$offsetx0, 231+$offsety0, 75, 75)
+				if $download_menu_active = 0 Then $DRAW_CD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $CD_PNG, 0, 0, 75, 75, 146+$offsetx0, 231+$offsety0, 75, 75)
 			case $DOWNLOAD_AREA
-				$DRAW_DOWNLOAD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $DOWNLOAD_PNG, 0, 0, 75, 75, 260+$offsetx0, 230+$offsety0, 75, 75)
+				if $download_menu_active = 0 Then $DRAW_DOWNLOAD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $DOWNLOAD_PNG, 0, 0, 75, 75, 260+$offsetx0, 230+$offsety0, 75, 75)
 			case $LAUNCH_AREA
 				$DRAW_LAUNCH = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $LAUNCH_PNG, 0, 0, 22, 43, 35+$offsetx0, 600+$offsety0, 22, 43)
 		EndSwitch
@@ -414,14 +416,15 @@ Func Control_Hover()
 		Switch $CursorCtrl[4]
 			case $EXIT_AREA
 				$EXIT_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $EXIT_OVER, 0, 0, 20, 20, 335+$offsetx0, -20+$offsety0, 20, 20)
+				if $CursorCtrl[2] == 1 Then GUI_Exit()
 			case $MIN_AREA
 				$MIN_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $MIN_OVER, 0, 0, 20, 20, 135+$offsetx0, -3+$offsety0, 20, 20)
 			case $ISO_AREA
-				$DRAW_ISO = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $ISO_HOVER_PNG, 0, 0, 75, 75, 38+$offsetx0, 231+$offsety0, 75, 75)
+				if $download_menu_active = 0 Then $DRAW_ISO = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $ISO_HOVER_PNG, 0, 0, 75, 75, 38+$offsetx0, 231+$offsety0, 75, 75)
 			case $CD_AREA
-				$DRAW_CD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $CD_HOVER_PNG, 0, 0, 75, 75, 146+$offsetx0, 231+$offsety0, 75, 75)
+				if $download_menu_active = 0 Then $DRAW_CD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $CD_HOVER_PNG, 0, 0, 75, 75, 146+$offsetx0, 231+$offsety0, 75, 75)
 			case $DOWNLOAD_AREA
-				$DRAW_DOWNLOAD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $DOWNLOAD_HOVER_PNG, 0, 0, 75, 75, 260+$offsetx0, 230+$offsety0, 75, 75)
+				if $download_menu_active = 0 Then $DRAW_DOWNLOAD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $DOWNLOAD_HOVER_PNG, 0, 0, 75, 75, 260+$offsetx0, 230+$offsety0, 75, 75)
 			case $LAUNCH_AREA
 				$DRAW_LAUNCH = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $LAUNCH_HOVER_PNG, 0, 0, 22, 43, 35+$offsetx0, 600+$offsety0, 22, 43)
 		EndSwitch
@@ -756,6 +759,12 @@ Func UpdateStatus($status)
 	SendReport(IniRead($lang_ini, "English", $status, $status))
 	_FileWriteLog($logfile, "Status : " & Translate($status))
 	GUICtrlSetData($label_step6_statut, Translate($status))
+EndFunc   ;==>UpdateStatus
+
+Func UpdateStatusStep2($status)
+	SendReport(IniRead($lang_ini, "English", $status, $status))
+	_FileWriteLog($logfile, "Status : " & Translate($status))
+	GUICtrlSetData($label_step2_status, Translate($status))
 EndFunc   ;==>UpdateStatus
 
 Func UpdateLog($status)
@@ -1352,16 +1361,170 @@ Func GUI_Choose_CD()
 EndFunc
 
 Func GUI_Download()
-	RunWait(@ScriptDir & "\Download Linux.exe")
+	Global $combo_linux,$download_manual,$download_auto
 
-	; Only one ISO is present so we can't be wrong, it's the downloaded one
-	If CountISO() = 1 AND @error = 0  Then
-		$iso_file=_FileListToArray(@ScriptDir,"*.iso",1)
-		$file_set = @ScriptDir & "\" & $iso_file[1]
-		$file_set_mode = "iso"
-		Check_iso_integrity($file_set)
+	; Used to avoid redrawing the old elements of Step 2 (ISO, CD and download)
+	$download_menu_active = 1
+
+
+	; hiding old elements
+	GUICtrlSetState($ISO_AREA, $GUI_HIDE)
+	GUICtrlSetState($CD_AREA, $GUI_HIDE)
+	GUICtrlSetState($DOWNLOAD_AREA, $GUI_HIDE)
+	GUICtrlSetState($label_cd, $GUI_HIDE)
+	GUICtrlSetState($label_download, $GUI_HIDE)
+	GUICtrlSetState($label_iso, $GUI_HIDE)
+
+	; Drawing new menu
+	$combo_linux = GUICtrlCreateCombo(">> " & "Select your favourite Linux", 38+$offsetx0, 238+$offsety0, 300,-1,3)
+	GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
+	GUICtrlSetColor(-1, 0xFFFFFF)
+	GUICtrlSetOnEvent(-1, "GUI_Select_Linux")
+	Get_Compatibility_List()
+	GUICtrlSetData($combo_linux, Print_For_ComboBox())
+
+	$download_manual = GUICtrlCreateButton("Download Manually", 38+$offsetx0, 231+$offsety0+50, 130)
+	GUICtrlSetOnEvent(-1, "GUI_Download_Manually")
+	GUICtrlSetState ( -1, $GUI_DISABLE )
+
+	$download_auto = GUICtrlCreateButton("Download Automatically", 38+$offsetx0+160, 231+$offsety0+50, 130)
+	GUICtrlSetOnEvent(-1, "GUI_Download_Automatically")
+	GUICtrlSetState ( -1, $GUI_DISABLE )
+EndFunc
+
+Func GUI_Select_Linux()
+	$selected_linux = StringSplit(GUICtrlRead($combo_linux), "//",1)
+	if $selected_linux[0] >= 2 Then
+		GUICtrlSetState ( $download_manual, $GUI_ENABLE )
+		GUICtrlSetState ( $download_auto, $GUI_ENABLE )
+	Else
+		MsgBox(48, "Attention","Please select a linux to continue")
+		GUICtrlSetState ( $download_manual, $GUI_DISABLE )
+		GUICtrlSetState ( $download_auto, $GUI_DISABLE )
 	EndIf
 EndFunc
+
+Func GUI_Download_Automatically()
+	$selected_linux = StringSplit(GUICtrlRead($combo_linux), "//",1)
+	$release_in_list = FindReleaseFromDescription($selected_linux[1])
+	DownloadRelease($release_in_list,1)
+EndFunc
+
+Func GUI_Download_Manually()
+	$selected_linux = StringSplit(GUICtrlRead($combo_linux), "//",1)
+	$release_in_list = FindReleaseFromDescription($selected_linux[1])
+	DownloadRelease($release_in_list,0)
+EndFunc
+
+Func DownloadRelease($release_in_list,$automatic_download)
+	Local $latency[50],$i,$mirror,$available_mirrors=0,$tested_mirrors=0
+	Global $best_mirror,$iso_size,$filename,$progress_bar, $label_step2_status
+	GUICtrlSetState($combo_linux, $GUI_HIDE)
+	GUICtrlSetState($download_manual, $GUI_HIDE)
+	GUICtrlSetState($download_auto, $GUI_HIDE)
+	$progress_bar = _ProgressCreate(38+$offsetx0, 238+$offsety0, 300, 30)
+	_ProgressSetImages($progress_bar, @ScriptDir & "\tools\img\progress_green.jpg", @ScriptDir & "\tools\img\progress_background.jpg")
+	_ProgressSetFont($progress_bar, "", -1, -1, 0x000000,0)
+
+	$label_step2_status = GUICtrlCreateLabel("Looking for the fastest mirror", 38+$offsetx0, 231+$offsety0+50, 300,80)
+	GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
+	GUICtrlSetColor(-1, 0xFFFFFF)
+	UpdateStatusStep2("Choosing fastest mirror")
+
+	for $i=$R_MIRROR1 to $R_MIRROR10
+		$mirror = $releases[$release_in_list][$i]
+		if  StringStripWS ($mirror,1) <> "" Then $available_mirrors = $available_mirrors +1
+	Next
+
+	for $i=$R_MIRROR1 to $R_MIRROR10
+		$mirror = $releases[$release_in_list][$i]
+		if  StringStripWS ($mirror,1) <> "" Then
+			$temp_latency = Ping(URLToHostname($mirror),1000)
+			if @error = 0 Then
+				$tested_mirrors = $tested_mirrors +1
+				_ProgressSet($progress_bar, $tested_mirrors*100/$available_mirrors)
+				_ProgressSetText($progress_bar, "Testing : " & URLToHostname($mirror))
+			Else
+				$temp_latency= 10000
+			EndIf
+		Else
+			$temp_latency = 10000
+		EndIf
+		$latency[$i] = $temp_latency
+
+	Next
+
+	if _ArrayMin($latency,1,$R_MIRROR1,$R_MIRROR10) = 10000 Then
+		UpdateStatusStep2("No online mirror found !" & @CRLF & "Please check your internet connection or try with another linux"  )
+		_ProgressSet($progress_bar, 100)
+
+	Else
+		UpdateStatusStep2("Best mirror found"& @CRLF &"Download will start in a few seconds" )
+		_ProgressSet($progress_bar, 100)
+		Sleep(1500)
+
+		$best_mirror = $releases[$release_in_list][_ArrayMinIndex($latency,1,$R_MIRROR1,$R_MIRROR10)]
+		if $automatic_download = 0 Then
+			; Download manually
+			UpdateStatusStep2("Select this file as the source when download will be completed.")
+			Sleep(1000)
+			ShellExecute($best_mirror)
+		Else
+			; Download automatically
+			$iso_size = InetGetSize($best_mirror)
+			$filename = unix_path_to_name($best_mirror)
+			$inet_success = InetGet($best_mirror, @ScriptDir & "\" & $filename, 1, 1)
+			if $inet_success Then
+				UpdateStatusStep2("Downloading "& $filename & @CRLF &"From " & URLToHostname($best_mirror))
+				Download_State()
+			Else
+				UpdateStatusStep2("Error while trying to download, please check you internet connection or try another linux")
+			EndIf
+		EndIf
+	EndIf
+	Sleep(3000)
+		_ProgressDelete($progress_bar)
+		_Progress_CallBack_Free(1)
+		GUICtrlSetState ( $combo_linux, $GUI_HIDE )
+		GUICtrlSetState ( $download_manual, $GUI_HIDE )
+		GUICtrlSetState ( $download_auto, $GUI_HIDE )
+		GUICtrlSetState ( $label_step2_status, $GUI_HIDE )
+		$cleaner = GUICtrlCreateLabel("",38+$offsetx0,238+$offsety0, 300, 30)
+		GUICtrlSetState($cleaner, $GUI_SHOW)
+		; Showing old elements again
+		GUICtrlSetState($ISO_AREA, $GUI_SHOW)
+		GUICtrlSetState($CD_AREA, $GUI_SHOW)
+		GUICtrlSetState($DOWNLOAD_AREA, $GUI_SHOW)
+		GUICtrlSetState($label_cd, $GUI_SHOW)
+		GUICtrlSetState($label_download, $GUI_SHOW)
+		GUICtrlSetState($label_iso, $GUI_SHOW)
+		GUICtrlSetState($cleaner, $GUI_HIDE)
+		$download_menu_active = 0
+		DrawAll()
+
+EndFunc
+
+Func Download_State()
+		While @InetGetActive
+			$percent_downloaded = Int((100 * @InetGetBytesRead / $iso_size))
+			_ProgressSet($progress_bar,$percent_downloaded)
+			_ProgressSetText($progress_bar, $percent_downloaded & "% ( " & RoundForceDecimal(@InetGetBytesRead / (1024 * 1024)) & " / " & RoundForceDecimal($iso_size / (1024 * 1024)) & " " & "MB" & " )")
+			Sleep(300)
+		WEnd
+		_ProgressSet($progress_bar,100)
+		_ProgressSetText($progress_bar,"100% ( " & Round($iso_size / (1024 * 1024)) & " / " & Round($iso_size / (1024 * 1024)) & " " & "MB" & " )")
+
+		UpdateStatusStep2("File has been successfully downloaded, a check will begin in few seconds.")
+		Sleep(3000)
+
+EndFunc
+
+Func RoundForceDecimal($number)
+	$rounded = Round($number,1)
+	If Not StringInStr($rounded, ".") Then $rounded = $rounded & ".0"
+	Return $rounded
+EndFunc
+
 
 Func GUI_Persistence_Slider()
 	If GUICtrlRead($slider) > 0 Then
