@@ -20,7 +20,7 @@ Global Const $StructDef_COPYDATA = "dword none;dword count;ptr pointer"
 Global Const $WM_COPYDATA_MH = 0x4A
 
 ;Message Queue Setup
-Global $MHCallBackTimer = 200 
+Global $MHCallBackTimer = 200
 Global $pTimerProc, $uiTimer
 Global $aMessageQueue[1]=[0]
 
@@ -28,7 +28,7 @@ Global $last_config, $last_report,$sErrorMsg
 Global  $last_actions[10] = [ "" , "" , "" ,"" , "" , "" ,"" , "" , "" , "" ]
 Global $sending_status
 Global $current_logfile = @ScriptDir & "\logs\crash-report-" & @MDAY & "-" & @MON & "-" & @YEAR & " (" & @HOUR & "h" & @MIN & "s" & @SEC & ").log"
-		
+
 Global $oMyRet[2]
 Global $oMyError
 
@@ -52,7 +52,7 @@ _OnAutoItError()
 
 ;   this function is made to be customized !
 Func _OnAutoItError()
-	
+
     If StringInStr($CmdLineRaw,"/AutoIt3ExecuteScript") Then Return
     Opt("TrayIconHide",1)
     ;   run a second instance
@@ -68,7 +68,7 @@ Func _OnAutoItError()
         Sleep(1)
     WEnd
     If $sErrorMsg="" Then Exit
-	
+
 
     GUICreate("LiLi USB Creator Automatic Bug Report",400,90,Default,Default,-2134376448);BitOR($WS_CAPTION,$WS_POPUP,$WS_SYSMENU)
     GUISetBkColor(0xE0DFE2)
@@ -90,7 +90,7 @@ Func _OnAutoItError()
             GUICtrlSetCursor(-1,0)
         $sen=GUICtrlCreateIcon("explorer.exe",254,13,63,16,16)
             GUICtrlSetCursor(-1,0)
-        
+
 		GUICtrlSetBkColor(GUICtrlCreateLabel("",246,8,141,22),0xEFEEF2)
             GUICtrlSetState(-1,128)
         $show=GUICtrlCreateLabel("    "& Translate("Voir le rapport"),265,12,115,15)
@@ -101,18 +101,18 @@ Func _OnAutoItError()
         $sho=GUICtrlCreateIcon("shell32.dll",290,249,11,16,16)
             If @Compiled=0 Then GUICtrlSetImage(-1,"shell32.dll",-81)
             GUICtrlSetCursor(-1,0)
-			
+
 		GUICtrlSetBkColor(GUICtrlCreateLabel("",246,34,141,22),0xEFEEF2)
             GUICtrlSetState(-1,128)
         $rest=GUICtrlCreateLabel("    "& Translate("Relancer l'application"),265,38,115,15)
             GUICtrlSetBkColor(-1,-2)
             GUICtrlSetCursor(-1,0)
 			GUICtrlSetOnEvent(-1, "GUI_Err_RunAgain")
-		
+
         $res=GUICtrlCreateIcon("shell32.dll",255,249,37,16,16)
             GUICtrlSetCursor(-1,0)
 		#ce
-		
+
 		GUICtrlSetBkColor(GUICtrlCreateLabel("",246,34,141,22),0xEFEEF2)
             GUICtrlSetState(-1,128)
         $show=GUICtrlCreateLabel("    "& Translate("Voir le rapport"),265,38,115,15)
@@ -123,8 +123,8 @@ Func _OnAutoItError()
         $sho=GUICtrlCreateIcon("shell32.dll",255,249,37,16,16)
             If @Compiled=0 Then GUICtrlSetImage(-1,"shell32.dll",-81)
             GUICtrlSetCursor(-1,0)
-			
-			
+
+
         GUICtrlSetBkColor(GUICtrlCreateLabel("",246,60,141,22),0xEFEEF2)
             GUICtrlSetState(-1,128)
         $close=GUICtrlCreateLabel("     "& Translate("Arrêter l'application"),265,64,115,15)
@@ -140,13 +140,11 @@ Func _OnAutoItError()
     TraySetToolTip("AutoIt Error Handler and Debugger")
     ;   choose action to be taken
 	If IniRead($settings_ini, "General", "skip_autoreport", "no")=="no" Then
-		
-		$my_mail_title = StringRegExp($sErrorMsg, '(?s)\x3d\x3e(.*)\x5e', 2)
-		If $my_mail_title > 2 Then
-			$subject = IniRead($settings_ini, "General", "unique_ID", "none")  & " : Unknown"
-		Else
-			$subject = IniRead($settings_ini, "General", "unique_ID", "none")  & " : " & $my_mail_title[1]
-		EndIf
+		; Only taking the description of the error
+		$my_mail_title = StringTrimLeft($sErrorMsg, StringInStr($sErrorMsg,".exe")+4)
+
+			$subject = IniRead($settings_ini, "General", "unique_ID", "none")  & " : " & $my_mail_title
+
 		$oMyError = ObjEvent("AutoIt.Error", "MyErrFunc")
 		_INetSmtpMailCom("mail.slym.fr", "LiLi USB Creator Automatic Bug Report" , "livecreator@usbuntu.slym.fr", "bug-report@slym.fr",  $subject, ConstructHTMLReport(), "livecreator@usbuntu.slym.fr","livecreator")
 		If @error Then
@@ -190,7 +188,7 @@ Func ConstructHTMLReport()
 	Return $temp
 EndFunc
 
-Func _ReceiveReport($report) 
+Func _ReceiveReport($report)
 	If StringLeft($report, 12) = @CRLF & "----------" Then
 		$last_config = $report
 		ConsoleWrite("Reporting config : " & $report & @crlf)
@@ -206,7 +204,7 @@ Func _ReceiveReport($report)
 		_ArrayPush($last_actions,$report)
 		ConsoleWrite("Au rapport : " & $report& @crlf)
 	EndIf
-	
+
 	;Msgbox(0,@ScriptName,"I am " & @ScriptName & " I have received some data" & @crlf & @crlf & $report)
 EndFunc
 
@@ -260,13 +258,13 @@ EndFunc
 ; #FUNCTION# ====================================================================================================================
 ; Name...........: _MHVersion
 ; Description ...: Gets Message Handler Version information
-; Syntax.........: _MHVersion() 
+; Syntax.........: _MHVersion()
 ; Parameters ....: None
 ; Return values .: Message Handler Version Number
 ; Author ........: ChrisL
 ; ===============================================================================================================================
 Func _MHVersion()
-	
+
 	Return $MHVersionInformation
 
 EndFunc
@@ -297,23 +295,23 @@ EndFunc
 ; Description ...: Process any messages that are queued and adjust the message queue
 ; Syntax.........: None
 ; Parameters ....: None
-; Return values .: None 
+; Return values .: None
 ; Author ........: ChrisL
 ; ===============================================================================================================================
 Func _CALLBACKQUEUE()
-	
+
 	Local $vMessage
 	Local $queueLen = $aMessageQueue[0]
-	
-	If $queueLen > 0 then 
+
+	If $queueLen > 0 then
 		$vMessage = $aMessageQueue[1]
 		$aMessageQueue[1] = ""
 		For $i = 1 to $queueLen -1
 			$aMessageQueue[$i] = $aMessageQueue[$i +1]
 		Next
-		
+
 		Redim $aMessageQueue[$queueLen]
-		
+
 		$aMessageQueue[0] = $queueLen - 1
 		Call($MHSendDataToFunc,$vMessage)
 	EndIf
@@ -326,7 +324,7 @@ EndFunc
 ; Description ...: Queues messages to prevent script slowdown
 ; Syntax.........: _QueueMessage($vText)
 ; Parameters ....: $vText    - The text to queue from the remote script
-; Return values .: None 
+; Return values .: None
 ; Author ........: ChrisL
 ; ===============================================================================================================================
 Func _QueueMessage($vText)
@@ -346,20 +344,20 @@ EndFunc
 ; Author ........: ChrisL
 ; ===============================================================================================================================
 Func _SetAsReceiver($vTitle)
-	
-	If StringLen($vTitle) = 0 then 
-		Msgbox(16 + 262144,"Message Handler Error","A Local_ReceiverID_Name must be specified." & @crlf & _ 
+
+	If StringLen($vTitle) = 0 then
+		Msgbox(16 + 262144,"Message Handler Error","A Local_ReceiverID_Name must be specified." & @crlf & _
 			"Messages will not be received unless a unique Local_ReceiverID_Name is used!")
 		Return SetError(1,1,-1);Make sure the user has specified a title
 	EndIf
-	
+
 	$vTitle &= $MHAdditionalIdentifier;add on our additionalIdentifier which is unlikely to be used exept by scripts using this UDF
-	
+
 	If WInExists($vtitle) and WinGetHandle($vTitle) <> $MHhwmd_Receiver then ;already a window exists with this title and it's not ours highly unlikely unless 2 copies of the script are running
-		Msgbox(16 + 262144,"Message Handler Error","The Local_ReceiverID_Name " & StringTrimRight($vTitle,StringLen($MHAdditionalIdentifier)) & " already exists." & @crlf & _ 
-			"A unique Local_ReceiverID_Name must be specified." & @crlf & _ 
+		Msgbox(16 + 262144,"Message Handler Error","The Local_ReceiverID_Name " & StringTrimRight($vTitle,StringLen($MHAdditionalIdentifier)) & " already exists." & @crlf & _
+			"A unique Local_ReceiverID_Name must be specified." & @crlf & _
 			"Messages will not be received unless a unique Local_ReceiverID_Name is used!")
-		Return SetError(1,2,-1) 
+		Return SetError(1,2,-1)
 	EndIf
 
 	$MHhwmd_Receiver = GUICreate($vTitle)
@@ -368,7 +366,7 @@ Func _SetAsReceiver($vTitle)
 	$uiTimer = DllCall("user32.dll", "uint", "SetTimer", "hwnd", 0, "uint", 0, "int", $MHCallBackTimer, "ptr", DllCallbackGetPtr($pTimerProc))
 	$uiTimer = $uiTimer[0]
 	Return $MHhwmd_Receiver
-	
+
 EndFunc
 
 
@@ -400,41 +398,41 @@ EndFunc
 ; ===============================================================================================================================
 Func _SendData($vData,$ReceiverTitle)
 	Local $strLen,$CDString,$vs_cds,$pCDString,$pStruct,$hwndRec
-	
+
 	If StringLen($ReceiverTitle) = 0 then Return SetError(1,1,0);Make sure the user has specified a title
 	$ReceiverTitle&= $MHAdditionalIdentifier
-	
+
 	$strLen = StringLen($vData)
 	$CDString = DllStructCreate("char var1[" & $strLen +1 & "]");the array to hold the string we are sending
 	DllStructSetData($CDString,1,$vData)
-	
+
 	$pCDString = DllStructGetPtr($CDString);the pointer to the string
-	
+
 	$vs_cds = DllStructCreate($StructDef_COPYDATA);create the message struct
 	DllStructSetData($vs_cds,"count",$strLen + 1);tell the receiver the length of the string +1
 	DllStructSetData($vs_cds,"pointer",$pCDString);the pointer to the string
 
 	$pStruct = DllStructGetPtr($vs_cds)
-	
+
 	$hwndRec = WinGetHandle($ReceiverTitle)
-	If $hwndRec = "" then 
+	If $hwndRec = "" then
 		$vs_cds = 0;free the struct
 		$CDString = 0;free the struct
 		Return SetError(1,2,0)
 	EndIf
-	
+
 
 	DllCall("user32.dll", "lparam", "SendMessage", "hwnd", $hwndRec, "int", $WM_COPYDATA_MH, "wparam", 0, "lparam", $pStruct)
-	If @error then 
+	If @error then
 		$vs_cds = 0;free the struct
 		$CDString = 0;free the struct
 		return SetError(1, 3, 0) ;return 0 no data sent
 	EndIf
-	
-	
+
+
 	$vs_cds = 0;free the struct
 	$CDString = 0;free the struct
-	Return $strLen 
+	Return $strLen
 EndFunc
 
 ; #FUNCTION# ====================================================================================================================
@@ -444,14 +442,14 @@ EndFunc
 ; Parameters ....: $hWnd       - Window/control handle
 ;                  $iMsg       - Message ID received
 ;                  $wParam     - Could specify additional message-specific information
-;                  $lParam     - Specifies a pointer to the message 
+;                  $lParam     - Specifies a pointer to the message
 ; Return values .: None        - Calls user specified function
 ; Author ........: piccaso
 ; Modified.......: ChrisL and martin
 ; ===============================================================================================================================
 Func _GUIRegisterMsgProc($hWnd, $MsgID, $WParam, $LParam)
 	Local $vs_cds,$vs_msg
-	
+
     If $MsgID = $WM_COPYDATA_MH Then ; We Recived a WM_COPYDATA Message
        ; $LParam = Poiter to a COPYDATA Struct
         $vs_cds = DllStructCreate($StructDef_COPYDATA, $LParam)
@@ -462,7 +460,7 @@ Func _GUIRegisterMsgProc($hWnd, $MsgID, $WParam, $LParam)
 		$vs_cds = 0
 		$vs_msg = 0
     EndIf
-	
+
 EndFunc  ;==>_GUIRegisterMsgProc
 
 
@@ -481,10 +479,10 @@ EndFunc  ;==>_DefaultMsgFunc
 
 ;Release the CallBack resources
 Func CallBack_Exit()
-	If $MHhwmd_Receiver <> "" then 
+	If $MHhwmd_Receiver <> "" then
 		DllCallbackFree($pTimerProc)
 		DllCall("user32.dll", "int", "KillTimer", "hwnd", 0, "uint", $uiTimer)
-	EndIf	
+	EndIf
 EndFunc
 
 

@@ -1,6 +1,15 @@
 #NoTrayIcon
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_icon=icon.ico
+; AutoIt Version: 3.2.12.1
+; Author        : Thibaut Lauzière (Slÿm) www.slym.fr
+; e-Mail        : contact@linuxliveusb.com
+; License       : GPL v3.0
+; Version       : 2.0
+; Download      : http://www.linuxliveusb.com
+; Support       : http://www.linuxliveusb.com
+
+
 #AutoIt3Wrapper_Compression=3
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
@@ -25,7 +34,8 @@ Global $downloaded_virtualbox_filename
 Global $GUI,$CONTROL_GUI,$EXIT_BUTTON,$MIN_BUTTON,$DRAW_REFRESH,$DRAW_ISO,$DRAW_CD,$DRAW_DOWNLOAD,$DRAW_LAUNCH,$HELP_STEP1,$HELP_STEP2,$HELP_STEP3,$HELP_STEP4,$HELP_STEP5,$label_iso,$label_cd,$label_download,$label_step2_status
 Global 	$ZEROGraphic,$EXIT_NORM,$EXIT_OVER,$MIN_NORM,$MIN_OVER,$PNG_GUI,$CD_PNG,$CD_HOVER_PNG,$ISO_PNG,$ISO_HOVER_PNG,$DOWNLOAD_PNG,$DOWNLOAD_HOVER_PNG,$LAUNCH_PNG,$LAUNCH_HOVER_PNG,$HELP,$BAD,$GOOD,$WARNING
 Global $download_menu_active = 0
-
+Global $combo_linux,$download_manual,$download_auto
+Global $best_mirror,$iso_size,$filename,$progress_bar, $label_step2_status
 Global $MD5_ISO, $compatible_md5, $compatible_filename,$release_number=-1
 
 
@@ -184,10 +194,10 @@ GUICtrlSetOnEvent(-1, "GUI_Help_Step2")
 $HELP_STEP3_AREA = GUICtrlCreateLabel("", 335+$offsetx0, 339+$offsety0, 20, 20)
 GUICtrlSetCursor(-1, 0)
 GUICtrlSetOnEvent(-1, "GUI_Help_Step3")
-$HELP_STEP4_AREA = GUICtrlCreateLabel("", 335+$offsetx0, 449+$offsety0, 20, 20)
+$HELP_STEP4_AREA = GUICtrlCreateLabel("", 335+$offsetx0, 451+$offsety0, 20, 20)
 GUICtrlSetCursor(-1, 0)
 GUICtrlSetOnEvent(-1, "GUI_Help_Step4")
-$HELP_STEP5_AREA = GUICtrlCreateLabel("", 335+$offsetx0, 562+$offsety0, 20, 20)
+$HELP_STEP5_AREA = GUICtrlCreateLabel("", 335+$offsetx0, 565+$offsety0, 20, 20)
 GUICtrlSetCursor(-1, 0)
 GUICtrlSetOnEvent(-1, "GUI_Help_Step5")
 
@@ -210,8 +220,8 @@ $DRAW_LAUNCH = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $LAUNCH_PNG, 0, 
 $HELP_STEP1 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335+$offsetx0, 105+$offsety0, 20, 20)
 $HELP_STEP2 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335+$offsetx0, 201+$offsety0, 20, 20)
 $HELP_STEP3 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335+$offsetx0, 339+$offsety0, 20, 20)
-$HELP_STEP4 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335+$offsetx0, 449+$offsety0, 20, 20)
-$HELP_STEP5 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335+$offsetx0, 562+$offsety0, 20, 20)
+$HELP_STEP4 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335+$offsetx0, 451+$offsety0, 20, 20)
+$HELP_STEP5 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335+$offsetx0, 565+$offsety0, 20, 20)
 
 ; Put the state for the first 3 steps
 Step1_Check("bad")
@@ -359,8 +369,8 @@ Func DrawAll()
 		$HELP_STEP1 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335+$offsetx0, 105+$offsety0, 20, 20)
 		$HELP_STEP2 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335+$offsetx0, 201+$offsety0, 20, 20)
 		$HELP_STEP3 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335+$offsetx0, 339+$offsety0, 20, 20)
-		$HELP_STEP4 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335+$offsetx0, 449+$offsety0, 20, 20)
-		$HELP_STEP5 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335+$offsetx0, 562+$offsety0, 20, 20)
+		$HELP_STEP4 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335+$offsetx0, 451+$offsety0, 20, 20)
+		$HELP_STEP5 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335+$offsetx0, 565+$offsety0, 20, 20)
 		Redraw_Traffic_Lights()
 EndFunc
 
@@ -1361,11 +1371,10 @@ Func GUI_Choose_CD()
 EndFunc
 
 Func GUI_Download()
-	Global $combo_linux,$download_manual,$download_auto
+
 
 	; Used to avoid redrawing the old elements of Step 2 (ISO, CD and download)
 	$download_menu_active = 1
-
 
 	; hiding old elements
 	GUICtrlSetState($ISO_AREA, $GUI_HIDE)
@@ -1418,7 +1427,7 @@ EndFunc
 
 Func DownloadRelease($release_in_list,$automatic_download)
 	Local $latency[50],$i,$mirror,$available_mirrors=0,$tested_mirrors=0
-	Global $best_mirror,$iso_size,$filename,$progress_bar, $label_step2_status
+
 	GUICtrlSetState($combo_linux, $GUI_HIDE)
 	GUICtrlSetState($download_manual, $GUI_HIDE)
 	GUICtrlSetState($download_auto, $GUI_HIDE)
