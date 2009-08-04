@@ -532,7 +532,7 @@ Func Create_autorun($drive_letter,$release_in_list)
 	; Grouping release with same files
 	$group1 = "ubuntu810,xubuntu810,kubuntu810"
 	$group2 = "mint6"
-	$group3 = "ubuntu904,xubuntu904,kubuntu904"
+	$group3 = "ubuntu904,xubuntu904,kubuntu904,netbook_remix910"
 
 	if StringInStr($group1, $codename) > 0 Then
 		$icon = "umenu.exe,0"
