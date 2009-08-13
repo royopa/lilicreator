@@ -159,3 +159,8 @@ Func unix_path_to_name($filepath)
 	$short_name = StringSplit($filepath, '/')
 	Return ($short_name[$short_name[0]])
 EndFunc   ;==>unix_path_to_name
+
+Func get_extension($filepath)
+	$short_name = StringSplit($filepath, '.')
+	Return ($short_name[$short_name[0]])
+EndFunc   ;==>unix_path_to_name

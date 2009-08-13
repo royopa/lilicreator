@@ -235,7 +235,7 @@ EndFunc
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 #cs
-	Description : Copy already uncompressed iso or CD files on the key
+	Description : Creates a bootable USB stick from an IMG file
 	Input :
 		$drive_letter = Letter of the drive (pre-formated like "E:" )
 		$path_to_cd = path to the CD or folder containing the Linux Live CD files
@@ -245,18 +245,31 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Func Copy_live_files_on_key($drive_letter,$path_to_cd)
-	SendReport("Start-Copy_live_files_on_key")
+Func Create_Stick_From_IMG($drive_letter,$path_to_cd)
+	SendReport("Start-Create_Stick_From_IMG")
 	If IniRead($settings_ini, "General", "skip_copy", "no") == "yes" Then Return 0
-	UpdateStatus(Translate("Copie des fichiers vers la clé") & " ( 5-10" & Translate("min") & " )")
 	_FileCopy2($path_to_cd & "\*.*", $drive_letter & "\")
-	SendReport("End-Copy_live_files_on_key")
+	SendReport("End-Create_Stick_From_IMG")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+#cs
+	Description : Copy already uncompressed iso or CD files on the key
+	Input :
+		$drive_letter = Letter of the drive (pre-formated like "E:" )
+		$img_file = pimg file containing a USB stick image
+	Output :
+		0 = sucess
+		1 = error see @error
+#ce
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Func WriteBlocksFromIMG($drive_letter,$img_file)
 
-
+EndFunc
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
