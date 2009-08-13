@@ -34,7 +34,7 @@ Global $downloaded_virtualbox_filename
 Global $GUI,$CONTROL_GUI,$EXIT_BUTTON,$MIN_BUTTON,$DRAW_REFRESH,$DRAW_ISO,$DRAW_CD,$DRAW_DOWNLOAD,$DRAW_LAUNCH,$HELP_STEP1,$HELP_STEP2,$HELP_STEP3,$HELP_STEP4,$HELP_STEP5,$label_iso,$label_cd,$label_download,$label_step2_status
 Global 	$ZEROGraphic,$EXIT_NORM,$EXIT_OVER,$MIN_NORM,$MIN_OVER,$PNG_GUI,$CD_PNG,$CD_HOVER_PNG,$ISO_PNG,$ISO_HOVER_PNG,$DOWNLOAD_PNG,$DOWNLOAD_HOVER_PNG,$LAUNCH_PNG,$LAUNCH_HOVER_PNG,$HELP,$BAD,$GOOD,$WARNING
 Global $download_menu_active = 0
-Global $combo_linux,$download_manual,$download_auto
+Global $combo_linux,$download_manual,$download_auto,$slider,$slider_visual
 Global $best_mirror,$iso_size,$filename,$progress_bar, $label_step2_status
 Global $MD5_ISO, $compatible_md5, $compatible_filename,$release_number=-1
 
@@ -231,16 +231,16 @@ Step3_Check("bad")
 SendReport("Creating GUI (buttons)")
 
 ; Text for step 2
-$label_iso = GUICtrlCreateLabel("ISO", 65+$offsetx0, 304+$offsety0, 20, 50)
+$label_iso = GUICtrlCreateLabel("ISO / IMG", 50+$offsetx0, 302+$offsety0, 50, 50)
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
 
 
-$label_cd = GUICtrlCreateLabel("CD", 175+$offsetx0, 304+$offsety0, 20, 50)
+$label_cd = GUICtrlCreateLabel("CD", 175+$offsetx0, 302+$offsety0, 20, 50)
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
 
-$label_download = GUICtrlCreateLabel(Translate("Télécharger"), 262+$offsetx0, 304+$offsety0, 70, 20)
+$label_download = GUICtrlCreateLabel(Translate("Télécharger"), 262+$offsetx0, 302+$offsety0, 70, 20)
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
 
@@ -570,6 +570,28 @@ Func Create_Empty_File($file_to_create, $size)
 		$line &= StderrRead($foo)
 		;UpdateStatus2($line)
 		If @error Then ExitLoop
+		Sleep(500)
+	WEnd
+	UpdateLog($line)
+	SendReport("End-Create_Empty_File")
+EndFunc
+
+Func WriteBlocksFromIMG($img_file)
+	SendReport("Start-WriteBlocksFromIMG ( " & $img_file & " )")
+	Local $cmd, $foo, $line
+	$cmd = @ScriptDir & '\tools\dd.exe if="'&$img_file&'" of=\\.\'& $selected_drive&'bs=1M --progress'
+	UpdateLog($cmd)
+	If ProcessExists("dd.exe") > 0 Then ProcessClose("dd.exe")
+	$foo = Run($cmd, @ScriptDir, @SW_HIDE, $STDIN_CHILD + $STDOUT_CHILD + $STDERR_CHILD)
+	While 1
+		$line = StdoutRead($foo)
+		If @error Then ExitLoop
+		$is_percentage = StringRegExp($line, '\s([0-9]{1,3})%', 0)
+
+		if $is_percentage =1 Then
+			$array = StringRegExp($line, '\s([0-9]{1,3})%', 3)
+			if $array[0] > 0 AND $array[0] < 101 Then ProgressSet( $array[0], $array[0] & " percent")
+		EndIf
 		Sleep(500)
 	WEnd
 	UpdateLog($line)
@@ -1015,11 +1037,13 @@ EndFunc
 ; ///////////////////////////////// Checking ISO/File MD5 Hashes                  ///////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Func Check_iso_integrity($linux_live_file)
-	SendReport("Start-Check_iso_integrity")
+Func Check_source_integrity($linux_live_file)
+	SendReport("Start-Check_source_integrity")
 
 	Global $MD5_ISO, $compatible_md5, $compatible_filename,$release_number=-1
-	If IniRead($settings_ini, "General", "skip_checking", "no") == "yes" Then
+
+	; No check if it's an img file or if the user do not want to
+	If IniRead($settings_ini, "General", "skip_checking", "no") == "yes" OR get_extension($linux_live_file)="img" Then
 		Step2_Check("good")
 		Return ""
 	EndIf
@@ -1052,8 +1076,8 @@ Func Check_iso_integrity($linux_live_file)
 		EndIf
 	EndIf
 	DisplayRelease($release_number)
-	SendReport("End-Check_iso_integrity")
-EndFunc   ;==>Check_iso_integrity
+	SendReport("End-Check_source_integrity")
+EndFunc
 
 Func Check_if_version_non_grata($ubuntu_version)
 	SendReport("Start-Check_if_version_non_grata")
@@ -1335,17 +1359,28 @@ EndFunc
 
 Func GUI_Choose_ISO()
 	SendReport("Start-ISO_AREA")
-	$iso_file = FileOpenDialog(Translate("Choisir l'image ISO d'un CD live de Linux"), @ScriptDir & "\", "ISO (*.iso)", 1)
+	$iso_file = FileOpenDialog(Translate("Choisir l'image ISO d'un CD live de Linux"), @ScriptDir & "\", "ISO / IMG (*.iso;*.img)", 1)
 	If @error Then
 		SendReport("IN-ISO_AREA (no iso)")
 		MsgBox(4096, "", Translate("Vous n'avez sélectionné aucun fichier"))
 		$file_set = 0;
 		Step2_Check("bad")
 	Else
-		SendReport("IN-ISO_AREA (iso selected :" & $iso_file & ")")
 		$file_set = $iso_file
-		$file_set_mode = "iso"
-		Check_iso_integrity($file_set)
+
+		if get_extension($iso_file) = "img" Then
+			GUICtrlSetState($slider,$GUI_DISABLE)
+			GUICtrlSetState($slider_visual,$GUI_DISABLE)
+			Step2_Check("good")
+			SendReport("IN-ISO_AREA (img selected :" & $iso_file & ")")
+			$file_set_mode = "img"
+		Else
+			GUICtrlSetState($slider,$GUI_ENABLE)
+			GUICtrlSetState($slider_visual,$GUI_ENABLE)
+			SendReport("IN-ISO_AREA (iso selected :" & $iso_file & ")")
+			$file_set_mode = "iso"
+		EndIf
+		Check_source_integrity($file_set)
 		SendReport(LogSystemConfig())
 	EndIf
 	; for debug Create_persistence_file($selected_drive,$release_number,"300",$GUI_CHECKED)
@@ -1644,8 +1679,10 @@ Func GUI_Launch_Creation()
 			; Uncompressing ou copying files on the key
 			If $file_set_mode = "iso" Then
 				Uncompress_ISO_on_key($selected_drive,$file_set,$release_number)
-			Else
+			Else $file_set_mode = "folder"
 				Copy_live_files_on_key($selected_drive,$file_set)
+			Else $file_set_mode = "img"
+				Create_Stick_From_IMG($selected_drive,$file_set)
 			EndIf
 
 			Rename_and_move_files($selected_drive, $release_number)
