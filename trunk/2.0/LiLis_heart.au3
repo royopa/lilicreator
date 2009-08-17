@@ -245,11 +245,11 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Func Create_Stick_From_IMG($drive_letter,$path_to_cd)
-	SendReport("Start-Create_Stick_From_IMG")
+Func Create_Stick_From_CD($drive_letter,$path_to_cd)
+	SendReport("Start-Create_Stick_From_CD")
 	If IniRead($settings_ini, "General", "skip_copy", "no") == "yes" Then Return 0
 	_FileCopy2($path_to_cd & "\*.*", $drive_letter & "\")
-	SendReport("End-Create_Stick_From_IMG")
+	SendReport("End-Create_Stick_From_CD")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -265,8 +265,32 @@ EndFunc
 		1 = error see @error
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-Func WriteBlocksFromIMG($drive_letter,$img_file)
+Func Create_Stick_From_IMG($drive_letter,$img_file)
+	SendReport("Start-Create_Stick_From_IMG ( " & $img_file & " )")
+	Local $cmd, $foo, $line, $img_size
+	$img_size= Ceiling(FileGetSize($img_file)/1048576)
+	$cmd = @ScriptDir & '\tools\dd.exe if="'&$img_file&'" of=\\.\'& $drive_letter&' bs=1M --progress'
+	UpdateLog($cmd)
+	If ProcessExists("dd.exe") > 0 Then ProcessClose("dd.exe")
+	$foo = Run($cmd, @ScriptDir, @SW_HIDE, $STDIN_CHILD + $STDOUT_CHILD + $STDERR_CHILD)
+		While 1
+		$line &= StdoutRead($foo)
+		If @error Then ExitLoop
 
+		; Regular Expression to parse progression
+		$str = StringRight($line,20)
+		$is = StringRegExp($line, '\r([0-9]{1,4}\,[0-9]{1,3}\,[0-9]{1,3})\r', 0)
+		if $is =1 Then
+			$array= StringRegExp($line, '\r([0-9]{1,4}\,[0-9]{1,3}\,[0-9]{1,3})\r', 3)
+				$mb_written = Ceiling(StringReplace($array[UBound($array)-1],",","")/1048576)
+				$percent_written = Ceiling(100*$mb_written/$img_size)
+				ProgressSet( $percent_written , $mb_written & " MB / "&$img_size& "MB ( "&$percent_written&"% )")
+				UpdateStatusNoLog(Translate("Ecriture de l'image sur la clé") & " " & $mb_written & " " & Translate("MB") &" / "&$img_size& Translate("MB") &" ( "&$percent_written&"% )")
+				$line=""
+		EndIf
+		Sleep(500)
+	Wend
+	SendReport("End-Create_Stick_From_IMG")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
