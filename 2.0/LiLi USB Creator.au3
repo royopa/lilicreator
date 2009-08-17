@@ -91,7 +91,7 @@ UnlockHelp()
 ;                                   Version
 Global $software_version = "2.0"
 
-SendReport("Starting LiLi USB Creator" & $software_version)
+SendReport("Starting LiLi USB Creator " & $software_version)
 
 _GDIPlus_Startup()
 
@@ -576,27 +576,6 @@ Func Create_Empty_File($file_to_create, $size)
 	SendReport("End-Create_Empty_File")
 EndFunc
 
-Func WriteBlocksFromIMG($img_file)
-	SendReport("Start-WriteBlocksFromIMG ( " & $img_file & " )")
-	Local $cmd, $foo, $line
-	$cmd = @ScriptDir & '\tools\dd.exe if="'&$img_file&'" of=\\.\'& $selected_drive&'bs=1M --progress'
-	UpdateLog($cmd)
-	If ProcessExists("dd.exe") > 0 Then ProcessClose("dd.exe")
-	$foo = Run($cmd, @ScriptDir, @SW_HIDE, $STDIN_CHILD + $STDOUT_CHILD + $STDERR_CHILD)
-	While 1
-		$line = StdoutRead($foo)
-		If @error Then ExitLoop
-		$is_percentage = StringRegExp($line, '\s([0-9]{1,3})%', 0)
-
-		if $is_percentage =1 Then
-			$array = StringRegExp($line, '\s([0-9]{1,3})%', 3)
-			if $array[0] > 0 AND $array[0] < 101 Then ProgressSet( $array[0], $array[0] & " percent")
-		EndIf
-		Sleep(500)
-	WEnd
-	UpdateLog($line)
-	SendReport("End-Create_Empty_File")
-EndFunc
 
 Func EXT2_Format_File($persistence_file)
 	Local $foo, $line
@@ -1317,15 +1296,14 @@ Func GUI_Choose_Drive()
 				GUICtrlSetLimit($slider, Round(SpaceAfterLinuxLiveMB($selected_drive) / 10), 0)
 				; State is OK ( FAT32 or FAT format and 700MB+ free) and warning for live mode only on step 3
 				Step3_Check("good")
-				SendReport(LogSystemConfig())
 			Else
 				GUICtrlSetData($label_max, SpaceAfterLinuxLiveMB($selected_drive) & " " & Translate("Mo"))
 				GUICtrlSetLimit($slider, Round(SpaceAfterLinuxLiveMB($selected_drive) / 10), 0)
 				; State is OK but warning for live mode only on step 3
 				Step3_Check("warning")
-				SendReport(LogSystemConfig())
 			EndIf
 
+		SendReport(LogSystemConfig())
 		ElseIf ( StringInStr(DriveGetFileSystem($selected_drive),"FAT") <=0 And GUICtrlRead($formater) <> $GUI_CHECKED ) Then
 
 			MsgBox(4096, "", Translate("Veuillez choisir un disque formaté en FAT32 ou FAT ou cocher l'option de formatage"))
@@ -1338,6 +1316,15 @@ Func GUI_Choose_Drive()
 			GUICtrlSetData($label_max, "?? " & Translate("Mo"))
 			GUICtrlSetLimit($slider, 0, 0)
 			Step3_Check("bad")
+		ElseIf $file_set_mode= "img" Then
+				Step3_Check("good")
+				GUICtrlSetState($slider,$GUI_DISABLE)
+				GUICtrlSetState($slider_visual,$GUI_DISABLE)
+				if DriveSpaceTotal($selected_drive) > 700 Then
+					Step1_Check("good")
+				Else
+					Step1_Check("bad")
+				EndIf
 		Else
 			If (DriveGetFileSystem($selected_drive) = "") Then
 				MsgBox(4096, "", Translate("Vous n'avez sélectionné aucun disque"))
@@ -1350,7 +1337,9 @@ Func GUI_Choose_Drive()
 			GUICtrlSetData($label_max, "?? " & Translate("Mo"))
 			GUICtrlSetLimit($slider, 0, 0)
 			Step3_Check("bad")
+
 		EndIf
+
 EndFunc
 
 Func GUI_Refresh_Drives()
@@ -1374,6 +1363,8 @@ Func GUI_Choose_ISO()
 			Step2_Check("good")
 			SendReport("IN-ISO_AREA (img selected :" & $iso_file & ")")
 			$file_set_mode = "img"
+			Step3_Check("good")
+			MsgBox(64, "", Translate("Les fichiers .IMG sont supportés de façon expérimentale."&@CRLF&"Seul le mode Live est actuellement disponible (étape 3)."))
 		Else
 			GUICtrlSetState($slider,$GUI_ENABLE)
 			GUICtrlSetState($slider_visual,$GUI_ENABLE)
@@ -1613,7 +1604,6 @@ Func GUI_Format_Key()
 			GUICtrlSetLimit($slider, SpaceAfterLinuxLiveMB($selected_drive) / 10, 0)
 		EndIf
 
-		; update the combo box (listing drives)
 		If ( ( StringInStr(DriveGetFileSystem($selected_drive),"FAT") >=1 Or GUICtrlRead($formater) == $GUI_CHECKED ) And SpaceAfterLinuxLiveMB($selected_drive) > 0 ) Then
 			; State is OK ( FAT32 or FAT format and 700MB+ free)
 			GUICtrlSetData($label_max, SpaceAfterLinuxLiveMB($selected_drive) & " " & Translate("Mo"))
@@ -1679,22 +1669,24 @@ Func GUI_Launch_Creation()
 			; Uncompressing ou copying files on the key
 			If $file_set_mode = "iso" Then
 				Uncompress_ISO_on_key($selected_drive,$file_set,$release_number)
-			Else $file_set_mode = "folder"
-				Copy_live_files_on_key($selected_drive,$file_set)
-			Else $file_set_mode = "img"
+			ElseIf $file_set_mode = "folder" Then
+				Create_Stick_From_CD($selected_drive,$file_set)
+			ElseIf $file_set_mode = "img" Then
 				Create_Stick_From_IMG($selected_drive,$file_set)
 			EndIf
 
-			Rename_and_move_files($selected_drive, $release_number)
+			; If it's not an IMG file, we have to do all these things :
+			if $file_set_mode <> "img" Then
+				Rename_and_move_files($selected_drive, $release_number)
 
-			Create_boot_menu($selected_drive,$release_number)
+				Create_boot_menu($selected_drive,$release_number)
 
-			Create_persistence_file($selected_drive,$release_number,GUICtrlRead($slider_visual),GUICtrlRead($hide_files))
+				Create_persistence_file($selected_drive,$release_number,GUICtrlRead($slider_visual),GUICtrlRead($hide_files))
 
-			Install_boot_sectors($selected_drive)
+				Install_boot_sectors($selected_drive)
+			EndIf
 
 			If (GUICtrlRead($hide_files) == $GUI_CHECKED) Then Hide_live_files($selected_drive)
-
 
 			If GUICtrlRead($virtualbox) == $GUI_CHECKED And $virtualbox_check >= 1 Then
 
@@ -1713,7 +1705,7 @@ Func GUI_Launch_Creation()
 			EndIf
 
 			; Create Autorun menu
-			Create_autorun($selected_drive,"test")
+			Create_autorun($selected_drive,$release_number)
 
 			; Creation is now done
 			UpdateStatus("Votre clé LinuxLive est maintenant prête !")
@@ -1826,18 +1818,23 @@ Func _Language()
 	Select
 		Case StringInStr("040c,080c,0c0c,100c,140c,180c", @OSLang)
 			SendReport("End-_Language (FR)")
-			Return "French"
+			;Return "French"
+			Return "Portuguese";
 		Case StringInStr("0403,040a,080a,0c0a,100a,140a,180a,1c0a,200a,240a,280a,2c0a,300a,340a,380a,3c0a,400a,440a,480a,4c0a,500a", @OSLang)
 			SendReport("End-_Language (SP)")
 			Return "Spanish"
 		Case StringInStr("0407,0807,0c07,1007,1407,0413,0813", @OSLang)
 			SendReport("End-_Language (GE)")
 			Return "German"
+		Case StringInStr("0416,0816", @OSLang)
+			SendReport("End-_Language (PT)")
+			Return "Portuguese";
 		Case StringInStr("0410,0810", @OSLang)
 			Return "Italian"
 		Case Else
 			SendReport("End-_Language (EN)")
 			Return "English"
+
 	EndSelect
 EndFunc   ;==>_Language
 
