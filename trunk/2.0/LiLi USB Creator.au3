@@ -405,12 +405,14 @@ EndFunc
 
 Func Control_Hover()
 	Global $previous_hovered_control
-    Local $CursorCtrl = GUIGetCursorInfo($CONTROL_GUI)
+    Local $CursorCtrl
+	
 	if WinActive("CONTROL_GUI") OR WinActive("LiLi USB Creator")  Then
+		$CursorCtrl =  GUIGetCursorInfo()
+		if Not @error Then
 		Switch $previous_hovered_control
 			case $EXIT_AREA
 				$EXIT_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $EXIT_NORM, 0, 0, 20, 20, 335+$offsetx0, -20+$offsety0, 20, 20)
-				if $CursorCtrl[2] == 1 Then GUI_Exit()
 			case $MIN_AREA
 				$MIN_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $MIN_NORM, 0, 0, 20, 20, 135+$offsetx0, -3+$offsety0, 20, 20)
 			case $ISO_AREA
@@ -426,7 +428,7 @@ Func Control_Hover()
 		Switch $CursorCtrl[4]
 			case $EXIT_AREA
 				$EXIT_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $EXIT_OVER, 0, 0, 20, 20, 335+$offsetx0, -20+$offsety0, 20, 20)
-				if $CursorCtrl[2] == 1 Then GUI_Exit()
+				if $CursorCtrl[2] = 1 Then GUI_Exit()
 			case $MIN_AREA
 				$MIN_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $MIN_OVER, 0, 0, 20, 20, 135+$offsetx0, -3+$offsety0, 20, 20)
 			case $ISO_AREA
@@ -438,8 +440,10 @@ Func Control_Hover()
 			case $LAUNCH_AREA
 				$DRAW_LAUNCH = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $LAUNCH_HOVER_PNG, 0, 0, 22, 43, 35+$offsetx0, 600+$offsety0, 22, 43)
 		EndSwitch
+		$previous_hovered_control = $CursorCtrl[4]
 	EndIf
-	$previous_hovered_control = $CursorCtrl[4]
+	EndIf
+	
 EndFunc
 
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1008,8 +1012,48 @@ Func Fedora_WriteTextCFG($drive_letter)
 		FileWrite($file, $boot_text)
 		FileClose($file)
   		SendReport("End-Fedora_WriteTextCFG")
+	EndFunc
+	
+Func Mandriva_WriteTextCFG($drive_letter)
+	SendReport("Start-Mandriva_WriteTextCFG")
+	Local $boot_text=""
+	$uuid=Get_Disk_UUID($drive_letter)
+	$boot_text &= @LF & "default vesamenu.c32" _
+		& @LF &  "timeout 100" _
+		& @LF &  "menu background splash.jpg" _
+		& @LF &  "menu title Welcome to Fedora !" _
+		& @LF &  "menu color border 0 #ffffffff #00000000" _
+		& @LF &  "menu color sel 7 #ffffffff #ff000000" _
+		& @LF &  "menu color title 0 #ffffffff #00000000" _
+		& @LF &  "menu color tabmsg 0 #ffffffff #00000000" _
+		& @LF &  "menu color unsel 0 #ffffffff #00000000" _
+		& @LF &  "menu color hotsel 0 #ff000000 #ffffffff" _
+		& @LF &  "menu color hotkey 7 #ffffffff #ff000000" _
+		& @LF &  "menu color timeout_msg 0 #ffffffff #00000000" _
+		& @LF &  "menu color timeout 0 #ffffffff #00000000" _
+		& @LF &  "menu color cmdline 0 #ffffffff #00000000" _
+		& @LF &  "menu hidden" _
+		& @LF &  "menu hiddenrow 5" _
+		& @LF &  "label linux0" _
+  		& @LF &  "  menu label " & Translate("Mode Persistant") _
+  		& @LF &  "  kernel vmlinuz0" _
+  		& @LF &  "  append initrd=initrd0.img root=UUID="&$uuid&" rootfstype=vfat rw liveimg overlay=UUID="&$uuid&" quiet  rhgb " _
+  		& @LF &  "menu default" _
+  		& @LF &  "label check0" _
+  		& @LF &  "  menu label "& Translate("Verification des fichiers") _
+  		& @LF &  "  kernel vmlinuz0" _
+  		& @LF &  "  append initrd=initrd0.img root=UUID="&$uuid&" rootfstype=vfat rw liveimg overlay=UUID="&$uuid&"quiet  rhgb check" _
+  		& @LF &  "label memtest" _
+   		& @LF &  " menu label "& Translate("Test de la RAM") _
+  		& @LF &  "  kernel memtest" _
+  		& @LF &  "label local" _
+  		& @LF &  "  menu label Boot from local drive" _
+   		& @LF &  "  localboot 0xffff"
+		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
+		FileWrite($file, $boot_text)
+		FileClose($file)
+  		SendReport("End-Mandriva_WriteTextCFG")
 EndFunc
-
 
 
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1054,7 +1098,8 @@ Func Check_source_integrity($linux_live_file)
 			$release_number=-1
 		EndIf
 	EndIf
-	DisplayRelease($release_number)
+	; Debug purpose
+	; DisplayRelease($release_number)
 	SendReport("End-Check_source_integrity")
 EndFunc
 
@@ -1360,14 +1405,26 @@ Func GUI_Choose_ISO()
 		if get_extension($iso_file) = "img" Then
 			GUICtrlSetState($slider,$GUI_DISABLE)
 			GUICtrlSetState($slider_visual,$GUI_DISABLE)
+			GUICtrlSetState($virtualbox,$GUI_UNCHECKED)
+			GUICtrlSetState($virtualbox, $GUI_DISABLE)
 			Step2_Check("good")
-			SendReport("IN-ISO_AREA (img selected :" & $iso_file & ")")
+			
 			$file_set_mode = "img"
 			Step3_Check("good")
-			MsgBox(64, "", Translate("Les fichiers .IMG sont supportés de façon expérimentale."&@CRLF&"Seul le mode Live est actuellement disponible (étape 3)."))
+			
+			if DriveSpaceTotal($selected_drive) > 700 Then
+				Step1_Check("good")
+			Else
+				Step1_Check("bad")
+			EndIf
+			
+				
+			SendReport("IN-ISO_AREA (img selected :" & $iso_file & ")")
+			MsgBox(64, "", Translate("Les fichiers .IMG sont supportés de façon expérimentale.")&@CRLF&Translate("Seul le mode Live est actuellement disponible dans l'étape 3 et l'option de virtualisation est désactivée."))
 		Else
 			GUICtrlSetState($slider,$GUI_ENABLE)
 			GUICtrlSetState($slider_visual,$GUI_ENABLE)
+			GUICtrlSetState($virtualbox, $GUI_ENABLE)
 			SendReport("IN-ISO_AREA (iso selected :" & $iso_file & ")")
 			$file_set_mode = "iso"
 		EndIf
@@ -1387,6 +1444,9 @@ Func GUI_Choose_CD()
 			Step2_Check("bad")
 			$file_set = 0;
 		Else
+			GUICtrlSetState($slider,$GUI_ENABLE)
+			GUICtrlSetState($slider_visual,$GUI_ENABLE)
+			GUICtrlSetState($virtualbox, $GUI_ENABLE)
 			SendReport("IN-CD_AREA (CD selected :" & $folder_file & ")")
 			$file_set = $folder_file;
 			$file_set_mode = "folder"
@@ -1818,8 +1878,7 @@ Func _Language()
 	Select
 		Case StringInStr("040c,080c,0c0c,100c,140c,180c", @OSLang)
 			SendReport("End-_Language (FR)")
-			;Return "French"
-			Return "Portuguese";
+			Return "French"
 		Case StringInStr("0403,040a,080a,0c0a,100a,140a,180a,1c0a,200a,240a,280a,2c0a,300a,340a,380a,3c0a,400a,440a,480a,4c0a,500a", @OSLang)
 			SendReport("End-_Language (SP)")
 			Return "Spanish"

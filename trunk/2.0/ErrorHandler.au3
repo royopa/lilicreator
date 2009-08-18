@@ -175,6 +175,7 @@ EndFunc
 Func GUI_Err_Stop()
 	Exit
 EndFunc
+
 Func ConstructReport()
 	$temp = Translate("Erreur") & " :" & @CRLF & $sErrorMsg &  @CRLF & Translate("10 dernières actions") & _
 	": " & @CRLF & _ArrayToString($last_actions,@CRLF & "--> ") & @CRLF & $last_config  & @CRLF & _
