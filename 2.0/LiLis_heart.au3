@@ -64,6 +64,15 @@ Func Clean_old_installs($drive_letter,$release_in_list)
 		FileDelete2($drive_letter & "\mint4win.exe")
 		DirRemove2($drive_letter & "\drivers\",1)
 		FileDelete2($drive_letter & "\.disc_id")
+	Elseif $distribution = "Mandriva" Then
+		; Mandriva files
+		FileDelete2($drive_letter & "\README.pdf")
+		FileDelete2($drive_letter & "\LISEZMOI.pdf")
+		FileDelete2($drive_letter & "\autorun.inf")
+		DirRemove2($drive_letter & "\loopbacks\",1)
+		DirRemove2($drive_letter & "\isolinux\",1)
+		DirRemove2($drive_letter & "\autorun\",1)
+		DirRemove2($drive_letter & "\boot\",1)
 	Else
 		; Fedora files
 		FileDelete2($drive_letter & "\README")
@@ -132,7 +141,8 @@ Func Download_virtualBox()
 
 				$downloaded_virtualbox_filename = unix_path_to_name($VirtualBoxUrl)
 				$virtualbox_already_downloaded = 0
-
+				
+				#cs
 				; Checking if last version has aleardy been downloaded
 				If FileExists(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename) And $virtualbox_size > 0 And $virtualbox_size == FileGetSize(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename) Then
 					; Already have last version, no download needed
@@ -191,6 +201,16 @@ Func Download_virtualBox()
 					UpdateStatus("VirtualBox ne sera pas installé")
 					$check_vbox = 0
 				EndIf
+				
+				#ce
+				$downloaded_virtualbox_filename = "VirtualBox.zip"
+				$virtualbox_already_downloaded = 1
+				$virtualbox_size = FileGetSize(@ScriptDir & "\tools\VirtualBox.zip")
+					UpdateStatus("VirtualBox a déjà été téléchargé")
+					Sleep(1000)
+					$check_vbox = 2
+					
+					
 				Sleep(2000)
 				SendReport("End-Download_virtualBox")
 				Return $check_vbox
@@ -341,6 +361,8 @@ Func Create_boot_menu($drive_letter,$release_in_list)
 	UpdateStatus(Translate("Détection automatique du type de variante") & " : " & $variant)
 	if $distribution == "Ubuntu" Then
 		Ubuntu_WriteTextCFG($drive_letter,$variant)
+	Elseif $distribution == "Ubuntu" Then
+		Mandriva_WriteTextCFG($drive_letter)
 	Else
 		; Fedora
 		Fedora_WriteTextCFG($drive_letter)
@@ -401,7 +423,16 @@ Func Hide_live_files($drive_letter)
 	HideFile($drive_letter & "\GPL")
 	HideFile($drive_letter & "\LiveOS\")
 	HideFile($drive_letter & "\EFI\")
-	SendReport("End-Hide_live_files")
+
+	; Mandriva files
+	HideFile($drive_letter & "\README.pdf")
+	HideFile($drive_letter & "\LISEZMOI.pdf")
+	HideFile($drive_letter & "\autorun.inf")
+	HideFile($drive_letter & "\loopbacks\")
+	HideFile($drive_letter & "\isolinux\")
+	HideFile($drive_letter & "\autorun\")
+	HideFile($drive_letter & "\boot\")
+
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -437,7 +468,6 @@ Func Create_persistence_file($drive_letter,$release_in_list,$persistence_size,$h
 		Else
 			; fedora
 			$persistence_file= $drive_letter & '\LiveOS\overlay-' & StringReplace(DriveGetLabel($drive_letter)," ", "_") & '-' & Get_Disk_UUID($drive_letter)
-			Msgbox(4096,"Persistence File ",$persistence_file)
 		Endif
 
 		Create_Empty_File($persistence_file, $persistence_size)
@@ -568,7 +598,7 @@ Func Create_autorun($drive_letter,$release_in_list)
 
 	; Grouping release with same files
 	$group1 = "ubuntu810,xubuntu810,kubuntu810"
-	$group2 = "mint6"
+	$group2 = "mint6,mint7"
 	$group3 = "ubuntu904,xubuntu904,kubuntu904,netbook_remix910"
 
 	if StringInStr($group1, $codename) > 0 Then
@@ -657,11 +687,6 @@ Func Final_check()
 
 	If $avert_admin <> "" Or $avert_mem <> "" Then MsgBox(64, Translate("Attention"), $avert_admin & @CRLF & $avert_mem)
 	SendReport("End-Final_check")
-EndFunc
-
-Func biou()
-		MsgBox(4096,"BIOU","BIOU")
-		Exit
 EndFunc
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
