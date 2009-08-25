@@ -136,13 +136,15 @@ Func Download_virtualBox()
 				If $virtualbox_size <= 0 Then
 					$no_internet = 1
 					UpdateLog("No working mirror !")
+					$downloaded_virtualbox_filename = "VirtualBox.zip"
+				Else
+					$downloaded_virtualbox_filename = unix_path_to_name($VirtualBoxUrl)
 				EndIf
 
 
-				$downloaded_virtualbox_filename = unix_path_to_name($VirtualBoxUrl)
 				$virtualbox_already_downloaded = 0
-				
-				#cs
+
+				;cs
 				; Checking if last version has aleardy been downloaded
 				If FileExists(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename) And $virtualbox_size > 0 And $virtualbox_size == FileGetSize(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename) Then
 					; Already have last version, no download needed
@@ -201,16 +203,17 @@ Func Download_virtualBox()
 					UpdateStatus("VirtualBox ne sera pas installé")
 					$check_vbox = 0
 				EndIf
-				
-				#ce
+
+				;#ce
+				#cs
 				$downloaded_virtualbox_filename = "VirtualBox.zip"
 				$virtualbox_already_downloaded = 1
 				$virtualbox_size = FileGetSize(@ScriptDir & "\tools\VirtualBox.zip")
 					UpdateStatus("VirtualBox a déjà été téléchargé")
 					Sleep(1000)
 					$check_vbox = 2
-					
-					
+					#ce
+
 				Sleep(2000)
 				SendReport("End-Download_virtualBox")
 				Return $check_vbox
@@ -358,7 +361,7 @@ Func Create_boot_menu($drive_letter,$release_in_list)
 	If IniRead($drive_letter, "General", "skip_boot_text", "no") == "yes" Then Return 0
 	$variant = ReleaseGetVariant($release_in_list)
 	$distribution = ReleaseGetDistribution($release_in_list)
-	UpdateStatus(Translate("Détection automatique du type de variante") & " : " & $variant)
+	;UpdateStatus(Translate("Détection automatique du type de variante") & " : " & $variant)
 	if $distribution == "Ubuntu" Then
 		Ubuntu_WriteTextCFG($drive_letter,$variant)
 	Elseif $distribution == "Ubuntu" Then
@@ -566,7 +569,7 @@ Func Uncompress_virtualbox_on_key($drive_letter)
 
 	; Unzipping to the key
 	UpdateStatus(Translate("Décompression de Virtualbox sur la clé") & " ( 4" & Translate("min") & " )")
-	Run7zip2('"' & @ScriptDir & '\tools\7z.exe" x "' & @ScriptDir & "\tools\" & $downloaded_virtualbox_filename & '" -r -aoa -o' & $drive_letter, 76)
+	Run7zip2('"' & @ScriptDir & '\tools\7z.exe" x "' & @ScriptDir & "\tools\" & $downloaded_virtualbox_filename & '" -r -aoa -o' & $drive_letter, 90)
 
 	; maybe check after ?
 	SendReport("End-Uncompress_virtualbox_on_key")
@@ -601,20 +604,22 @@ Func Create_autorun($drive_letter,$release_in_list)
 	$group2 = "mint6,mint7"
 	$group3 = "ubuntu904,xubuntu904,kubuntu904,netbook_remix910"
 
+	; Using LiLi icon
+	FileCopy(@ScriptDir & "\tools\img\lili.ico", $drive_letter & "\lili.ico",1)
+	RunWait3("cmd /c attrib /D /S +S +H " & $drive_letter & "\lili.ico", @ScriptDir, @SW_HIDE)
+	$icon = "lili.ico"
+
 	if StringInStr($group1, $codename) > 0 Then
-		$icon = "umenu.exe,0"
+		;$icon = "umenu.exe,0"
 		$menu = "umenu.exe"
 	Elseif StringInStr($group2, $codename) > 0 Then
-		$icon = "lmmenu.exe,0"
+		;$icon = "lmmenu.exe,0"
 		$menu = "lmmenu.exe"
 	Elseif StringInStr($group3, $codename) > 0 Then
-		$icon = "wubi.exe,0"
+		;$icon = "wubi.exe,0"
 		$menu = "wubi.exe --cdmenu"
 	Else
 		; others : Fedora, CrunchBang
-		FileCopy(@ScriptDir & "\tools\img\lili.ico", $drive_letter & "\lili.ico",1)
-		RunWait3("cmd /c attrib /D /S +S +H " & $drive_letter & "\lili.ico", @ScriptDir, @SW_HIDE)
-		$icon = "lili.ico"
 		$menu = ""
 	EndIf
 
@@ -623,7 +628,7 @@ Func Create_autorun($drive_letter,$release_in_list)
 	IniWrite($drive_letter & "\autorun.inf", "autorun", "label", "LinuxLive Key")
 
 	; If virtualbox is installed
-	if FileExists($drive_letter & "\VirtualBox\Virtualize_This_Key.exe") AND FileExists($drive_letter & "VirtualBox\VirtualBox.exe") Then
+	if FileExists($drive_letter & "\VirtualBox\Virtualize_This_Key.exe") OR FileExists($drive_letter & "VirtualBox\VirtualBox.exe") Then
 		IniWrite($drive_letter & "\autorun.inf", "autorun", "shell\linuxlive", "----> LinuxLive!")
 		IniWrite($drive_letter & "\autorun.inf", "autorun", "shell\linuxlive\command", "VirtualBox\Virtualize_This_Key.exe")
 		IniWrite($drive_letter &"\autorun.inf", "autorun", "shell\linuxlive2", "----> VirtualBox Interface")
