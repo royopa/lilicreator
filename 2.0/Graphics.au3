@@ -764,6 +764,9 @@ Func _Progress_CallBack_Free($Force = False)
 		$_Progress_ahCallBack[2] = 0
 		Return
 	EndIf
+	; Need to be debugged for LiLi USB Creator sor return directly
+	; Throw an error when closing LiLi after trying to download automatically an iso
+	return
 	If (Not $Force) And ($_Progress_ahCallBack[2] > 0) Then Return
 	ConsoleWrite("!DEBUG Variables ------------------" & @CRLF)
 	ConsoleWrite("! $Force" & $Force & @CRLF)

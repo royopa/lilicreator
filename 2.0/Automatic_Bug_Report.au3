@@ -28,6 +28,7 @@ Global $last_config, $last_report,$sErrorMsg
 Global  $last_actions[10] = [ "" , "" , "" ,"" , "" , "" ,"" , "" , "" , "" ]
 Global $sending_status
 Global $current_logfile = @ScriptDir & "\logs\crash-report-" & @MDAY & "-" & @MON & "-" & @YEAR & " (" & @HOUR & "h" & @MIN & "s" & @SEC & ").log"
+Global $user_system
 
 Global $oMyRet[2]
 Global $oMyError
@@ -137,21 +138,18 @@ Func _OnAutoItError()
     WinSetOnTop(@ScriptName,"",1)
     Opt("TrayIconHide",0)
     Opt("TrayAutoPause",0)
-    TraySetToolTip("AutoIt Error Handler and Debugger")
+
+    TraySetToolTip("LiLi Creator Automatic Bug Report")
+	TraySetIcon(@ScriptDir&"\tools\img\lili.ico")
+
     ;   choose action to be taken
 	If IniRead($settings_ini, "General", "skip_autoreport", "no")=="no" Then
-		; Only taking the description of the error
-		$my_mail_title = StringTrimLeft($sErrorMsg, StringInStr($sErrorMsg,".exe")+4)
-
-			$subject = IniRead($settings_ini, "General", "unique_ID", "none")  & " : " & $my_mail_title
-
-		$oMyError = ObjEvent("AutoIt.Error", "MyErrFunc")
-		_INetSmtpMailCom("mail.slym.fr", "LiLi USB Creator Automatic Bug Report" , "livecreator@usbuntu.slym.fr", "bug-report@slym.fr",  $subject, ConstructHTMLReport(), "livecreator@usbuntu.slym.fr","livecreator")
-		If @error Then
+		If SendBug() <> "OK" Then
 			GUICtrlSetData($sending_status,Translate("Statut du rapport")& " : " & Translate("Erreur (non envoyé)"))
 		Else
 			GUICtrlSetData($sending_status,Translate("Statut du rapport")& " : " & Translate("Envoyé"))
 		EndIf
+
 	Endif
 
 	; Updating last log file with crash report
@@ -176,6 +174,59 @@ Func GUI_Err_Stop()
 	Exit
 EndFunc
 
+Func SendBug()
+
+	$hw_open = _WinHttpOpen()
+	$hw_connect = _WinHttpConnect($hw_open, "www.linuxliveusb.com")
+	$h_openRequest = _WinHttpOpenRequest($hw_connect, "POST", "/bugs/automatic-bug-report.php")
+
+	_WinHttpAddRequestHeaders($h_openRequest,"User-Agent:Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.0.10) Gecko/2009042316 Firefox/3.0.7")
+	_WinHttpAddRequestHeaders($h_openRequest, "Content-Type: multipart/form-data; boundary=" & $HTTP_POST_BOUNDARY)
+	_WinHttpAddRequestHeaders($h_openRequest, "Accept-Language: en-us,en;q=0.5")
+	_WinHttpAddRequestHeaders($h_openRequest, "Accept-Charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7")
+	_WinHttpAddRequestHeaders($h_openRequest, "Cache-Control: max-age=0")
+
+	InitPostData()
+	AddPostData("REPORTER_ID",IniRead($settings_ini, "General", "unique_ID", "none"))
+	AddPostData("ERROR_MSG",$sErrorMsg)
+	AddPostData("SOFTWARE_VERSION",$software_version)
+	AddPostData("OS_VERSION",@OSVersion)
+	AddPostData("ARCH",@ProcessorArch)
+	AddPostData("SERVICE_PACK",@OSServicePack)
+	AddPostData("LANGUAGE",_Language_for_stats())
+	AddPostData("TEN_LAST_ACTIONS",_ArrayToString($last_actions,@CRLF & "--> "))
+	AddPostData("LAST_CONFIG",$last_config)
+	ClosePostData()
+
+	_WinHttpAddRequestHeaders($h_openRequest,"Content-Length: "& StringLen($post_data))
+	_WinHttpSendRequest($h_openRequest, $WINHTTP_NO_ADDITIONAL_HEADERS,$post_data)
+
+	_WinHttpReceiveResponse($h_openRequest)
+
+	If _WinHttpQueryDataAvailable($h_openRequest) Then
+		_ReceiveReport("-------SendBug6")
+		$header = StringLeft(_WinHttpQueryHeaders($h_openRequest),50)
+		;debug purpose :
+		;MsgBox(0, "Header", $header &@CRLF&"---------------------------------"&@CRLF&_WinHttpReadData($h_openRequest))
+		_WinHttpCloseHandle($h_openRequest)
+		_WinHttpCloseHandle($hw_connect)
+		_WinHttpCloseHandle($hw_open)
+
+		; Checking if status is OK
+		if StringInStr($header,"200") AND StringInStr($header,"OK") Then
+			return "OK"
+		Else
+			return "NOT OK"
+		EndIf
+	Else
+		_WinHttpCloseHandle($h_openRequest)
+		_WinHttpCloseHandle($hw_connect)
+		_WinHttpCloseHandle($hw_open)
+		return "NOT OK"
+	EndIf
+
+EndFunc
+
 Func ConstructReport()
 	$temp = Translate("Erreur") & " :" & @CRLF & $sErrorMsg &  @CRLF & Translate("10 dernières actions") & _
 	": " & @CRLF & _ArrayToString($last_actions,@CRLF & "--> ") & @CRLF & $last_config  & @CRLF & _
@@ -192,20 +243,16 @@ EndFunc
 Func _ReceiveReport($report)
 	If StringLeft($report, 12) = @CRLF & "----------" Then
 		$last_config = $report
-		ConsoleWrite("Reporting config : " & $report & @crlf)
 	ElseIf StringLeft($report, 6) = "stats-" Then
 		$stats = StringTrimLeft($report, 6)
-		InetGetSize("http://usbuntu.slym.fr/stats.php?"&$stats)
-		ConsoleWrite("Reporting stats : " & $report & @crlf)
+		InetGetSize("http://www.linuxliveusb.com/stats/index.php?"&$stats)
 	ElseIf StringLeft($report, 8) = "logfile-" Then
 		$current_logfile = StringTrimLeft($report, 6)
-		ConsoleWrite("Reporting logfile : " & $report & @crlf)
 	Else
+		ConsoleWrite($report & @CRLF)
 		$last_report = $report
 		_ArrayPush($last_actions,$report)
-		ConsoleWrite("Au rapport : " & $report& @crlf)
 	EndIf
-
 	;Msgbox(0,@ScriptName,"I am " & @ScriptName & " I have received some data" & @crlf & @crlf & $report)
 EndFunc
 
@@ -486,57 +533,3 @@ Func CallBack_Exit()
 	EndIf
 EndFunc
 
-
-Func _INetSmtpMailCom($s_SmtpServer, $s_FromName, $s_FromAddress, $s_ToAddress, $s_Subject = "", $as_Body = "", $s_Username = "", $s_Password = "")
-	$IPPort = 26
-	$ssl = 0
-	 $s_CcAddress = ""
-	$s_BccAddress = ""
-    $s_Importance="Normal"
-	Local $objEmail = ObjCreate("CDO.Message")
-    $objEmail.From = '"' & $s_FromName & '" <' & $s_FromAddress & '>'
-    $objEmail.To = $s_ToAddress
-    Local $i_Error = 0
-    Local $i_Error_desciption = ""
-    If $s_CcAddress <> "" Then $objEmail.Cc = $s_CcAddress
-    If $s_BccAddress <> "" Then $objEmail.Bcc = $s_BccAddress
-    $objEmail.Subject = $s_Subject
-    If StringInStr($as_Body, "<") And StringInStr($as_Body, ">") Then
-        $objEmail.HTMLBody = $as_Body
-    Else
-        $objEmail.Textbody = $as_Body & @CRLF
-    EndIf
-
-    $objEmail.Configuration.Fields.Item ("http://schemas.microsoft.com/cdo/configuration/sendusing") = 2
-    $objEmail.Configuration.Fields.Item ("http://schemas.microsoft.com/cdo/configuration/smtpserver") = $s_SmtpServer
-    If Number($IPPort) = 0 then $IPPort = 25
-    $objEmail.Configuration.Fields.Item ("http://schemas.microsoft.com/cdo/configuration/smtpserverport") = $IPPort
-    ;Authenticated SMTP
-    If $s_Username <> "" Then
-        $objEmail.Configuration.Fields.Item ("http://schemas.microsoft.com/cdo/configuration/smtpauthenticate") = 1
-        $objEmail.Configuration.Fields.Item ("http://schemas.microsoft.com/cdo/configuration/sendusername") = $s_Username
-        $objEmail.Configuration.Fields.Item ("http://schemas.microsoft.com/cdo/configuration/sendpassword") = $s_Password
-    EndIf
-    If $ssl Then
-        $objEmail.Configuration.Fields.Item ("http://schemas.microsoft.com/cdo/configuration/smtpusessl") = True
-    EndIf
-    ;Update settings
-    $objEmail.Configuration.Fields.Update
-    ; Set Email Importance
-    Switch $s_Importance
-        Case "High"
-            $objEmail.Fields.Item ("urn:schemas:mailheader:Importance") = "High"
-        Case "Normal"
-            $objEmail.Fields.Item ("urn:schemas:mailheader:Importance") = "Normal"
-        Case "Low"
-            $objEmail.Fields.Item ("urn:schemas:mailheader:Importance") = "Low"
-    EndSwitch
-    $objEmail.Fields.Update
-    ; Sent the Message
-    $objEmail.Send
-    $objEmail=""
-	if @error then
-        SetError(2)
-        return $oMyRet[1]
-    EndIf
-EndFunc   ;==>_INetSmtpMailCom
