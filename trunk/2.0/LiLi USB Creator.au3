@@ -1,27 +1,29 @@
+; Author           : Thibaut Lauzière (Slÿm)
+; Author's Website : www.slym.fr
+; e-Mail           : contact@linuxliveusb.com
+; License          : GPL v3.0
+; Version          : 2.0
+; Download         : http://www.linuxliveusb.com
+; Support          : http://www.linuxliveusb.com/bugs/
+; Compiled with    : AutoIT v3.2.12.1
+
+
 #NoTrayIcon
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
-#AutoIt3Wrapper_icon=icon.ico
-; AutoIt Version: 3.2.12.1
-; Author        : Thibaut Lauzière (Slÿm) www.slym.fr
-; e-Mail        : contact@linuxliveusb.com
-; License       : GPL v3.0
-; Version       : 2.0
-; Download      : http://www.linuxliveusb.com
-; Support       : http://www.linuxliveusb.com
-
-
+#AutoIt3Wrapper_icon=tools\img\lili.ico
 #AutoIt3Wrapper_Compression=3
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=1.5.1.87
+#AutoIt3Wrapper_Res_Fileversion=2.0.88.2
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=Y
-#AutoIt3Wrapper_Res_LegalCopyright=Copyright Thibaut Lauziere a.k.a Slÿm
+#AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_Language=1033
 #AutoIt3Wrapper_Res_Field=Site|http://www.linuxliveusb.com
 #AutoIt3Wrapper_AU3Check_Parameters=-w 4
 #AutoIt3Wrapper_Run_After=upx.exe --best --compress-resources=0 "%out%"
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
+Global $software_version = "2.0 (beta)"
 Global $lang_ini = @ScriptDir & "\tools\settings\langs.ini"
 Global $settings_ini = @ScriptDir & "\tools\settings\settings.ini"
 Global $log_dir =  @ScriptDir & "\logs\"
@@ -29,15 +31,16 @@ Global $help_file_name = "Help.chm"
 Global $help_available_langs = "en,fr,sp"
 Global $lang, $anonymous_id
 Global $downloaded_virtualbox_filename
+
 ; Global variables used for the onEvent Functions
 ; Globals images and GDI+ elements
-Global $GUI,$CONTROL_GUI,$EXIT_BUTTON,$MIN_BUTTON,$DRAW_REFRESH,$DRAW_ISO,$DRAW_CD,$DRAW_DOWNLOAD,$DRAW_LAUNCH,$HELP_STEP1,$HELP_STEP2,$HELP_STEP3,$HELP_STEP4,$HELP_STEP5,$label_iso,$label_cd,$label_download,$label_step2_status
-Global 	$ZEROGraphic,$EXIT_NORM,$EXIT_OVER,$MIN_NORM,$MIN_OVER,$PNG_GUI,$CD_PNG,$CD_HOVER_PNG,$ISO_PNG,$ISO_HOVER_PNG,$DOWNLOAD_PNG,$DOWNLOAD_HOVER_PNG,$LAUNCH_PNG,$LAUNCH_HOVER_PNG,$HELP,$BAD,$GOOD,$WARNING
+Global $GUI,$CONTROL_GUI,$EXIT_BUTTON,$MIN_BUTTON,$DRAW_REFRESH,$DRAW_ISO,$DRAW_CD,$DRAW_DOWNLOAD,$DRAW_BACK,$DRAW_BACK_HOVER,$DRAW_LAUNCH,$HELP_STEP1,$HELP_STEP2,$HELP_STEP3,$HELP_STEP4,$HELP_STEP5,$label_iso,$label_cd,$label_download,$label_step2_status
+Global 	$ZEROGraphic,$EXIT_NORM,$EXIT_OVER,$MIN_NORM,$MIN_OVER,$PNG_GUI,$CD_PNG,$CD_HOVER_PNG,$ISO_PNG,$ISO_HOVER_PNG,$DOWNLOAD_PNG,$DOWNLOAD_HOVER_PNG,$BACK_PNG,$BACK_HOVER_PNG,$LAUNCH_PNG,$LAUNCH_HOVER_PNG,$HELP,$BAD,$GOOD,$WARNING,$BACK_AREA
 Global $download_menu_active = 0
 Global $combo_linux,$download_manual,$download_auto,$slider,$slider_visual
 Global $best_mirror,$iso_size,$filename,$progress_bar, $label_step2_status
 Global $MD5_ISO, $compatible_md5, $compatible_filename,$release_number=-1
-
+Global $foo
 
 Opt("GUIOnEventMode", 1)
 
@@ -54,7 +57,7 @@ if DirGetSize(@ScriptDir & "\tools\",2 ) <> -1 Then
 	Else
 		; Generate an unique ID for anonymous crash reports and stats
 		If IniRead($settings_ini, "General", "unique_ID", "none") = "none" OR  IniRead($settings_ini, "General", "unique_ID", "none") = ""  Then
-			$anonymous_id = Chr(Random(Asc("A"), Asc("Z"), 1)) & Chr(Random(Asc("A"), Asc("Z"), 1)) & Chr(Random(Asc("A"), Asc("Z"), 1)) & Chr(Random(Asc("A"), Asc("Z"), 1)) & Chr(Random(Asc("A"), Asc("Z"), 1)) & Chr(Random(Asc("A"), Asc("Z"), 1))
+			$anonymous_id = Chr(Random(Asc("A"), Asc("Z"), 1)) & Chr(Random(Asc("A"), Asc("Z"), 1)) & Chr(Random(Asc("A"), Asc("Z"), 1)) & Chr(Random(Asc("A"), Asc("Z"), 1)) & Chr(Random(Asc("A"), Asc("Z"), 1)) & Chr(Random(Asc("A"), Asc("Z"), 1)) & Chr(Random(Asc("A"), Asc("Z"), 1)) & Chr(Random(Asc("A"), Asc("Z"), 1))
 			IniWrite($settings_ini, "General", "unique_ID", $anonymous_id)
 		Else
 			$anonymous_id = IniRead($settings_ini, "General", "unique_ID", "none")
@@ -82,45 +85,17 @@ UnlockHelp()
 #include <md5.au3>
 #include <INet.au3>
 #include <IE.au3>
-#include <ErrorHandler.au3>
+#include <WinHTTP.au3>
+#include <Automatic_Bug_Report.au3>
 #include <Ressources.au3>
 #include <Graphics.au3>
 #include <Releases.au3>
 #include <LiLis_heart.au3>
 
-;                                   Version
-Global $software_version = "2.0"
-
 SendReport("Starting LiLi USB Creator " & $software_version)
 
 _GDIPlus_Startup()
 
-
-
-; If compiled, load the included resources else it will load files
-#cs
-If @Compiled == 1 Then
-	; Chargement des ressources
-	$EXIT_NORM = _ResourceGetAsImage("EXIT_NORM")
-	$EXIT_OVER = _ResourceGetAsImage("EXIT_OVER")
-	$MIN_NORM = _ResourceGetAsImage("MIN_NORM")
-	$MIN_OVER = _ResourceGetAsImage("MIN_OVER")
-	$BAD = _ResourceGetAsImage("BAD")
-	$WARNING = _ResourceGetAsImage("WARNING")
-	$GOOD = _ResourceGetAsImage("GOOD")
-	$HELP = _ResourceGetAsImage("HELP")
-	$CD_PNG = _ResourceGetAsImage("CD_PNG")
-	$CD_HOVER_PNG = _ResourceGetAsImage("CD_HOVER_PNG")
-	$ISO_PNG = _ResourceGetAsImage("ISO_PNG")
-	$ISO_HOVER_PNG = _ResourceGetAsImage("ISO_HOVER_PNG")
-	$DOWNLOAD_PNG = _ResourceGetAsImage("DOWNLOAD_PNG")
-	$DOWNLOAD_HOVER_PNG = _ResourceGetAsImage("DOWNLOAD_HOVER_PNG")
-	$LAUNCH_PNG = _ResourceGetAsImage("LAUNCH_PNG")
-	$LAUNCH_HOVER_PNG = _ResourceGetAsImage("LAUNCH_HOVER_PNG")
-	$REFRESH_PNG = _ResourceGetAsImage("REFRESH_PNG")
-	$PNG_GUI = _ResourceGetAsImage("PNG_GUI_" & $lang)
-Else
-#ce
 	; Loading PNG Files
 	$EXIT_NORM = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\close.PNG")
 	$EXIT_OVER = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\close_hover.PNG")
@@ -139,6 +114,8 @@ Else
 	$LAUNCH_PNG = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\launch.png")
 	$LAUNCH_HOVER_PNG = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\launch_hover.png")
 	$REFRESH_PNG = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\refresh.png")
+	$BACK_PNG = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\back.png")
+	$BACK_HOVER_PNG = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\back_hover.png")
 	if FileExists(@ScriptDir & "\tools\img\GUI_" & $lang & ".png") Then
 		$PNG_GUI = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\GUI_" & $lang & ".png")
 	Else
@@ -320,7 +297,7 @@ Global $selected_drive, $logfile, $virtualbox_check, $virtualbox_size
 Global $STEP1_OK, $STEP2_OK, $STEP3_OK
 Global $DRAW_CHECK_STEP1, $DRAW_CHECK_STEP2, $DRAW_CHECK_STEP3
 Global $MD5_FOLDER, $MD5_ISO, $version_in_file
-Global $variante, $jackalope
+Global $variante
 
 $selected_drive = "->"
 $file_set = 0;
@@ -347,6 +324,11 @@ Get_Compatibility_List()
 ; Hovering Buttons
 AdlibEnable ( "Control_Hover", 150 )
 
+MsgBox(0, "Beta Version", "This is a beta version, please leave a feedback on the dedicated webpage or at feedback@linuxliveusb.com" &@CRLF& @CRLF  )
+ShellExecute("http://www.linuxliveusb.com/feedback/")
+
+
+WinActivate ("CONTROL_GUI","")
 ; Main part
 While 1
 	; Force retracing the combo box (bugfix)
@@ -361,9 +343,13 @@ WEnd
 Func DrawAll()
 		$EXIT_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $EXIT_NORM, 0, 0, 20, 20, 335+$offsetx0, -20+$offsety0, 20, 20)
 		$MIN_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $MIN_NORM, 0, 0, 20, 20, 135+$offsetx0, -3+$offsety0, 20, 20)
-		if $download_menu_active = 0 Then $DRAW_CD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $CD_PNG, 0, 0, 75, 75, 146+$offsetx0, 231+$offsety0, 75, 75)
-		if $download_menu_active = 0 Then $DRAW_DOWNLOAD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $DOWNLOAD_PNG, 0, 0, 75, 75, 260+$offsetx0, 230+$offsety0, 75, 75)
-		if $download_menu_active = 0 Then $DRAW_ISO = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $ISO_PNG, 0, 0, 75, 75, 38+$offsetx0, 231+$offsety0, 75, 75)
+		if $download_menu_active = 0 Then
+			$DRAW_CD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $CD_PNG, 0, 0, 75, 75, 146+$offsetx0, 231+$offsety0, 75, 75)
+			$DRAW_DOWNLOAD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $DOWNLOAD_PNG, 0, 0, 75, 75, 260+$offsetx0, 230+$offsety0, 75, 75)
+			$DRAW_ISO = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $ISO_PNG, 0, 0, 75, 75, 38+$offsetx0, 231+$offsety0, 75, 75)
+		Else
+			$DRAW_BACK = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $BACK_PNG, 0, 0, 32, 32, 5+$offsetx0, 300+$offsety0, 32, 32)
+		EndIf
 		$DRAW_LAUNCH = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $LAUNCH_PNG, 0, 0, 22, 43, 35+$offsetx0, 600+$offsety0, 22, 43)
 
 		$HELP_STEP1 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335+$offsetx0, 105+$offsety0, 20, 20)
@@ -406,12 +392,13 @@ EndFunc
 Func Control_Hover()
 	Global $previous_hovered_control
     Local $CursorCtrl
-	
 	if WinActive("CONTROL_GUI") OR WinActive("LiLi USB Creator")  Then
+		
 		$CursorCtrl =  GUIGetCursorInfo()
 		if Not @error Then
 		Switch $previous_hovered_control
 			case $EXIT_AREA
+				if $CursorCtrl[2] = 1 Then GUI_Exit()
 				$EXIT_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $EXIT_NORM, 0, 0, 20, 20, 335+$offsetx0, -20+$offsety0, 20, 20)
 			case $MIN_AREA
 				$MIN_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $MIN_NORM, 0, 0, 20, 20, 135+$offsetx0, -3+$offsety0, 20, 20)
@@ -423,12 +410,14 @@ Func Control_Hover()
 				if $download_menu_active = 0 Then $DRAW_DOWNLOAD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $DOWNLOAD_PNG, 0, 0, 75, 75, 260+$offsetx0, 230+$offsety0, 75, 75)
 			case $LAUNCH_AREA
 				$DRAW_LAUNCH = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $LAUNCH_PNG, 0, 0, 22, 43, 35+$offsetx0, 600+$offsety0, 22, 43)
+			case $BACK_AREA
+				if $download_menu_active = 1 Then $DRAW_BACK = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $BACK_PNG, 0, 0, 32, 32, 5+$offsetx0, 300+$offsety0, 32, 32)
 		EndSwitch
 
 		Switch $CursorCtrl[4]
 			case $EXIT_AREA
-				$EXIT_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $EXIT_OVER, 0, 0, 20, 20, 335+$offsetx0, -20+$offsety0, 20, 20)
 				if $CursorCtrl[2] = 1 Then GUI_Exit()
+				$EXIT_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $EXIT_OVER, 0, 0, 20, 20, 335+$offsetx0, -20+$offsety0, 20, 20)
 			case $MIN_AREA
 				$MIN_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $MIN_OVER, 0, 0, 20, 20, 135+$offsetx0, -3+$offsety0, 20, 20)
 			case $ISO_AREA
@@ -439,11 +428,13 @@ Func Control_Hover()
 				if $download_menu_active = 0 Then $DRAW_DOWNLOAD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $DOWNLOAD_HOVER_PNG, 0, 0, 75, 75, 260+$offsetx0, 230+$offsety0, 75, 75)
 			case $LAUNCH_AREA
 				$DRAW_LAUNCH = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $LAUNCH_HOVER_PNG, 0, 0, 22, 43, 35+$offsetx0, 600+$offsety0, 22, 43)
+			case $BACK_AREA
+				if $download_menu_active = 1 Then $DRAW_BACK_HOVER = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $BACK_HOVER_PNG, 0, 0, 32, 32, 5+$offsetx0, 300+$offsety0, 32, 32)
 		EndSwitch
 		$previous_hovered_control = $CursorCtrl[4]
 	EndIf
 	EndIf
-	
+
 EndFunc
 
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -495,6 +486,19 @@ Func HideFile($file_or_folder)
 	SendReport("End-HideFile")
 EndFunc
 
+Func FileRename($file1,$file2)
+	SendReport("Start-FileRename ( " & $file1 & "-->"& $file2 & " )")
+	UpdateLog("Renaming File : " & $file1 & "-->"& $file2)
+
+		If FileMove($file1,$file2,1) ==1 Then
+			UpdateLog("                   File renamed successfully")
+		Else
+			UpdateLog("                   Error : " & $file1 & " cannot be moved")
+		EndIf
+
+	SendReport("End-FileRename")
+EndFunc
+
 Func _FileCopy($fromFile, $tofile)
 	SendReport("Start-_FileCopy")
 	Local $FOF_RESPOND_YES = 16
@@ -516,7 +520,7 @@ EndFunc
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Func Run7zip($cmd, $taille)
-	Local $foo, $percentage, $line
+	Local $percentage, $line
 	$initial = DriveSpaceFree($selected_drive)
 	SendReport("Start-Run7zip ( " & $cmd & " )")
 
@@ -539,7 +543,7 @@ Func Run7zip($cmd, $taille)
 EndFunc
 
 Func Run7zip2($cmd, $taille)
-	Local $foo, $percentage, $line
+	Local $percentage, $line
 	$initial = DriveSpaceFree($selected_drive)
 	SendReport("Start-Run7zip2 ( " & $cmd & " )")
 	UpdateLog($cmd)
@@ -562,7 +566,7 @@ EndFunc
 
 Func Create_Empty_File($file_to_create, $size)
 	SendReport("Start-Create_Empty_File ( " & $file_to_create & " )")
-	Local $cmd, $foo, $line
+	Local $cmd, $line
 	$cmd = @ScriptDir & '\tools\dd.exe if=/dev/zero of=' & $file_to_create & ' count=' & $size & ' bs=1024k'
 	UpdateLog($cmd)
 	If ProcessExists("dd.exe") > 0 Then ProcessClose("dd.exe")
@@ -582,7 +586,7 @@ EndFunc
 
 
 Func EXT2_Format_File($persistence_file)
-	Local $foo, $line
+	Local $line
 	If ProcessExists("mke2fs.exe") > 0 Then ProcessClose("mke2fs.exe")
 	$cmd = @ScriptDir & '\tools\mke2fs.exe -b 1024 ' & $persistence_file
 	SendReport("Start-EXT2_Format_File ( " & $cmd & " )")
@@ -601,7 +605,7 @@ EndFunc
 
 Func RunWait3($soft, $arg1, $arg2)
 	SendReport("Start-RunWait3 ( " & $soft & " )")
-	Local $line, $foo
+	Local $line
 	UpdateLog($soft)
 	$foo = Run($soft, @ScriptDir, @SW_HIDE, $STDOUT_CHILD + $STDERR_CHILD)
 	$line = @CRLF
@@ -616,7 +620,7 @@ EndFunc
 
 Func Run2($soft, $arg1, $arg2)
 	SendReport("Start-Run2 ( " & $soft & " )")
-	Local $line, $foo
+	Local $line
 	UpdateLog($soft)
 	$foo = Run($soft, @ScriptDir, @SW_HIDE, $STDOUT_CHILD + $STDERR_CHILD)
 	$line = @CRLF
@@ -925,7 +929,7 @@ Func Ubuntu_WriteTextCFG($selected_drive,$variant)
 		& @LF &  "menu color cmdline 0 #ffffffff #00000000" _
 		& @LF &  "menu hidden" _
 		& @LF &  "menu hiddenrow 5"
-	Elseif $variant = "custom" Then
+	Elseif $variant = "custom" OR $variant = "crunchbang" Then
 		$boot_text &=  "DISPLAY isolinux.txt" _
 					 & @LF & "TIMEOUT 300" _
 					 & @LF & "PROMPT 1" _
@@ -956,20 +960,23 @@ Func Ubuntu_WriteTextCFG($selected_drive,$variant)
 		$file = FileOpen($selected_drive & "\syslinux\text.cfg", 2)
 		FileWrite($file, $boot_text)
 		FileClose($file)
-	if $variant = "mint" OR $variant = "custom" then
+	if $variant = "mint" OR $variant = "custom" OR $variant = "crunchbang" then
 		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
 		FileWrite($file, $boot_text)
 		FileClose($file)
 	EndIf
 
-	if $variant = "custom" then
+	if $variant = "custom" OR $variant = "crunchbang" then
 		FileDelete2($selected_drive & "\syslinux\isolinux.txt")
 		FileCopy(@ScriptDir & "\tools\crunchbang-isolinux.txt", $selected_drive & "\syslinux\isolinux.txt", 1)
 	EndIf
 
+	if $variant <> "ubuntu" Then
 		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
 		FileWrite($file, $boot_text)
 		FileClose($file)
+	EndIf
+
 	SendReport("End-Ubuntu_WriteTextCFG")
 EndFunc   ;==>WriteTextCFG
 
@@ -1001,7 +1008,7 @@ Func Fedora_WriteTextCFG($drive_letter)
   		& @LF &  "label check0" _
   		& @LF &  "  menu label "& Translate("Verification des fichiers") _
   		& @LF &  "  kernel vmlinuz0" _
-  		& @LF &  "  append initrd=initrd0.img root=UUID="&$uuid&" rootfstype=vfat rw liveimg overlay=UUID="&$uuid&"quiet  rhgb check" _
+  		& @LF &  "  append initrd=initrd0.img root=UUID="&$uuid&" rootfstype=vfat rw liveimg overlay=UUID="&$uuid&" quiet  rhgb check" _
   		& @LF &  "label memtest" _
    		& @LF &  " menu label "& Translate("Test de la RAM") _
   		& @LF &  "  kernel memtest" _
@@ -1013,7 +1020,7 @@ Func Fedora_WriteTextCFG($drive_letter)
 		FileClose($file)
   		SendReport("End-Fedora_WriteTextCFG")
 	EndFunc
-	
+
 Func Mandriva_WriteTextCFG($drive_letter)
 	SendReport("Start-Mandriva_WriteTextCFG")
 	Local $boot_text=""
@@ -1092,10 +1099,25 @@ Func Check_source_integrity($linux_live_file)
 			Step2_Check("warning")
 			$release_number=$temp_index
 		Else
-			; Filename is not known and MD5 is not OK -> NOT COMPATIBLE
-			MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("Merci de vérifier la liste de compatibilité dans le guide d'utilisation.") & @CRLF & Translate("Si votre version est bien dans la liste c'est que le fichier est corrompu et qu'il faut le télécharger à nouveau"))
-			Step2_Check("warning")
-			$release_number=-1
+			; Filename is not known but trying to find what it is with its name => INTELLIGENT PROCESSING
+			if StringInStr($shortname, "9.04") OR StringInStr($shortname, "9.10") OR StringInStr($shortname, "ubuntu") OR StringInStr($shortname, "netbook-remix")  Then
+				$temp_index = _ArraySearch($compatible_filename,"ubuntu-9.04-desktop-i386.iso")
+				$release_number=$temp_index
+				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") &@CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour")& @CRLF & @CRLF &@TAB & ReleaseGetDescription($release_number))
+			ElseIf StringInStr($shortname, "fedora") OR StringInStr($shortname, "F10") OR StringInStr($shortname, "F11") Then
+				$temp_index = _ArraySearch($compatible_filename,"Fedora-11-i686-Live.iso")
+				$release_number=$temp_index
+				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") &@CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour")&  @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
+			ElseIf StringInStr($shortname, "crunchbang") Then
+				$temp_index = _ArraySearch($compatible_filename,"crunchbang-9.04.01.i386.iso")
+				$release_number=$temp_index
+				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") &@CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour")&  @CRLF &@CRLF &  @TAB & ReleaseGetDescription($release_number))
+			Else
+				; Filename is not known and MD5 is not OK -> NOT COMPATIBLE
+				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("Merci de vérifier la liste de compatibilité dans le guide d'utilisation.") & @CRLF & Translate("Si votre version est bien dans la liste c'est que le fichier est corrompu et qu'il faut le télécharger à nouveau"))
+				Step2_Check("warning")
+				$release_number=-1
+			EndIf
 		EndIf
 	EndIf
 	; Debug purpose
@@ -1110,8 +1132,6 @@ Func Check_if_version_non_grata($ubuntu_version)
 		Step2_Check("warning")
 		SendReport("End-Check_if_version_non_grata (is Non grata)")
 		Return 1
-	ElseIf StringInStr($ubuntu_version, "9.04") Then
-		$jackalope = 1
 	EndIf
 	SendReport("End-Check_if_version_non_grata (is not Non grata)")
 EndFunc   ;==>Check_if_version_non_grata
@@ -1123,7 +1143,6 @@ Func MD5_ISO($FileName)
 		SendReport("End-MD5_ISO (no iso)")
 		Return "no iso"
 	EndIf
-
 	Global $FileHandle = FileOpen($FileName, 16)
 
 	$MD5CTX = _MD5Init()
@@ -1135,7 +1154,6 @@ Func MD5_ISO($FileName)
 	Next
 	$hash = _MD5Result($MD5CTX)
 	FileClose($FileHandle)
-
 	ProgressSet(100, "100%", Translate("Vérification terminée"))
 	Sleep(500)
 	ProgressOff()
@@ -1301,9 +1319,11 @@ EndFunc
 
 ; Clickable parts of images
 Func GUI_Exit()
-
+	InetGet("abort")
+	ProcessClose($foo)
 	GUIDelete($CONTROL_GUI)
 	GUIDelete($GUI)
+	_ProgressDelete($progress_bar)
 	_GDIPlus_GraphicsDispose($ZEROGraphic)
 	_GDIPlus_ImageDispose($EXIT_NORM)
 	_GDIPlus_ImageDispose($EXIT_OVER)
@@ -1322,6 +1342,8 @@ Func GUI_Exit()
 	_GDIPlus_ImageDispose($BAD)
 	_GDIPlus_ImageDispose($GOOD)
 	_GDIPlus_ImageDispose($WARNING)
+	_GDIPlus_ImageDispose($BACK_PNG)
+	_GDIPlus_ImageDispose($BACK_HOVER_PNG)
 	_GDIPlus_Shutdown()
 	 Exit
 EndFunc
@@ -1388,6 +1410,7 @@ Func GUI_Choose_Drive()
 EndFunc
 
 Func GUI_Refresh_Drives()
+	Final_Help("G:")
 	Refresh_DriveList()
 EndFunc
 
@@ -1408,17 +1431,16 @@ Func GUI_Choose_ISO()
 			GUICtrlSetState($virtualbox,$GUI_UNCHECKED)
 			GUICtrlSetState($virtualbox, $GUI_DISABLE)
 			Step2_Check("good")
-			
+
 			$file_set_mode = "img"
 			Step3_Check("good")
-			
+
 			if DriveSpaceTotal($selected_drive) > 700 Then
 				Step1_Check("good")
 			Else
 				Step1_Check("bad")
 			EndIf
-			
-				
+
 			SendReport("IN-ISO_AREA (img selected :" & $iso_file & ")")
 			MsgBox(64, "", Translate("Les fichiers .IMG sont supportés de façon expérimentale.")&@CRLF&Translate("Seul le mode Live est actuellement disponible dans l'étape 3 et l'option de virtualisation est désactivée."))
 		Else
@@ -1457,8 +1479,6 @@ Func GUI_Choose_CD()
 EndFunc
 
 Func GUI_Download()
-
-
 	; Used to avoid redrawing the old elements of Step 2 (ISO, CD and download)
 	$download_menu_active = 1
 
@@ -1485,11 +1505,40 @@ Func GUI_Download()
 	$download_auto = GUICtrlCreateButton("Download Automatically", 38+$offsetx0+160, 231+$offsety0+50, 130)
 	GUICtrlSetOnEvent(-1, "GUI_Download_Automatically")
 	GUICtrlSetState ( -1, $GUI_DISABLE )
+
+	$BACK_AREA = GUICtrlCreateLabel("", 5+$offsetx0, 300+$offsety0, 32, 32)
+	$DRAW_BACK = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $BACK_PNG, 0, 0, 32, 32, 5+$offsetx0, 300+$offsety0, 32, 32)
+	GUICtrlSetCursor(-1, 0)
+	GUICtrlSetOnEvent(-1, "GUI_Back_Download")
+EndFunc
+
+Func GUI_Back_Download()
+	if @InetGetActive =1 Then InetGet("abort")
+	GUICtrlSetState ( $combo_linux, $GUI_HIDE )
+	GUICtrlSetState ( $download_manual, $GUI_HIDE )
+	GUICtrlSetState ( $download_auto, $GUI_HIDE )
+	GUICtrlSetState ( $label_step2_status, $GUI_HIDE )
+
+	$cleaner = GUICtrlCreateLabel("",38+$offsetx0,238+$offsety0, 300, 30)
+	$cleaner2 = GUICtrlCreateLabel("",5+$offsetx0,300+$offsety0, 32, 32)
+	GUICtrlSetState($cleaner, $GUI_SHOW)
+
+	; Showing old elements again
+	GUICtrlSetState($ISO_AREA, $GUI_SHOW)
+	GUICtrlSetState($CD_AREA, $GUI_SHOW)
+	GUICtrlSetState($DOWNLOAD_AREA, $GUI_SHOW)
+	GUICtrlSetState($label_cd, $GUI_SHOW)
+	GUICtrlSetState($label_download, $GUI_SHOW)
+	GUICtrlSetState($label_iso, $GUI_SHOW)
+	GUICtrlSetState($cleaner, $GUI_HIDE)
+	GUICtrlSetState($cleaner2, $GUI_HIDE)
+	$download_menu_active = 0
+	DrawAll()
 EndFunc
 
 Func GUI_Select_Linux()
-	$selected_linux = StringSplit(GUICtrlRead($combo_linux), "//",1)
-	if $selected_linux[0] >= 2 Then
+	$selected_linux = GUICtrlRead($combo_linux)
+	if StringInStr($selected_linux,">>") =0  Then
 		GUICtrlSetState ( $download_manual, $GUI_ENABLE )
 		GUICtrlSetState ( $download_auto, $GUI_ENABLE )
 	Else
@@ -1500,14 +1549,14 @@ Func GUI_Select_Linux()
 EndFunc
 
 Func GUI_Download_Automatically()
-	$selected_linux = StringSplit(GUICtrlRead($combo_linux), "//",1)
-	$release_in_list = FindReleaseFromDescription($selected_linux[1])
+	$selected_linux = GUICtrlRead($combo_linux)
+	$release_in_list = FindReleaseFromDescription($selected_linux)
 	DownloadRelease($release_in_list,1)
 EndFunc
 
 Func GUI_Download_Manually()
-	$selected_linux = StringSplit(GUICtrlRead($combo_linux), "//",1)
-	$release_in_list = FindReleaseFromDescription($selected_linux[1])
+	$selected_linux = GUICtrlRead($combo_linux)
+	$release_in_list = FindReleaseFromDescription($selected_linux)
 	DownloadRelease($release_in_list,0)
 EndFunc
 
@@ -1517,14 +1566,19 @@ Func DownloadRelease($release_in_list,$automatic_download)
 	GUICtrlSetState($combo_linux, $GUI_HIDE)
 	GUICtrlSetState($download_manual, $GUI_HIDE)
 	GUICtrlSetState($download_auto, $GUI_HIDE)
+	GUICtrlSetState($BACK_AREA, $GUI_HIDE)
+
 	$progress_bar = _ProgressCreate(38+$offsetx0, 238+$offsety0, 300, 30)
 	_ProgressSetImages($progress_bar, @ScriptDir & "\tools\img\progress_green.jpg", @ScriptDir & "\tools\img\progress_background.jpg")
 	_ProgressSetFont($progress_bar, "", -1, -1, 0x000000,0)
+
+	$DRAW_BACK = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $BACK_PNG, 0, 0, 32, 32, 5+$offsetx0, 300+$offsety0, 32, 32)
 
 	$label_step2_status = GUICtrlCreateLabel("Looking for the fastest mirror", 38+$offsetx0, 231+$offsety0+50, 300,80)
 	GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 	GUICtrlSetColor(-1, 0xFFFFFF)
 	UpdateStatusStep2("Choosing fastest mirror")
+
 
 	for $i=$R_MIRROR1 to $R_MIRROR10
 		$mirror = $releases[$release_in_list][$i]
@@ -1579,12 +1633,12 @@ Func DownloadRelease($release_in_list,$automatic_download)
 	EndIf
 	Sleep(3000)
 		_ProgressDelete($progress_bar)
-		_Progress_CallBack_Free(1)
 		GUICtrlSetState ( $combo_linux, $GUI_HIDE )
 		GUICtrlSetState ( $download_manual, $GUI_HIDE )
 		GUICtrlSetState ( $download_auto, $GUI_HIDE )
 		GUICtrlSetState ( $label_step2_status, $GUI_HIDE )
 		$cleaner = GUICtrlCreateLabel("",38+$offsetx0,238+$offsety0, 300, 30)
+		$cleaner2 = GUICtrlCreateLabel("",5+$offsetx0,300+$offsety0, 32, 32)
 		GUICtrlSetState($cleaner, $GUI_SHOW)
 		; Showing old elements again
 		GUICtrlSetState($ISO_AREA, $GUI_SHOW)
@@ -1594,6 +1648,7 @@ Func DownloadRelease($release_in_list,$automatic_download)
 		GUICtrlSetState($label_download, $GUI_SHOW)
 		GUICtrlSetState($label_iso, $GUI_SHOW)
 		GUICtrlSetState($cleaner, $GUI_HIDE)
+		GUICtrlSetState($cleaner2, $GUI_HIDE)
 		$download_menu_active = 0
 		DrawAll()
 
@@ -1783,9 +1838,9 @@ EndFunc
 
 Func Final_Help($selected_drive)
 			$gui_finish = GUICreate (Translate("Votre clé LinuxLive est maintenant prête !"), 604, 378 , -1, -1)
-			GUISetOnEvent($GUI_EVENT_CLOSE, "GUI_Events")
-			GUISetOnEvent($GUI_EVENT_MINIMIZE, "GUI_Events")
-			GUISetOnEvent($GUI_EVENT_RESTORE, "GUI_Events")
+			GUISetOnEvent($GUI_EVENT_CLOSE, "GUI_Events2")
+			GUISetOnEvent($GUI_EVENT_MINIMIZE, "GUI_Events2")
+			GUISetOnEvent($GUI_EVENT_RESTORE, "GUI_Events2")
 			GUICtrlCreatePic(@ScriptDir & "\tools\img\tuto.jpg", 350, 0, 254, 378)
 			$printme = @CRLF & @CRLF& @CRLF & @CRLF& "  " & Translate("Votre clé LinuxLive est maintenant prête !") _
 			& @CRLF & @CRLF & "    "  &Translate("Pour lancer LinuxLive :") _
@@ -1798,13 +1853,26 @@ Func Final_Help($selected_drive)
 				$printme &= @CRLF  & "    " & "-> " &Translate("'VirtualBox Interface' pour lancer l'interface complète de VirtalBox")
 			EndIf
 			$printme &= @CRLF  & "    " & "-> " &Translate("'CD Menu' pour lancer le menu original du CD")
-			GUICtrlCreateLabel($printme, 0, 0, 370, 378)
+			GUICtrlCreateLabel($printme, 0, 0, 350, 378)
 			GUICtrlSetBkColor(-1, 0x0ffffff)
 			GUICtrlSetFont (-1, 10, 600)
 			GUISetState(@SW_SHOW)
 EndFunc
 
 Func GUI_Events()
+    Select
+        Case @GUI_CtrlId = $GUI_EVENT_CLOSE
+			;GUIDelete(@GUI_WinHandle)
+			GUI_Exit()
+        Case @GUI_CtrlId = $GUI_EVENT_MINIMIZE
+			GUISetState(@SW_MINIMIZE,@GUI_WinHandle)
+        Case @GUI_CtrlId = $GUI_EVENT_RESTORE
+			GUISetState(@SW_SHOW,@GUI_WinHandle)
+
+    EndSelect
+EndFunc
+
+Func GUI_Events2()
     Select
         Case @GUI_CtrlId = $GUI_EVENT_CLOSE
 			GUIDelete(@GUI_WinHandle)
@@ -1889,6 +1957,7 @@ Func _Language()
 			SendReport("End-_Language (PT)")
 			Return "Portuguese";
 		Case StringInStr("0410,0810", @OSLang)
+			SendReport("End-_Language (IT)")
 			Return "Italian"
 		Case Else
 			SendReport("End-_Language (EN)")

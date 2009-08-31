@@ -37,12 +37,13 @@ Func Clean_old_installs($drive_letter,$release_in_list)
 
 	UpdateStatus("Nettoyage des installations précédentes ( 2min )")
 	$distribution = ReleaseGetDistribution($release_in_list)
-
+	
+	; Common Linux Live files
+	DirRemove2($drive_letter & "\isolinux\", 1)
+	DirRemove2($drive_letter & "\syslinux\", 1)
+	FileDelete2($drive_letter & "\autorun.inf")
 	; Only clean for the distribution that will be installed
 	if $distribution = "Ubuntu" Then
-		; Common Linux Live files
-		DirRemove2($drive_letter & "\isolinux\", 1)
-		DirRemove2($drive_letter & "\syslinux\", 1)
 
 		; Classic Ubuntu files
 		DirRemove2($drive_letter & "\.disk\", 1)
@@ -68,7 +69,7 @@ Func Clean_old_installs($drive_letter,$release_in_list)
 		; Mandriva files
 		FileDelete2($drive_letter & "\README.pdf")
 		FileDelete2($drive_letter & "\LISEZMOI.pdf")
-		FileDelete2($drive_letter & "\autorun.inf")
+
 		DirRemove2($drive_letter & "\loopbacks\",1)
 		DirRemove2($drive_letter & "\isolinux\",1)
 		DirRemove2($drive_letter & "\autorun\",1)
@@ -335,9 +336,16 @@ Func Rename_and_move_files($drive_letter, $release_in_list)
 	SendReport("Start-Rename_and_move_files")
 	If IniRead($settings_ini, "General", "skip_moving_renaming", "no") == "yes" Then Return 0
 	UpdateStatus(Translate("Renommage et déplacement de quelques fichiers"))
+	
 	RunWait3("cmd /c rename " & $drive_letter & "\isolinux syslinux", @ScriptDir, @SW_HIDE)
-	RunWait3("cmd /c rename " & $drive_letter & "\syslinux\isolinux.cfg isolinux.cfg-old", @ScriptDir, @SW_HIDE)
-	RunWait3("cmd /c rename " & $drive_letter & "\syslinux\text.cfg text.orig", @ScriptDir, @SW_HIDE)
+	FileRename( $drive_letter & "\syslinux\text.cfg", $drive_letter & "\syslinux\text.cfg-old")
+	if ReleaseGetVariant($release_in_list) = "ubuntu" Then
+		FileRename( $drive_letter & "\syslinux\isolinux.cfg", $drive_letter & "\syslinux\syslinux.cfg")
+	Else
+		FileRename( $drive_letter & "\syslinux\isolinux.cfg", $drive_letter & "\syslinux\isolinux.cfg-old")
+	EndIf
+
+
 	SendReport("End-Rename_and_move_files")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

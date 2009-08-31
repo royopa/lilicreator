@@ -87,9 +87,9 @@ Func Print_For_ComboBox()
 	Local $temp=""
 	$sections = IniReadSectionNames($compatibility_ini)
 	For $release_in_list=1 to $sections[0]
-			$temp &=  $releases[$release_in_list][$R_DESCRIPTION]  _
-			& "// Size : " & $releases[$release_in_list][$R_DOWNLOAD_SIZE] _
-			& " (" & $releases[$release_in_list][$R_RELEASE_DATE] & ") |"
+			$temp &=  $releases[$release_in_list][$R_DESCRIPTION]&"|"
+			;& "// Size : " & $releases[$release_in_list][$R_DOWNLOAD_SIZE] _
+			;& " (" & $releases[$release_in_list][$R_RELEASE_DATE] & ") |"
 	Next
 	Return $temp
 EndFunc
@@ -150,6 +150,7 @@ Func URLToHostname($url)
 	$temp = StringSplit($url,"/")
 	Return $temp[3]
 EndFunc
+
 Func path_to_name($filepath)
 	$short_name = StringSplit($filepath, '\')
 	Return ($short_name[$short_name[0]])
