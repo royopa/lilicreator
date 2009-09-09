@@ -324,8 +324,8 @@ Get_Compatibility_List()
 ; Hovering Buttons
 AdlibEnable ( "Control_Hover", 150 )
 
-MsgBox(0, "Beta Version", "This is a beta version, please leave a feedback on the dedicated webpage or at feedback@linuxliveusb.com" &@CRLF& @CRLF  )
-ShellExecute("http://www.linuxliveusb.com/feedback/")
+;MsgBox(0, "Beta Version", "This is a beta version, please leave a feedback on the dedicated webpage or at feedback@linuxliveusb.com" &@CRLF& @CRLF  )
+;ShellExecute("http://www.linuxliveusb.com/feedback/")
 
 
 WinActivate ("CONTROL_GUI","")
@@ -686,7 +686,7 @@ EndFunc   ;==>Refresh_DriveList
 Func SpaceAfterLinuxLiveMB($disk)
 	SendReport("Start-SpaceAfterLinuxLiveMB")
 	If GUICtrlRead($formater) == $GUI_CHECKED Then
-		$spacefree = DriveSpaceTotal($disk) - 720
+		$spacefree = DriveSpaceTotal($disk) - 810
 		If $spacefree >= 0 And $spacefree <= 4000 Then
 			Return Round($spacefree / 100, 0) * 100
 		ElseIf $spacefree >= 0 And $spacefree > 4000 Then
@@ -695,7 +695,7 @@ Func SpaceAfterLinuxLiveMB($disk)
 			Return 0
 		EndIf
 	Else
-		$spacefree = DriveSpaceFree($disk) - 720
+		$spacefree = DriveSpaceFree($disk) - 810
 		If $spacefree >= 0 And $spacefree <= 4000 Then
 			Return Round($spacefree / 100, 0) * 100
 		ElseIf $spacefree >= 0 And $spacefree > 4000 Then
@@ -710,14 +710,14 @@ EndFunc   ;==>SpaceAfterLinuxLiveMB
 Func SpaceAfterLinuxLiveGB($disk)
 	SendReport("Start-SpaceAfterLinuxLiveGB")
 	If GUICtrlRead($formater) == $GUI_CHECKED Then
-		$spacefree = DriveSpaceTotal($disk) - 720
+		$spacefree = DriveSpaceTotal($disk) - 810
 		If $spacefree >= 0 Then
 			Return Round($spacefree / 1024, 1)
 		Else
 			Return 0
 		EndIf
 	Else
-		$spacefree = DriveSpaceFree($disk) - 720
+		$spacefree = DriveSpaceFree($disk) - 810
 		If $spacefree >= 0 Then
 			Return Round($spacefree / 1024, 1)
 		Else
@@ -960,18 +960,20 @@ Func Ubuntu_WriteTextCFG($selected_drive,$variant)
 		$file = FileOpen($selected_drive & "\syslinux\text.cfg", 2)
 		FileWrite($file, $boot_text)
 		FileClose($file)
-	if $variant = "mint" OR $variant = "custom" OR $variant = "crunchbang" then
+		
+	if $variant = "kuki" then
+		FileCopy(@ScriptDir & "\tools\kuki-isolinux.txt", $selected_drive & "\syslinux\isolinux.txt", 1)
+		FileCopy(@ScriptDir & "\tools\kuki-syslinux.cfg", $selected_drive & "\syslinux\syslinux.cfg", 1)
+	elseif $variant = "mint" OR $variant = "custom" then
 		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
 		FileWrite($file, $boot_text)
 		FileClose($file)
-	EndIf
-
-	if $variant = "custom" OR $variant = "crunchbang" then
+	elseif $variant = "crunchbang" then
 		FileDelete2($selected_drive & "\syslinux\isolinux.txt")
 		FileCopy(@ScriptDir & "\tools\crunchbang-isolinux.txt", $selected_drive & "\syslinux\isolinux.txt", 1)
 	EndIf
 
-	if $variant <> "ubuntu" Then
+	if $variant <> "ubuntu" AND $variant <> "kuki"  Then
 		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
 		FileWrite($file, $boot_text)
 		FileClose($file)
@@ -1072,6 +1074,36 @@ Func Check_source_integrity($linux_live_file)
 
 	Global $MD5_ISO, $compatible_md5, $compatible_filename,$release_number=-1
 
+
+	; Pre-Checking
+		if get_extension($linux_live_file) = "img" Then
+			GUICtrlSetState($slider,$GUI_DISABLE)
+			GUICtrlSetState($slider_visual,$GUI_DISABLE)
+			GUICtrlSetState($virtualbox,$GUI_UNCHECKED)
+			GUICtrlSetState($virtualbox, $GUI_DISABLE)
+			Step2_Check("good")
+
+			$file_set_mode = "img"
+			Step3_Check("good")
+
+			if DriveSpaceTotal($selected_drive) > 700 Then
+				Step1_Check("good")
+			Else
+				Step1_Check("bad")
+			EndIf
+
+			SendReport("IN-Check_Source (img selected :" & $linux_live_file & ")")
+			MsgBox(64, "", Translate("Les fichiers .IMG sont supportés de façon expérimentale.")&@CRLF&Translate("Seul le mode Live est actuellement disponible dans l'étape 3 et l'option de virtualisation est désactivée."))
+		Else
+			GUICtrlSetState($slider,$GUI_ENABLE)
+			GUICtrlSetState($slider_visual,$GUI_ENABLE)
+			GUICtrlSetState($virtualbox, $GUI_ENABLE)
+			SendReport("IN-Check_Source (iso selected :" & $linux_live_file & ")")
+			$file_set_mode = "iso"
+		EndIf
+
+
+
 	; No check if it's an img file or if the user do not want to
 	If IniRead($settings_ini, "General", "skip_checking", "no") == "yes" OR get_extension($linux_live_file)="img" Then
 		Step2_Check("good")
@@ -1081,6 +1113,7 @@ Func Check_source_integrity($linux_live_file)
 	$shortname = path_to_name($linux_live_file)
 
 	If Check_if_version_non_grata($shortname) Then Return ""
+		
 	SendReport("Start-MD5_ISO")
 	$MD5_ISO = MD5_ISO($linux_live_file)
 	SendReport("End-MD5_ISO")
@@ -1100,22 +1133,35 @@ Func Check_source_integrity($linux_live_file)
 			$release_number=$temp_index
 		Else
 			; Filename is not known but trying to find what it is with its name => INTELLIGENT PROCESSING
-			if StringInStr($shortname, "9.04") OR StringInStr($shortname, "9.10") OR StringInStr($shortname, "ubuntu") OR StringInStr($shortname, "netbook-remix")  Then
+			
+			; Ubuntu based 
+			if StringInStr($shortname, "9.04") OR StringInStr($shortname, "9.10") OR StringInStr($shortname, "ubuntu") OR StringInStr($shortname, "netbook-remix") OR StringInStr($shortname, "Fluxbuntu") OR StringInStr($shortname, "gnewsense") Then
 				$temp_index = _ArraySearch($compatible_filename,"ubuntu-9.04-desktop-i386.iso")
 				$release_number=$temp_index
+				Step2_Check("warning")
 				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") &@CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour")& @CRLF & @CRLF &@TAB & ReleaseGetDescription($release_number))
+			; Kuki based (Ubuntu)
+			Elseif  StringInStr($shortname, "kuki") Then
+				$temp_index = _ArraySearch($compatible_filename,"kuki-2.8-20090829Final.iso")
+				$release_number=$temp_index
+				Step2_Check("warning")
+				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") &@CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour")& @CRLF & @CRLF &@TAB & ReleaseGetDescription($release_number))
+			; Fedora Based
 			ElseIf StringInStr($shortname, "fedora") OR StringInStr($shortname, "F10") OR StringInStr($shortname, "F11") Then
 				$temp_index = _ArraySearch($compatible_filename,"Fedora-11-i686-Live.iso")
 				$release_number=$temp_index
+				Step2_Check("warning")
 				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") &@CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour")&  @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
+			; CrunchBang Based
 			ElseIf StringInStr($shortname, "crunchbang") Then
 				$temp_index = _ArraySearch($compatible_filename,"crunchbang-9.04.01.i386.iso")
 				$release_number=$temp_index
+				Step2_Check("warning")
 				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") &@CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour")&  @CRLF &@CRLF &  @TAB & ReleaseGetDescription($release_number))
 			Else
 				; Filename is not known and MD5 is not OK -> NOT COMPATIBLE
 				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("Merci de vérifier la liste de compatibilité dans le guide d'utilisation.") & @CRLF & Translate("Si votre version est bien dans la liste c'est que le fichier est corrompu et qu'il faut le télécharger à nouveau"))
-				Step2_Check("warning")
+				Step2_Check("bad")
 				$release_number=-1
 			EndIf
 		EndIf
@@ -1136,17 +1182,17 @@ Func Check_if_version_non_grata($ubuntu_version)
 	SendReport("End-Check_if_version_non_grata (is not Non grata)")
 EndFunc   ;==>Check_if_version_non_grata
 
-Func MD5_ISO($FileName)
+Func MD5_ISO($FileToHash)
 	ProgressOn(Translate("Vérification"), Translate("Vérification de l'intégrité + compatibilité"), "0 %", -1, -1, 16)
 	Global $BufferSize = 0x20000
-	If $FileName = "" Then
+	If $FileToHash = "" Then
 		SendReport("End-MD5_ISO (no iso)")
 		Return "no iso"
 	EndIf
-	Global $FileHandle = FileOpen($FileName, 16)
+	Global $FileHandle = FileOpen($FileToHash, 16)
 
 	$MD5CTX = _MD5Init()
-	$iterations = Ceiling(FileGetSize($FileName) / $BufferSize)
+	$iterations = Ceiling(FileGetSize($FileToHash) / $BufferSize)
 	For $i = 1 To $iterations
 		_MD5Input($MD5CTX, FileRead($FileHandle, $BufferSize))
 		$percent_md5 = Round(100 * $i / $iterations)
@@ -1207,7 +1253,7 @@ Func Check_folder_integrity($folder)
 	Sleep(500)
 	ProgressOff()
 	If $corrupt = 0 Then
-		MsgBox(4096, Translate("Vérification terminée"), Translate("Toutes les fichiers sont bons."))
+		MsgBox(4096, Translate("Vérification terminée"), Translate("Tous les fichiers sont bons."))
 		Step2_Check("good")
 		$MD5_FOLDER = "Good"
 	EndIf
@@ -1216,23 +1262,23 @@ Func Check_folder_integrity($folder)
 EndFunc   ;==>Check_folder_integrity
 
 
-Func MD5_FOLDER($FileName)
+Func MD5_FOLDER($FileToHash)
 	Global $progression_foldermd5
 	Global $BufferSize = 0x20000
 
-	If $FileName = "" Then
+	If $FileToHash = "" Then
 		SendReport("End-MD5_FOLDER (no folder)")
 		Return "no iso"
 	EndIf
 
-	Global $FileHandle = FileOpen($FileName, 16)
+	Global $FileHandle = FileOpen($FileToHash, 16)
 
 	$MD5CTX = _MD5Init()
-	$iterations = Ceiling(FileGetSize($FileName) / $BufferSize)
+	$iterations = Ceiling(FileGetSize($FileToHash) / $BufferSize)
 	For $i = 1 To $iterations
 		_MD5Input($MD5CTX, FileRead($FileHandle, $BufferSize))
 		$percent_md5 = Round(100 * $i / $iterations)
-		ProgressSet($percent_md5, Translate("Vérification du fichier") & " " & path_to_name($FileName) & " (" & $percent_md5 & " %)")
+		ProgressSet($percent_md5, Translate("Vérification du fichier") & " " & path_to_name($FileToHash) & " (" & $percent_md5 & " %)")
 	Next
 	$hash = _MD5Result($MD5CTX)
 	FileClose($FileHandle)
@@ -1410,52 +1456,25 @@ Func GUI_Choose_Drive()
 EndFunc
 
 Func GUI_Refresh_Drives()
-	Final_Help("G:")
 	Refresh_DriveList()
 EndFunc
 
 Func GUI_Choose_ISO()
 	SendReport("Start-ISO_AREA")
-	$iso_file = FileOpenDialog(Translate("Choisir l'image ISO d'un CD live de Linux"), @ScriptDir & "\", "ISO / IMG (*.iso;*.img)", 1)
+	$source_file = FileOpenDialog(Translate("Choisir l'image ISO d'un CD live de Linux"), @ScriptDir & "\", "ISO / IMG (*.iso;*.img)", 1)
 	If @error Then
 		SendReport("IN-ISO_AREA (no iso)")
 		MsgBox(4096, "", Translate("Vous n'avez sélectionné aucun fichier"))
 		$file_set = 0;
 		Step2_Check("bad")
 	Else
-		$file_set = $iso_file
-
-		if get_extension($iso_file) = "img" Then
-			GUICtrlSetState($slider,$GUI_DISABLE)
-			GUICtrlSetState($slider_visual,$GUI_DISABLE)
-			GUICtrlSetState($virtualbox,$GUI_UNCHECKED)
-			GUICtrlSetState($virtualbox, $GUI_DISABLE)
-			Step2_Check("good")
-
-			$file_set_mode = "img"
-			Step3_Check("good")
-
-			if DriveSpaceTotal($selected_drive) > 700 Then
-				Step1_Check("good")
-			Else
-				Step1_Check("bad")
-			EndIf
-
-			SendReport("IN-ISO_AREA (img selected :" & $iso_file & ")")
-			MsgBox(64, "", Translate("Les fichiers .IMG sont supportés de façon expérimentale.")&@CRLF&Translate("Seul le mode Live est actuellement disponible dans l'étape 3 et l'option de virtualisation est désactivée."))
-		Else
-			GUICtrlSetState($slider,$GUI_ENABLE)
-			GUICtrlSetState($slider_visual,$GUI_ENABLE)
-			GUICtrlSetState($virtualbox, $GUI_ENABLE)
-			SendReport("IN-ISO_AREA (iso selected :" & $iso_file & ")")
-			$file_set_mode = "iso"
-		EndIf
+		$file_set=$source_file
 		Check_source_integrity($file_set)
 		SendReport(LogSystemConfig())
 	EndIf
-	; for debug Create_persistence_file($selected_drive,$release_number,"300",$GUI_CHECKED)
 	SendReport("End-ISO_AREA")
 EndFunc
+
 
 Func GUI_Choose_CD()
 		SendReport("Start-CD_AREA")
@@ -1651,14 +1670,26 @@ Func DownloadRelease($release_in_list,$automatic_download)
 		GUICtrlSetState($cleaner2, $GUI_HIDE)
 		$download_menu_active = 0
 		DrawAll()
-
+		
 EndFunc
 
 Func Download_State()
+	Local $begin, $oldgetbytesread,$estimated_time=""
+	
+	$begin = TimerInit()
+	$oldgetbytesread = @InetGetBytesRead
+		
 		While @InetGetActive
 			$percent_downloaded = Int((100 * @InetGetBytesRead / $iso_size))
 			_ProgressSet($progress_bar,$percent_downloaded)
-			_ProgressSetText($progress_bar, $percent_downloaded & "% ( " & RoundForceDecimal(@InetGetBytesRead / (1024 * 1024)) & " / " & RoundForceDecimal($iso_size / (1024 * 1024)) & " " & "MB" & " )")
+			$dif = TimerDiff($begin)
+			if  $dif > 1000 Then
+				$bytes_per_ms= (@InetGetBytesRead-$oldgetbytesread)/$dif
+				$estimated_time=HumanTime(($iso_size-@InetGetBytesRead)/(1000*$bytes_per_ms))
+				$begin = TimerInit()
+				$oldgetbytesread = @InetGetBytesRead
+			EndIf
+			_ProgressSetText($progress_bar, $percent_downloaded & "% ( " & RoundForceDecimal(@InetGetBytesRead / (1024 * 1024)) & " / " & RoundForceDecimal($iso_size / (1024 * 1024)) & " " & "MB" & " ) "&$estimated_time)
 			Sleep(300)
 		WEnd
 		_ProgressSet($progress_bar,100)
@@ -1666,8 +1697,31 @@ Func Download_State()
 
 		UpdateStatusStep2("File has been successfully downloaded, a check will begin in few seconds.")
 		Sleep(3000)
-
+		$file_set=@ScriptDir & "\"&$filename
+		Check_source_integrity($file_set)
+		SendReport(LogSystemConfig())
 EndFunc
+
+Func HumanTime($sec)
+	if $sec <= 0 Then Return ""
+	
+	$hours=Floor($sec/3600)
+	if $hours > 5 Then Return ""
+	
+	$minutes=Floor($sec/60) - $hours*60
+	$seconds = Floor($sec) - $minutes*60
+
+	if $sec > 3600 Then
+		$human_time= $hours & "h " & $minutes & "m "
+	elseif $sec <= 3600 AND $sec > 60 Then
+		$human_time= $minutes & "m " & $seconds & "s "
+	elseif $sec <= 60 Then
+		$human_time= $seconds & "s "
+	EndIf
+	Return $human_time
+EndFunc
+	
+	
 
 Func RoundForceDecimal($number)
 	$rounded = Round($number,1)
@@ -1950,7 +2004,7 @@ Func _Language()
 		Case StringInStr("0403,040a,080a,0c0a,100a,140a,180a,1c0a,200a,240a,280a,2c0a,300a,340a,380a,3c0a,400a,440a,480a,4c0a,500a", @OSLang)
 			SendReport("End-_Language (SP)")
 			Return "Spanish"
-		Case StringInStr("0407,0807,0c07,1007,1407,0413,0813", @OSLang)
+		Case StringInStr("0407,0807,0c07,1007,1407", @OSLang)
 			SendReport("End-_Language (GE)")
 			Return "German"
 		Case StringInStr("0416,0816", @OSLang)
