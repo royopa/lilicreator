@@ -332,8 +332,8 @@ AdlibEnable ( "Control_Hover", 150 )
 
 
 GUIRegisterMsg($WM_PAINT, "DrawAll")
-GUISetState()
-$for_winactivate = WinGetHandle("[ACTIVE]")
+WinActivate($for_winactivate)
+GuiSetState($GUI_SHOW,$CONTROL_GUI)
 
 
 ; Main part
