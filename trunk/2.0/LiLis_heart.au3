@@ -37,7 +37,7 @@ Func Clean_old_installs($drive_letter,$release_in_list)
 
 	UpdateStatus("Nettoyage des installations précédentes ( 2min )")
 	$distribution = ReleaseGetDistribution($release_in_list)
-	
+
 	; Common Linux Live files
 	DirRemove2($drive_letter & "\isolinux\", 1)
 	DirRemove2($drive_letter & "\syslinux\", 1)
@@ -336,7 +336,7 @@ Func Rename_and_move_files($drive_letter, $release_in_list)
 	SendReport("Start-Rename_and_move_files")
 	If IniRead($settings_ini, "General", "skip_moving_renaming", "no") == "yes" Then Return 0
 	UpdateStatus(Translate("Renommage et déplacement de quelques fichiers"))
-	
+
 	RunWait3("cmd /c rename " & $drive_letter & "\isolinux syslinux", @ScriptDir, @SW_HIDE)
 	FileRename( $drive_letter & "\syslinux\text.cfg", $drive_letter & "\syslinux\text.cfg-old")
 	if ReleaseGetVariant($release_in_list) = "ubuntu" Then
@@ -610,7 +610,7 @@ Func Create_autorun($drive_letter,$release_in_list)
 	; Grouping release with same files
 	$group1 = "ubuntu810,xubuntu810,kubuntu810"
 	$group2 = "mint6,mint7"
-	$group3 = "ubuntu904,xubuntu904,kubuntu904,netbook_remix910"
+	$group3 = "ubuntu904,xubuntu904,kubuntu904,netbook_remix910,ubuntu910a6"
 
 	; Using LiLi icon
 	FileCopy(@ScriptDir & "\tools\img\lili.ico", $drive_letter & "\lili.ico",1)

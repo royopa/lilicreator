@@ -116,6 +116,11 @@ Func ReleaseGetCodename($release_in_list)
 	Return $releases[$release_in_list][$R_CODE]
 EndFunc
 
+Func ReleaseGetMD5($release_in_list)
+	if $release_in_list <=0 Then Return "NotFound"
+	Return $releases[$release_in_list][$R_FILE_MD5]
+EndFunc
+
 Func ReleaseGetDistribution($release_in_list)
 	if $release_in_list <=0 Then Return "NotFound"
 	Return $releases[$release_in_list][$R_DISTRIBUTION]

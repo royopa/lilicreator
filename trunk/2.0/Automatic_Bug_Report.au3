@@ -180,7 +180,7 @@ Func SendBug()
 	$hw_connect = _WinHttpConnect($hw_open, "www.linuxliveusb.com")
 	$h_openRequest = _WinHttpOpenRequest($hw_connect, "POST", "/bugs/automatic-bug-report.php")
 
-	_WinHttpAddRequestHeaders($h_openRequest,"User-Agent:Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.0.10) Gecko/2009042316 Firefox/3.0.7")
+	_WinHttpAddRequestHeaders($h_openRequest,"User-Agent:Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.0.10) Gecko/2009042316 Firefox/3.5.1")
 	_WinHttpAddRequestHeaders($h_openRequest, "Content-Type: multipart/form-data; boundary=" & $HTTP_POST_BOUNDARY)
 	_WinHttpAddRequestHeaders($h_openRequest, "Accept-Language: en-us,en;q=0.5")
 	_WinHttpAddRequestHeaders($h_openRequest, "Accept-Charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7")
