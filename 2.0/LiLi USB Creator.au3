@@ -14,7 +14,7 @@
 #AutoIt3Wrapper_Compression=3
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.0.88.2
+#AutoIt3Wrapper_Res_Fileversion=2.0.88.3
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_Language=1033
@@ -23,7 +23,7 @@
 #AutoIt3Wrapper_Run_After=upx.exe --best --compress-resources=0 "%out%"
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
-Global $software_version = "2.0 (beta)"
+Global $software_version = "2.0 RC1"
 Global $lang_ini = @ScriptDir & "\tools\settings\langs.ini"
 Global $settings_ini = @ScriptDir & "\tools\settings\settings.ini"
 Global $log_dir =  @ScriptDir & "\logs\"
@@ -36,11 +36,12 @@ Global $downloaded_virtualbox_filename
 ; Globals images and GDI+ elements
 Global $GUI,$CONTROL_GUI,$EXIT_BUTTON,$MIN_BUTTON,$DRAW_REFRESH,$DRAW_ISO,$DRAW_CD,$DRAW_DOWNLOAD,$DRAW_BACK,$DRAW_BACK_HOVER,$DRAW_LAUNCH,$HELP_STEP1,$HELP_STEP2,$HELP_STEP3,$HELP_STEP4,$HELP_STEP5,$label_iso,$label_cd,$label_download,$label_step2_status
 Global 	$ZEROGraphic,$EXIT_NORM,$EXIT_OVER,$MIN_NORM,$MIN_OVER,$PNG_GUI,$CD_PNG,$CD_HOVER_PNG,$ISO_PNG,$ISO_HOVER_PNG,$DOWNLOAD_PNG,$DOWNLOAD_HOVER_PNG,$BACK_PNG,$BACK_HOVER_PNG,$LAUNCH_PNG,$LAUNCH_HOVER_PNG,$HELP,$BAD,$GOOD,$WARNING,$BACK_AREA
-Global $download_menu_active = 0
+Global $download_menu_active = 0,$cleaner, $cleaner2
 Global $combo_linux,$download_manual,$download_auto,$slider,$slider_visual
 Global $best_mirror,$iso_size,$filename,$progress_bar, $label_step2_status
 Global $MD5_ISO, $compatible_md5, $compatible_filename,$release_number=-1
 Global $foo
+Global $for_winactivate
 
 Opt("GUIOnEventMode", 1)
 
@@ -99,8 +100,8 @@ _GDIPlus_Startup()
 	; Loading PNG Files
 	$EXIT_NORM = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\close.PNG")
 	$EXIT_OVER = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\close_hover.PNG")
-	$MIN_NORM = "";_GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\min.PNG")
-	$MIN_OVER = "" ;_GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\min_hover.PNG")
+	$MIN_NORM = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\min.PNG")
+	$MIN_OVER = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\min_hover.PNG")
 	$BAD = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\bad.png")
 	$WARNING = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\warning.png")
 	$GOOD = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\good.png")
@@ -127,6 +128,9 @@ _GDIPlus_Startup()
 SendReport("Creating GUI")
 
 $GUI = GUICreate("LiLi USB Creator", 450, 750, -1, -1, $WS_POPUP, $WS_EX_LAYERED)
+GUISetOnEvent($GUI_EVENT_CLOSE, "GUI_Events")
+GUISetOnEvent($GUI_EVENT_MINIMIZE, "GUI_Events")
+GUISetOnEvent($GUI_EVENT_RESTORE, "GUI_Events")
 
 SetBitmap($GUI, $PNG_GUI, 255)
 GUIRegisterMsg($WM_NCHITTEST, "WM_NCHITTEST")
@@ -140,13 +144,14 @@ $CONTROL_GUI = GUICreate("CONTROL_GUI", 450, 750, 0, $LAYERED_GUI_CORRECTION, $W
 $offsetx0=27
 $offsety0=23
 
+
 ; Clickable parts of images
 $EXIT_AREA = GUICtrlCreateLabel("", 335+$offsetx0, -20+$offsety0, 20, 20)
 GUICtrlSetCursor(-1, 0)
 GUICtrlSetOnEvent(-1, "GUI_Exit")
-$MIN_AREA = "";GUICtrlCreateLabel("", 135+$offsetx0, -3+$offsety0, 20, 20)
-;GUICtrlSetCursor(-1, 0)
-;GUICtrlSetOnEvent(-1, "GUI_Minimize")
+$MIN_AREA = GUICtrlCreateLabel("", 305+$offsetx0, -20+$offsety0, 20, 20)
+GUICtrlSetCursor(-1, 0)
+GUICtrlSetOnEvent(-1, "GUI_Minimize")
 $REFRESH_AREA = GUICtrlCreateLabel("", 300+$offsetx0, 145+$offsety0, 20, 20)
 GUICtrlSetCursor(-1, 0)
 GUICtrlSetOnEvent(-1, "GUI_Refresh_Drives")
@@ -180,15 +185,16 @@ GUICtrlSetOnEvent(-1, "GUI_Help_Step5")
 
 GUISetBkColor(0x121314)
 _WinAPI_SetLayeredWindowAttributes($CONTROL_GUI, 0x121314)
-GUISetState(@SW_SHOW, $CONTROL_GUI)
 
+
+GUISetState(@SW_SHOW, $CONTROL_GUI)
 
 
 $ZEROGraphic = _GDIPlus_GraphicsCreateFromHWND($CONTROL_GUI)
 
 ; Firt display (initialization) of images
 $EXIT_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $EXIT_NORM, 0, 0, 20, 20, 335+$offsetx0, -20+$offsety0, 20, 20)
-$MIN_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $MIN_NORM, 0, 0, 20, 20, 135+$offsetx0, -3+$offsety0, 20, 20)
+$MIN_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $MIN_NORM, 0, 0, 20, 20, 305+$offsetx0, -20+$offsety0, 20, 20)
 $DRAW_REFRESH = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $REFRESH_PNG, 0, 0, 20, 20, 300+$offsetx0, 145+$offsety0, 20, 20)
 $DRAW_ISO = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $ISO_PNG, 0, 0, 75, 75, 38+$offsetx0, 231+$offsety0, 75, 75)
 $DRAW_CD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $CD_PNG, 0, 0, 75, 75, 146+$offsetx0, 231+$offsety0, 75, 75)
@@ -324,11 +330,12 @@ Get_Compatibility_List()
 ; Hovering Buttons
 AdlibEnable ( "Control_Hover", 150 )
 
-;MsgBox(0, "Beta Version", "This is a beta version, please leave a feedback on the dedicated webpage or at feedback@linuxliveusb.com" &@CRLF& @CRLF  )
-;ShellExecute("http://www.linuxliveusb.com/feedback/")
+
+GUIRegisterMsg($WM_PAINT, "DrawAll")
+GUISetState()
+$for_winactivate = WinGetHandle("[ACTIVE]")
 
 
-WinActivate ("CONTROL_GUI","")
 ; Main part
 While 1
 	; Force retracing the combo box (bugfix)
@@ -336,13 +343,14 @@ While 1
 		GUICtrlSetData($combo, GUICtrlRead($combo))
 		$combo_updated = 1
 	EndIf
-
 	sleep(60000)
 WEnd
 
 Func DrawAll()
+		_WinAPI_RedrawWindow($CONTROL_GUI, 0, 0, $RDW_UPDATENOW)
 		$EXIT_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $EXIT_NORM, 0, 0, 20, 20, 335+$offsetx0, -20+$offsety0, 20, 20)
-		$MIN_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $MIN_NORM, 0, 0, 20, 20, 135+$offsetx0, -3+$offsety0, 20, 20)
+		$MIN_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $MIN_NORM, 0, 0, 20, 20, 305+$offsetx0, -20+$offsety0, 20, 20)
+		$DRAW_REFRESH = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $REFRESH_PNG, 0, 0, 20, 20, 300+$offsetx0, 145+$offsety0, 20, 20)
 		if $download_menu_active = 0 Then
 			$DRAW_CD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $CD_PNG, 0, 0, 75, 75, 146+$offsetx0, 231+$offsety0, 75, 75)
 			$DRAW_DOWNLOAD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $DOWNLOAD_PNG, 0, 0, 75, 75, 260+$offsetx0, 230+$offsety0, 75, 75)
@@ -358,6 +366,9 @@ Func DrawAll()
 		$HELP_STEP4 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335+$offsetx0, 451+$offsety0, 20, 20)
 		$HELP_STEP5 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335+$offsetx0, 565+$offsety0, 20, 20)
 		Redraw_Traffic_Lights()
+	_WinAPI_RedrawWindow($CONTROL_GUI, 0, 0, $RDW_VALIDATE) ; then force no-redraw of GUI
+ Return $GUI_RUNDEFMSG
+
 EndFunc
 
 Func Redraw_Traffic_Lights()
@@ -393,7 +404,7 @@ Func Control_Hover()
 	Global $previous_hovered_control
     Local $CursorCtrl
 	if WinActive("CONTROL_GUI") OR WinActive("LiLi USB Creator")  Then
-		
+
 		$CursorCtrl =  GUIGetCursorInfo()
 		if Not @error Then
 		Switch $previous_hovered_control
@@ -401,7 +412,8 @@ Func Control_Hover()
 				if $CursorCtrl[2] = 1 Then GUI_Exit()
 				$EXIT_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $EXIT_NORM, 0, 0, 20, 20, 335+$offsetx0, -20+$offsety0, 20, 20)
 			case $MIN_AREA
-				$MIN_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $MIN_NORM, 0, 0, 20, 20, 135+$offsetx0, -3+$offsety0, 20, 20)
+				if $CursorCtrl[2] = 1 Then GUI_Minimize()
+				$MIN_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $MIN_NORM, 0, 0, 20, 20, 305+$offsetx0, -20+$offsety0, 20, 20)
 			case $ISO_AREA
 				if $download_menu_active = 0 Then $DRAW_ISO = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $ISO_PNG, 0, 0, 75, 75, 38+$offsetx0, 231+$offsety0, 75, 75)
 			case $CD_AREA
@@ -419,7 +431,8 @@ Func Control_Hover()
 				if $CursorCtrl[2] = 1 Then GUI_Exit()
 				$EXIT_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $EXIT_OVER, 0, 0, 20, 20, 335+$offsetx0, -20+$offsety0, 20, 20)
 			case $MIN_AREA
-				$MIN_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $MIN_OVER, 0, 0, 20, 20, 135+$offsetx0, -3+$offsety0, 20, 20)
+				if $CursorCtrl[2] = 1 Then GUI_Minimize()
+				$MIN_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $MIN_OVER, 0, 0, 20, 20, 305+$offsetx0, -20+$offsety0, 20, 20)
 			case $ISO_AREA
 				if $download_menu_active = 0 Then $DRAW_ISO = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $ISO_HOVER_PNG, 0, 0, 75, 75, 38+$offsetx0, 231+$offsety0, 75, 75)
 			case $CD_AREA
@@ -434,7 +447,6 @@ Func Control_Hover()
 		$previous_hovered_control = $CursorCtrl[4]
 	EndIf
 	EndIf
-
 EndFunc
 
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -912,6 +924,15 @@ Func Ubuntu_WriteTextCFG($selected_drive,$variant)
 	$boot_text = ""
 	$kbd_code = GetKbdCode()
 
+	$codename= ReleaseGetCodename($release_number)
+
+	; Karmic Koala have a renamed initrd file
+	if $codename = "ubuntu910a6" Then
+		$initrd_file="initrd.lz"
+	Else
+		$initrd_file="initrd.gz"
+	EndIf
+
 	if $variant = "mint" then
 		$boot_text = "default vesamenu.c32" _
 		& @LF &  "timeout 100" _
@@ -940,19 +961,19 @@ Func Ubuntu_WriteTextCFG($selected_drive,$variant)
 
 	$boot_text &=  @LF & "label persist" & @LF & "menu label ^" & Translate("Mode Persistant") _
 			 & @LF & "  kernel /casper/vmlinuz" _
-			 & @LF & "  append  " & $kbd_code & "noprompt cdrom-detect/try-usb=true persistent file=/cdrom/preseed/" & $variant & ".seed boot=casper initrd=/casper/initrd.gz splash--" _
+			 & @LF & "  append  " & $kbd_code & "noprompt cdrom-detect/try-usb=true persistent file=/cdrom/preseed/" & $variant & ".seed boot=casper initrd=/casper/" & $initrd_file & " splash--" _
 			 & @LF & "label live" _
 			 & @LF & "  menu label ^" & Translate("Mode Live") _
 			 & @LF & "  kernel /casper/vmlinuz" _
-			 & @LF & "  append   " & $kbd_code & "noprompt cdrom-detect/try-usb=true file=/cdrom/preseed/" & $variant & ".seed boot=casper initrd=/casper/initrd.gz splash--" _
+			 & @LF & "  append   " & $kbd_code & "noprompt cdrom-detect/try-usb=true file=/cdrom/preseed/" & $variant & ".seed boot=casper initrd=/casper/" & $initrd_file & " splash--" _
 			 & @LF & "label live-install" _
 			 & @LF & "  menu label ^" & Translate("Installer") _
 			 & @LF & "  kernel /casper/vmlinuz" _
-			 & @LF & "  append   " & $kbd_code & "noprompt cdrom-detect/try-usb=true persistent file=/cdrom/preseed/" & $variant & ".seed boot=casper only-ubiquity initrd=/casper/initrd.gz splash --" _
+			 & @LF & "  append   " & $kbd_code & "noprompt cdrom-detect/try-usb=true persistent file=/cdrom/preseed/" & $variant & ".seed boot=casper only-ubiquity initrd=/casper/" & $initrd_file & " splash --" _
 			 & @LF & "label check" _
 			 & @LF & "  menu label ^" & Translate("Verification des fichiers") _
 			 & @LF & "  kernel /casper/vmlinuz" _
-			 & @LF & "  append   " & $kbd_code & "noprompt boot=casper integrity-check initrd=/casper/initrd.gz splash --" _
+			 & @LF & "  append   " & $kbd_code & "noprompt boot=casper integrity-check initrd=/casper/" & $initrd_file & " splash --" _
 			 & @LF & "label memtest" _
 			 & @LF & "  menu label ^" & Translate("Test de la RAM") _
 			 & @LF & "  kernel /install/mt86plus"
@@ -960,7 +981,7 @@ Func Ubuntu_WriteTextCFG($selected_drive,$variant)
 		$file = FileOpen($selected_drive & "\syslinux\text.cfg", 2)
 		FileWrite($file, $boot_text)
 		FileClose($file)
-		
+
 	if $variant = "kuki" then
 		FileCopy(@ScriptDir & "\tools\kuki-isolinux.txt", $selected_drive & "\syslinux\isolinux.txt", 1)
 		FileCopy(@ScriptDir & "\tools\kuki-syslinux.cfg", $selected_drive & "\syslinux\syslinux.cfg", 1)
@@ -1113,7 +1134,20 @@ Func Check_source_integrity($linux_live_file)
 	$shortname = path_to_name($linux_live_file)
 
 	If Check_if_version_non_grata($shortname) Then Return ""
-		
+
+	; Some files do not need to be checked by MD5 ( Alpha releases ...). Only trusting filename
+	$temp_index = _ArraySearch($compatible_filename,$shortname)
+	if $temp_index > 0 Then
+		if ReleaseGetMD5($temp_index) = "ANY" Then
+			MsgBox(4096, Translate("Vérification") & " OK", Translate("La version est compatible et le fichier est valide"))
+			Step2_Check("good")
+			$release_number=$temp_index
+			Return ""
+		Else
+			$temp_index=0
+		EndIf
+	EndIf
+
 	SendReport("Start-MD5_ISO")
 	$MD5_ISO = MD5_ISO($linux_live_file)
 	SendReport("End-MD5_ISO")
@@ -1133,10 +1167,16 @@ Func Check_source_integrity($linux_live_file)
 			$release_number=$temp_index
 		Else
 			; Filename is not known but trying to find what it is with its name => INTELLIGENT PROCESSING
-			
-			; Ubuntu based 
-			if StringInStr($shortname, "9.04") OR StringInStr($shortname, "9.10") OR StringInStr($shortname, "ubuntu") OR StringInStr($shortname, "netbook-remix") OR StringInStr($shortname, "Fluxbuntu") OR StringInStr($shortname, "gnewsense") Then
+
+			; Ubuntu based
+			if StringInStr($shortname, "9.04") OR StringInStr($shortname, "ubuntu") OR StringInStr($shortname, "netbook-remix") OR StringInStr($shortname, "Fluxbuntu") OR StringInStr($shortname, "gnewsense") Then
 				$temp_index = _ArraySearch($compatible_filename,"ubuntu-9.04-desktop-i386.iso")
+				$release_number=$temp_index
+				Step2_Check("warning")
+				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") &@CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour")& @CRLF & @CRLF &@TAB & ReleaseGetDescription($release_number))
+			; Ubuntu Karmic (>=9.10) based
+			Elseif StringInStr($shortname, "9.10") OR StringInStr($shortname, "karmic") Then
+				$temp_index = _ArraySearch($compatible_filename,"karmic-desktop-i386.iso")
 				$release_number=$temp_index
 				Step2_Check("warning")
 				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") &@CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour")& @CRLF & @CRLF &@TAB & ReleaseGetDescription($release_number))
@@ -1363,6 +1403,7 @@ EndFunc
 ; ///////////////////////////////// Gui Buttons handling                        ///////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
 ; Clickable parts of images
 Func GUI_Exit()
 	InetGet("abort")
@@ -1478,6 +1519,12 @@ EndFunc
 
 Func GUI_Choose_CD()
 		SendReport("Start-CD_AREA")
+
+		;TODO : Recode support for CD
+		MsgBox(16,"Sorry","Sorry but CD Support is broken. Please use ISO or Download button.")
+		Step2_Check("bad")
+		$file_set = 0;
+		Return ""
 		$folder_file = FileSelectFolder(Translate("Sélectionner le CD live de Linux ou son répertoire"), "")
 		If @error Then
 			SendReport("IN-CD_AREA (no CD)")
@@ -1537,9 +1584,9 @@ Func GUI_Back_Download()
 	GUICtrlSetState ( $download_manual, $GUI_HIDE )
 	GUICtrlSetState ( $download_auto, $GUI_HIDE )
 	GUICtrlSetState ( $label_step2_status, $GUI_HIDE )
-
 	$cleaner = GUICtrlCreateLabel("",38+$offsetx0,238+$offsety0, 300, 30)
 	$cleaner2 = GUICtrlCreateLabel("",5+$offsetx0,300+$offsety0, 32, 32)
+
 	GUICtrlSetState($cleaner, $GUI_SHOW)
 
 	; Showing old elements again
@@ -1552,7 +1599,9 @@ Func GUI_Back_Download()
 	GUICtrlSetState($cleaner, $GUI_HIDE)
 	GUICtrlSetState($cleaner2, $GUI_HIDE)
 	$download_menu_active = 0
-	DrawAll()
+	$DRAW_CD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $CD_PNG, 0, 0, 75, 75, 146+$offsetx0, 231+$offsety0, 75, 75)
+	$DRAW_DOWNLOAD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $DOWNLOAD_PNG, 0, 0, 75, 75, 260+$offsetx0, 230+$offsety0, 75, 75)
+	$DRAW_ISO = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $ISO_PNG, 0, 0, 75, 75, 38+$offsetx0, 231+$offsety0, 75, 75)
 EndFunc
 
 Func GUI_Select_Linux()
@@ -1670,15 +1719,15 @@ Func DownloadRelease($release_in_list,$automatic_download)
 		GUICtrlSetState($cleaner2, $GUI_HIDE)
 		$download_menu_active = 0
 		DrawAll()
-		
+
 EndFunc
 
 Func Download_State()
 	Local $begin, $oldgetbytesread,$estimated_time=""
-	
+
 	$begin = TimerInit()
 	$oldgetbytesread = @InetGetBytesRead
-		
+
 		While @InetGetActive
 			$percent_downloaded = Int((100 * @InetGetBytesRead / $iso_size))
 			_ProgressSet($progress_bar,$percent_downloaded)
@@ -1704,10 +1753,10 @@ EndFunc
 
 Func HumanTime($sec)
 	if $sec <= 0 Then Return ""
-	
+
 	$hours=Floor($sec/3600)
 	if $hours > 5 Then Return ""
-	
+
 	$minutes=Floor($sec/60) - $hours*60
 	$seconds = Floor($sec) - $minutes*60
 
@@ -1720,8 +1769,8 @@ Func HumanTime($sec)
 	EndIf
 	Return $human_time
 EndFunc
-	
-	
+
+
 
 Func RoundForceDecimal($number)
 	$rounded = Round($number,1)
@@ -1916,12 +1965,12 @@ EndFunc
 Func GUI_Events()
     Select
         Case @GUI_CtrlId = $GUI_EVENT_CLOSE
-			;GUIDelete(@GUI_WinHandle)
 			GUI_Exit()
         Case @GUI_CtrlId = $GUI_EVENT_MINIMIZE
 			GUISetState(@SW_MINIMIZE,@GUI_WinHandle)
         Case @GUI_CtrlId = $GUI_EVENT_RESTORE
-			GUISetState(@SW_SHOW,@GUI_WinHandle)
+			WinActivate($for_winactivate)
+			GuiSetState($GUI_SHOW,$CONTROL_GUI)
 
     EndSelect
 EndFunc
@@ -1930,6 +1979,9 @@ Func GUI_Events2()
     Select
         Case @GUI_CtrlId = $GUI_EVENT_CLOSE
 			GUIDelete(@GUI_WinHandle)
+			Sleep(1000)
+			$return = MsgBox(65, "This is a RC Version", "This is a Release Candidate version, click OK to leave a feedback or click Cancel to close this window" )
+			if $return= 1 Then ShellExecute("http://www.linuxliveusb.com/feedback/rc1.php","", "", "", 7)
         Case @GUI_CtrlId = $GUI_EVENT_MINIMIZE
 			GUISetState(@SW_MINIMIZE,@GUI_WinHandle)
         Case @GUI_CtrlId = $GUI_EVENT_RESTORE
@@ -1955,7 +2007,7 @@ Func GUI_Help_Step4()
 EndFunc
 
 Func GUI_Help_Step5()
-	_About(Translate("A propos"), "LiLi USB Creator", "Copyright © " & @YEAR & " Thibaut Lauzière. All rights reserved.", $software_version, Translate("Guide d'utilisation"), "User_Guide", Translate("Homepage"), "http://www.linuxliveusb.com", Translate("Faire un don"), "https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=1195284", @AutoItExe, 0x0000FF, 0xFFFFFF, -1, -1, -1, -1, $CONTROL_GUI)
+	_About(Translate("A propos"), "LiLi USB Creator", "CopyLeft by Thibaut Lauzière."&@CRLF&"GPL v3 License", $software_version, Translate("Guide d'utilisation"), "User_Guide", Translate("Homepage"), "http://www.linuxliveusb.com", Translate("Faire un don"), "https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=8297661", @AutoItExe, 0x0000FF, 0xFFFFFF, -1, -1, -1, -1, $CONTROL_GUI)
 EndFunc
 
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
