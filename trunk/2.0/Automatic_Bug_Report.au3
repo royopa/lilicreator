@@ -25,7 +25,7 @@ Global $pTimerProc, $uiTimer
 Global $aMessageQueue[1]=[0]
 
 Global $last_config, $last_report,$sErrorMsg
-Global  $last_actions[10] = [ "" , "" , "" ,"" , "" , "" ,"" , "" , "" , "" ]
+Global  $last_actions[30] = [ "" , "" , "" ,"" , "" , "" ,"" , "" , "" , "","" , "" , "" ,"" , "" , "" ,"" , "" , "" , "","" , "" , "" ,"" , "" , "" ,"" , "" , "" , "" ]
 Global $sending_status
 Global $current_logfile = @ScriptDir & "\logs\crash-report-" & @MDAY & "-" & @MON & "-" & @YEAR & " (" & @HOUR & "h" & @MIN & "s" & @SEC & ").log"
 Global $user_system
@@ -253,7 +253,6 @@ Func _ReceiveReport($report)
 		$last_report = $report
 		_ArrayPush($last_actions,$report)
 	EndIf
-	;Msgbox(0,@ScriptName,"I am " & @ScriptName & " I have received some data" & @crlf & @crlf & $report)
 EndFunc
 
 Func MyErrFunc()

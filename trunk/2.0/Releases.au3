@@ -87,7 +87,7 @@ Func Print_For_ComboBox()
 	Local $temp=""
 	$sections = IniReadSectionNames($compatibility_ini)
 	For $release_in_list=1 to $sections[0]
-			$temp &=  $releases[$release_in_list][$R_DESCRIPTION]&"|"
+		if $releases[$release_in_list][$R_VISIBLE]="yes" Then $temp &=  $releases[$release_in_list][$R_DESCRIPTION]&"|"
 			;& "// Size : " & $releases[$release_in_list][$R_DOWNLOAD_SIZE] _
 			;& " (" & $releases[$release_in_list][$R_RELEASE_DATE] & ") |"
 	Next

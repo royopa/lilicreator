@@ -6,12 +6,12 @@ Func _About($Title, $MainLabel, $CopyRLabel, $VerLabel, $NameURL1, $URL1, $NameU
 
     Local $GUI, $LinkTop=120, $Msg
     Local $CurIsOnCtrlArr[1]
-   
+
     Local $LinkVisitedColor[4] = [3, $LinkColor, $LinkColor, $LinkColor]
     Local $LinkLabel[4]
-   
+
     WinSetState($Parent, "", @SW_DISABLE)
-   
+
     If $ExStyle = -1 Then $ExStyle = ""
     $GUI = GUICreate($Title, 350, 240, $Left, $Top, $Style, 0x00000080+$ExStyle, $Parent)
     GUISetBkColor($BkColor)
@@ -22,7 +22,7 @@ Func _About($Title, $MainLabel, $CopyRLabel, $VerLabel, $NameURL1, $URL1, $NameU
     GUICtrlCreateIcon($IconFile, 0, 10, 20)
 
     GUICtrlCreateGraphic(5, 75, 310, 3, $SS_ETCHEDFRAME)
-   
+
     For $i = 1 To 3
         $LinkLabel[$i] = GUICtrlCreateLabel(Eval("NameURL" & $i), 150, $LinkTop, 200, 20, 1)
         GUICtrlSetCursor(-1, 0)
@@ -33,7 +33,7 @@ Func _About($Title, $MainLabel, $CopyRLabel, $VerLabel, $NameURL1, $URL1, $NameU
 
     GUICtrlCreateLabel(Translate("Version")&": " & @LF & $VerLabel, 10, 130, 150, 35, 1)
     GUICtrlSetFont(-1, 10, 600, 0, "Tahoma")
-   
+
     GUICtrlCreateLabel($CopyRLabel, 0, 220, 320, -1, 1)
 
     GUISetState(@SW_SHOW, $GUI)
@@ -60,6 +60,10 @@ Func _About($Title, $MainLabel, $CopyRLabel, $VerLabel, $NameURL1, $URL1, $NameU
     WEnd
     WinSetState($Parent, "", @SW_ENABLE)
     GUIDelete($GUI)
+	Opt("GUIOnEventMode", 1)
+	GUIRegisterMsg($WM_PAINT, "DrawAll")
+	WinActivate($for_winactivate)
+	GuiSetState($GUI_SHOW,$CONTROL_GUI)
 
 EndFunc
 

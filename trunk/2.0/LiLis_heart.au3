@@ -11,7 +11,7 @@
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Format_FAT32($drive_letter)
-	SendReport("Start-Format_FAT32")
+	SendReport("Start-Format_FAT32 ( Drive : "& $drive_letter &" )")
 	UpdateStatus("Formatage de la clé")
 	RunWait3('cmd /c format /Q /X /y /V:MyLinuxLive /FS:FAT32 ' & $drive_letter, @ScriptDir, @SW_HIDE)
 	SendReport("End-Format_FAT32")
@@ -32,7 +32,7 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Clean_old_installs($drive_letter,$release_in_list)
-	SendReport("Start-Clean_old_installs")
+	SendReport("Start-Clean_old_installs ( Drive : "& $drive_letter &" - Release : "& $release_in_list &" )") 
 	If IniRead($settings_ini, "General", "skip_cleaning", "no") == "yes" Then Return 0
 
 	UpdateStatus("Nettoyage des installations précédentes ( 2min )")
@@ -129,7 +129,7 @@ Func Download_virtualBox()
 					$virtualbox_size = $virtualbox_size1
 				EndIf
 
-
+				SendReport("Start-Download_virtualBox-1")
 				UpdateLog("Found Mirror 1 : " & $VirtualBoxUrl1 & " with VirtualBox size : " & $virtualbox_size1 )
 				UpdateLog("Found Mirror 2 : " & $VirtualBoxUrl2 & " with VirtualBox size : " & $virtualbox_size2 )
 
@@ -144,7 +144,7 @@ Func Download_virtualBox()
 
 
 				$virtualbox_already_downloaded = 0
-
+				SendReport("Start-Download_virtualBox-2")
 				;cs
 				; Checking if last version has aleardy been downloaded
 				If FileExists(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename) And $virtualbox_size > 0 And $virtualbox_size == FileGetSize(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename) Then
@@ -238,7 +238,7 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Func Uncompress_ISO_on_key($drive_letter,$iso_file,$release_in_list)
-	SendReport("Start-Uncompress_ISO_on_key")
+	SendReport("Start-Uncompress_ISO_on_key ( Drive : "& $drive_letter &" - File : "& $iso_file &" - Release : "& $release_in_list &" )") 
 	If IniRead($settings_ini, "General", "skip_copy", "no") == "yes" Then Return 0
 	If ProcessExists("7z.exe") > 0 Then ProcessClose("7z.exe")
 	UpdateStatus(Translate("Décompression de l'ISO sur la clé") & " ( 5-10" & Translate("min") & " )")
@@ -270,7 +270,7 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Func Create_Stick_From_CD($drive_letter,$path_to_cd)
-	SendReport("Start-Create_Stick_From_CD")
+	SendReport("Start-Create_Stick_From_CD ( Drive : "& $drive_letter &" - CD Folder : "& $path_to_cd &" )")
 	If IniRead($settings_ini, "General", "skip_copy", "no") == "yes" Then Return 0
 	_FileCopy2($path_to_cd & "\*.*", $drive_letter & "\")
 	SendReport("End-Create_Stick_From_CD")
@@ -290,7 +290,7 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Create_Stick_From_IMG($drive_letter,$img_file)
-	SendReport("Start-Create_Stick_From_IMG ( " & $img_file & " )")
+	SendReport("Start-Create_Stick_From_IMG ( Drive : "& $drive_letter &" - File : "& $img_file & " )")
 	Local $cmd, $foo, $line, $img_size
 	$img_size= Ceiling(FileGetSize($img_file)/1048576)
 	$cmd = @ScriptDir & '\tools\dd.exe if="'&$img_file&'" of=\\.\'& $drive_letter&' bs=1M --progress'
