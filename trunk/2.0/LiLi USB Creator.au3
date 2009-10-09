@@ -931,7 +931,7 @@ Func Ubuntu_WriteTextCFG($selected_drive, $variant)
 	$codename = ReleaseGetCodename($release_number)
 
 	; Karmic Koala have a renamed initrd file
-	If $codename = "ubuntu910a6" Then
+	If $codename = "ubuntu910a6" OR $codename = "ubuntu910beta" Then
 		$initrd_file = "initrd.lz"
 	Else
 		$initrd_file = "initrd.gz"
@@ -2112,25 +2112,25 @@ Func _Language()
 	#cs
 		Case StringInStr("0413,0813", @OSLang)
 		Return "Dutch"
-		
+
 		Case StringInStr("0409,0809,0c09,1009,1409,1809,1c09,2009, 2409,2809,2c09,3009,3409", @OSLang)
 		Return "English"
-		
+
 		Case StringInStr("0410,0810", @OSLang)
 		Return "Italian"
-		
+
 		Case StringInStr("0414,0814", @OSLang)
 		Return "Norwegian"
-		
+
 		Case StringInStr("0415", @OSLang)
 		Return "Polish"
-		
+
 		Case StringInStr("0416,0816", @OSLang)
 		Return "Portuguese";
-		
+
 		Case StringInStr("040a,080a,0c0a,100a,140a,180a,1c0a,200a,240a,280a,2c0a,300a,340a,380a,3c0a,400a, 440a,480a,4c0a,500a", @OSLang)
 		Return "Spanish"
-		
+
 		Case StringInStr("041d,081d", @OSLang)
 		Return "Swedish"
 	#ce
