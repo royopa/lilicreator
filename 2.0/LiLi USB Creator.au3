@@ -4,7 +4,7 @@
 #AutoIt3Wrapper_Compression=3
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.0.88.6
+#AutoIt3Wrapper_Res_Fileversion=2.0.88.7
 #AutoIt3Wrapper_Res_FileVersion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_SaveSource=y
@@ -2080,12 +2080,12 @@ Func GUI_Events2()
 EndFunc   ;==>GUI_Events2
 
 Func GUI_Help_Step1()
-	ShellExecute("http://www.linuxliveusb.com/web/en/how-to/63-step1.html")
+	ShellExecute("http://www.linuxliveusb.com/en/how-to/63-step1.html")
 	;OpenHelpPage("etape1")
 EndFunc   ;==>GUI_Help_Step1
 
 Func GUI_Help_Step2()
-	ShellExecute("http://www.linuxliveusb.com/web/en/how-to/63-step1.html")
+	ShellExecute("http://www.linuxliveusb.com/en/how-to/63-step1.html")
 	;OpenHelpPage("etape2")
 EndFunc   ;==>GUI_Help_Step2
 
