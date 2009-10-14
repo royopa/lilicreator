@@ -32,7 +32,7 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Clean_old_installs($drive_letter,$release_in_list)
-	SendReport("Start-Clean_old_installs ( Drive : "& $drive_letter &" - Release : "& $release_in_list &" )") 
+	SendReport("Start-Clean_old_installs ( Drive : "& $drive_letter &" - Release : "& $release_in_list &" )")
 	If IniRead($settings_ini, "General", "skip_cleaning", "no") == "yes" Then Return 0
 
 	UpdateStatus("Nettoyage des installations précédentes ( 2min )")
@@ -43,7 +43,7 @@ Func Clean_old_installs($drive_letter,$release_in_list)
 	DirRemove2($drive_letter & "\syslinux\", 1)
 	FileDelete2($drive_letter & "\autorun.inf")
 	; Only clean for the distribution that will be installed
-	if $distribution = "Ubuntu" Then
+	if $distribution = "Ubuntu" OR $distribution = "default" Then
 
 		; Classic Ubuntu files
 		DirRemove2($drive_letter & "\.disk\", 1)
@@ -65,7 +65,7 @@ Func Clean_old_installs($drive_letter,$release_in_list)
 		FileDelete2($drive_letter & "\mint4win.exe")
 		DirRemove2($drive_letter & "\drivers\",1)
 		FileDelete2($drive_letter & "\.disc_id")
-	Elseif $distribution = "Mandriva" Then
+	Elseif $distribution = "Mandriva" OR $distribution = "default" Then
 		; Mandriva files
 		FileDelete2($drive_letter & "\README.pdf")
 		FileDelete2($drive_letter & "\LISEZMOI.pdf")
@@ -238,7 +238,7 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Func Uncompress_ISO_on_key($drive_letter,$iso_file,$release_in_list)
-	SendReport("Start-Uncompress_ISO_on_key ( Drive : "& $drive_letter &" - File : "& $iso_file &" - Release : "& $release_in_list &" )") 
+	SendReport("Start-Uncompress_ISO_on_key ( Drive : "& $drive_letter &" - File : "& $iso_file &" - Release : "& $release_in_list &" )")
 	If IniRead($settings_ini, "General", "skip_copy", "no") == "yes" Then Return 0
 	If ProcessExists("7z.exe") > 0 Then ProcessClose("7z.exe")
 	UpdateStatus(Translate("Décompression de l'ISO sur la clé") & " ( 5-10" & Translate("min") & " )")
@@ -341,6 +341,15 @@ Func Rename_and_move_files($drive_letter, $release_in_list)
 	FileRename( $drive_letter & "\syslinux\text.cfg", $drive_letter & "\syslinux\text.cfg-old")
 	if ReleaseGetVariant($release_in_list) = "ubuntu" Then
 		FileRename( $drive_letter & "\syslinux\isolinux.cfg", $drive_letter & "\syslinux\syslinux.cfg")
+	Elseif ReleaseGetVariant($release_in_list) = "default" Then
+		; Default Linux processing, no intelligence
+		RunWait3("cmd /c rename " & $drive_letter & "\boot\isolinux syslinux", @ScriptDir, @SW_HIDE)
+		FileRename( $drive_letter & "\boot\syslinux\isolinux.cfg", $drive_letter & "\boot\syslinux\syslinux.cfg")
+
+		RunWait3("cmd /c rename " & $drive_letter & "\isolinux syslinux", @ScriptDir, @SW_HIDE)
+		FileRename( $drive_letter & "\syslinux\isolinux.cfg", $drive_letter & "\syslinux\syslinux.cfg")
+
+		FileRename( $drive_letter & "isolinux.cfg", $drive_letter & "syslinux.cfg")
 	Else
 		FileRename( $drive_letter & "\syslinux\isolinux.cfg", $drive_letter & "\syslinux\isolinux.cfg-old")
 	EndIf
@@ -374,7 +383,8 @@ Func Create_boot_menu($drive_letter,$release_in_list)
 		Ubuntu_WriteTextCFG($drive_letter,$variant)
 	Elseif $distribution == "Ubuntu" Then
 		Mandriva_WriteTextCFG($drive_letter)
-	Else
+	Elseif $distribution <> "default" Then
+		; No processing for default Linux, just using the original isolinux config)
 		; Fedora
 		Fedora_WriteTextCFG($drive_letter)
 	EndIf
@@ -468,6 +478,10 @@ EndFunc
 Func Create_persistence_file($drive_letter,$release_in_list,$persistence_size,$hide_it)
 	SendReport("Start-Create_persistence_file")
 	If IniRead($settings_ini, "General", "skip_persistence", "no") == "yes" Then Return 0
+
+	; No persistence for default Linux
+	If ReleaseGetDistribution($release_in_list) = "default" Then Return 0
+
 	If $persistence_size > 0 Then
 		UpdateStatus("Création du fichier de persistance")
 		Sleep(1000)
