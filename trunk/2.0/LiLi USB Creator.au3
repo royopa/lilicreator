@@ -4,7 +4,7 @@
 #AutoIt3Wrapper_Compression=3
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.0.88.7
+#AutoIt3Wrapper_Res_Fileversion=2.0.88.9
 #AutoIt3Wrapper_Res_FileVersion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_SaveSource=y
@@ -24,9 +24,10 @@
 
 
 
-Global $software_version = "2.0 RC2"
+Global $software_version = "2.0"
 Global $lang_ini = @ScriptDir & "\tools\settings\langs.ini"
 Global $settings_ini = @ScriptDir & "\tools\settings\settings.ini"
+Global $blacklist_ini = @ScriptDir & "\tools\settings\black_list.ini"
 Global $log_dir = @ScriptDir & "\logs\"
 Global $help_file_name = "Help.chm"
 Global $help_available_langs = "en,fr,sp"
@@ -45,6 +46,7 @@ Global $foo
 Global $for_winactivate
 
 Opt("GUIOnEventMode", 1)
+
 
 ; Checking if Tools folder exists (contains tools and settings)
 If DirGetSize(@ScriptDir & "\tools\", 2) <> -1 Then
@@ -1097,6 +1099,9 @@ EndFunc   ;==>Mandriva_WriteTextCFG
 Func Check_source_integrity($linux_live_file)
 	SendReport("Start-Check_source_integrity (LinuxFile : " & $linux_live_file & " )")
 
+	$shortname = path_to_name($linux_live_file)
+	SendReport("distrib-"&$shortname)
+
 	Global $MD5_ISO, $compatible_md5, $compatible_filename, $release_number = -1
 
 
@@ -1134,7 +1139,7 @@ Func Check_source_integrity($linux_live_file)
 		Return ""
 	EndIf
 
-	$shortname = path_to_name($linux_live_file)
+
 	SendReport("Start-Check_source_integrity-1")
 	If Check_if_version_non_grata($shortname) Then Return ""
 
@@ -1208,10 +1213,18 @@ Func Check_source_integrity($linux_live_file)
 				Step2_Check("warning")
 				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
 			Else
+				; Any Linux, except those known not to work in Live mode
+				$temp_index = _ArraySearch($compatible_filename, "regular_linux.iso")
+				$release_number = $temp_index
+				Step2_Check("warning")
+				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
+			#cs
+			Else
 				; Filename is not known and MD5 is not OK -> NOT COMPATIBLE
 				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("Merci de vérifier la liste de compatibilité dans le guide d'utilisation.") & @CRLF & Translate("Si votre version est bien dans la liste c'est que le fichier est corrompu et qu'il faut le télécharger à nouveau"))
 				Step2_Check("bad")
 				$release_number = -1
+			#ce
 			EndIf
 			SendReport("Start-Check_source_integrity (end intelligent processing)")
 		EndIf
@@ -1219,9 +1232,24 @@ Func Check_source_integrity($linux_live_file)
 	SendReport("End-Check_source_integrity")
 EndFunc   ;==>Check_source_integrity
 
+
+; Check the ISO against black list
 Func Check_if_version_non_grata($version_name)
 	SendReport("Start-Check_if_version_non_grata (Version : " & $version_name & " )")
-	If StringInStr($version_name, "8.04") Or StringInStr($version_name, "7.10") Or StringInStr($version_name, "6.06") Or StringInStr($version_name, "alternate") Or StringInStr($version_name, "sparc") Then
+
+	Local $non_grata = 0
+
+	$blacklist= IniRead($blacklist_ini, "Black_List", "black_keywords", "sparc,alternate")
+	$blacklist_array = StringSplit($blacklist, ',')
+
+	FOR $i = 1 to $blacklist_array[0]
+		if StringInStr($version_name, $blacklist_array[$i]) Then
+			$non_grata=1
+			ExitLoop
+		EndIf
+	NEXT
+
+	If $non_grata = 1 Then
 		MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("Merci de vérifier la liste de compatibilité dans le guide d'utilisation."))
 		Step2_Check("warning")
 		SendReport("End-Check_if_version_non_grata (is Non grata)")
@@ -1616,6 +1644,7 @@ Func GUI_Back_Download()
 
 	GUICtrlSetState($cleaner, $GUI_SHOW)
 
+
 	; Showing old elements again
 	GUICtrlSetState($ISO_AREA, $GUI_SHOW)
 	GUICtrlSetState($CD_AREA, $GUI_SHOW)
@@ -1629,6 +1658,7 @@ Func GUI_Back_Download()
 	$DRAW_CD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $CD_PNG, 0, 0, 75, 75, 146 + $offsetx0, 231 + $offsety0, 75, 75)
 	$DRAW_DOWNLOAD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $DOWNLOAD_PNG, 0, 0, 75, 75, 260 + $offsetx0, 230 + $offsety0, 75, 75)
 	$DRAW_ISO = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $ISO_PNG, 0, 0, 75, 75, 38 + $offsetx0, 231 + $offsety0, 75, 75)
+	GUICtrlSetState($cleaner2, $GUI_SHOW)
 	SendReport("End-GUI_Back_Download")
 EndFunc   ;==>GUI_Back_Download
 
@@ -2014,7 +2044,10 @@ Func GUI_Launch_Creation()
 		If $virtualbox_check >= 1 Then Final_check()
 
 		Sleep(1000)
-		Final_Help($selected_drive)
+
+
+		;Final_Help($selected_drive)
+		ShellExecute("http://www.linuxliveusb.com/using-lili.html", "", "", "", 7)
 
 	Else
 		UpdateStatus("Veuillez valider les étapes 1 à 3")
@@ -2107,33 +2140,64 @@ EndFunc   ;==>GUI_Help_Step5
 ; ///////////////////////////////// Locales management                            ///////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#cs
+Select
+
+    Case StringInStr("0413,0813", @OSLang)
+
+        Return "Dutch"
+
+    Case StringInStr("0409,0809,0c09,1009,1409,1809,1c09,2009," _
+
+        & "2409,2809,2c09,3009,3409", @OSLang)
+
+    Return "English"
+
+    Case StringInStr("040c,080c,0c0c,100c,140c,180c", @OSLang)
+
+        Return "French"
+
+    Case StringInStr("0407,0807,0c07,1007,1407", @OSLang)
+
+        Return "German"
+
+    Case StringInStr("0410,0810", @OSLang)
+
+        Return "Italian"
+
+    Case StringInStr("0414,0814", @OSLang)
+
+        Return "Norwegian"
+
+    Case StringInStr("0415", @OSLang)
+
+        Return "Polish"
+
+    Case StringInStr("0416,0816", @OSLang)
+
+        Return "Portuguese"
+
+    Case StringInStr("040a,080a,0c0a,100a,140a,180a,1c0a,200a," _
+
+        & "240a,280a,2c0a,300a,340a,380a,3c0a,400a," _
+        & "440a,480a,4c0a,500a", @OSLang)
+
+    Return "Spanish"
+
+    Case StringInStr("041d,081d", @OSLang)
+
+        Return "Swedish"
+
+    Case Else
+
+        Return "Other (can't determine with @OSLang directly)"
+
+    EndSelect
+#ce
+
 Func _Language()
 	SendReport("Start-_Language")
-	#cs
-		Case StringInStr("0413,0813", @OSLang)
-		Return "Dutch"
 
-		Case StringInStr("0409,0809,0c09,1009,1409,1809,1c09,2009, 2409,2809,2c09,3009,3409", @OSLang)
-		Return "English"
-
-		Case StringInStr("0410,0810", @OSLang)
-		Return "Italian"
-
-		Case StringInStr("0414,0814", @OSLang)
-		Return "Norwegian"
-
-		Case StringInStr("0415", @OSLang)
-		Return "Polish"
-
-		Case StringInStr("0416,0816", @OSLang)
-		Return "Portuguese";
-
-		Case StringInStr("040a,080a,0c0a,100a,140a,180a,1c0a,200a,240a,280a,2c0a,300a,340a,380a,3c0a,400a, 440a,480a,4c0a,500a", @OSLang)
-		Return "Spanish"
-
-		Case StringInStr("041d,081d", @OSLang)
-		Return "Swedish"
-	#ce
 
 	$force_lang = IniRead($settings_ini, "General", "force_lang", "no")
 	$temp = IniReadSectionNames($lang_ini)
@@ -2143,26 +2207,29 @@ Func _Language()
 		Return $force_lang
 	EndIf
 	Select
+		Case StringInStr("0409,0809,0c09,1009,1409,1809,1c09,2009,2409,2809,2c09,3009,3409", @OSLang)
+			SendReport("End-_Language (English)")
+			Return "English"
 		Case StringInStr("040c,080c,0c0c,100c,140c,180c", @OSLang)
-			SendReport("End-_Language (FR)")
+			SendReport("End-_Language (French)")
 			Return "French"
-		Case StringInStr("0403,040a,080a,0c0a,100a,140a,180a,1c0a,200a,240a,280a,2c0a,300a,340a,380a,3c0a,400a,440a,480a,4c0a,500a", @OSLang)
-			SendReport("End-_Language (SP)")
+		Case StringInStr("040a,080a,0c0a,100a,140a,180a,1c0a,200a,240a,280a,2c0a,300a,340a,380a,3c0a,400a,440a,480a,4c0a,500a", @OSLang)
+			SendReport("End-_Language (Spanish)")
 			Return "Spanish"
 		Case StringInStr("0407,0807,0c07,1007,1407", @OSLang)
-			SendReport("End-_Language (GE)")
+			SendReport("End-_Language (German)")
 			Return "German"
 		Case StringInStr("0416,0816", @OSLang)
-			SendReport("End-_Language (PT)")
+			SendReport("End-_Language (Portuguese)")
 			Return "Portuguese";
 		Case StringInStr("0410,0810", @OSLang)
-			SendReport("End-_Language (IT)")
+			SendReport("End-_Language (Italian)")
 			Return "Italian"
 		Case StringInStr("0414,0814", @OSLang)
-			SendReport("End-_Language (NR)")
+			SendReport("End-_Language (Norwegian)")
 			Return "Norwegian"
 		Case Else
-			SendReport("End-_Language (EN)")
+			SendReport("End-_Language Default : English")
 			Return "English"
 
 	EndSelect

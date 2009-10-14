@@ -180,11 +180,8 @@ Func SendBug()
 	$hw_connect = _WinHttpConnect($hw_open, "www.linuxliveusb.com")
 	$h_openRequest = _WinHttpOpenRequest($hw_connect, "POST", "/bugs/automatic-bug-report.php")
 
-	_WinHttpAddRequestHeaders($h_openRequest,"User-Agent:Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.0.10) Gecko/2009042316 Firefox/3.5.1")
+	_WinHttpAddRequestHeaders($h_openRequest,"LiLi USB Creator " & $software_version)
 	_WinHttpAddRequestHeaders($h_openRequest, "Content-Type: multipart/form-data; boundary=" & $HTTP_POST_BOUNDARY)
-	_WinHttpAddRequestHeaders($h_openRequest, "Accept-Language: en-us,en;q=0.5")
-	_WinHttpAddRequestHeaders($h_openRequest, "Accept-Charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7")
-	_WinHttpAddRequestHeaders($h_openRequest, "Cache-Control: max-age=0")
 
 	InitPostData()
 	AddPostData("REPORTER_ID",IniRead($settings_ini, "General", "unique_ID", "none"))
@@ -228,14 +225,14 @@ Func SendBug()
 EndFunc
 
 Func ConstructReport()
-	$temp = Translate("Erreur") & " :" & @CRLF & $sErrorMsg &  @CRLF & Translate("10 dernières actions") & _
+	$temp = Translate("Erreur") & " :" & @CRLF & $sErrorMsg &  @CRLF & Translate("30 " & "dernières actions") & _
 	": " & @CRLF & _ArrayToString($last_actions,@CRLF & "--> ") & @CRLF & $last_config  & @CRLF & _
 	Translate("Identifiant anonyme unique") &  ": " & IniRead($settings_ini, "General", "unique_ID", "none")
 	Return $temp
 EndFunc
 
 Func ConstructHTMLReport()
-	$temp = "<html><head></head><body><center><h3>Report ID : "& IniRead($settings_ini, "General", "unique_ID", "none") & "</h3></center><br/><h3><u>Erreur :</u></h3><br/><pre>" & $sErrorMsg & "</pre><br/><h3><u>10 dernières actions : </u></h3><pre>" & _
+	$temp = "<html><head></head><body><center><h3>Report ID : "& IniRead($settings_ini, "General", "unique_ID", "none") & "</h3></center><br/><h3><u>Erreur :</u></h3><br/><pre>" & $sErrorMsg & "</pre><br/><h3><u>30 dernières actions : </u></h3><pre>" & _
 	_ArrayToString($last_actions,@CRLF & "--> ")  &  "</pre><br/><h3><u>Configuration Système :</u></h3><pre>" & $last_config  & "</pre></body></html>"
 	Return $temp
 EndFunc
@@ -245,9 +242,12 @@ Func _ReceiveReport($report)
 		$last_config = $report
 	ElseIf StringLeft($report, 6) = "stats-" Then
 		$stats = StringTrimLeft($report, 6)
-		InetGetSize("http://www.linuxliveusb.com/stats/index.php?"&$stats)
+		InetGetSize("http://www.linuxliveusb.com/stats/?"&$stats)
 	ElseIf StringLeft($report, 8) = "logfile-" Then
 		$current_logfile = StringTrimLeft($report, 6)
+	ElseIf StringLeft($report, 8) = "distrib-" Then
+		$distrib= StringTrimLeft($report, 8)
+		InetGetSize("http://www.linuxliveusb.com/stats/?distrib="&$distrib&"&id="&$anonymous_id)
 	Else
 		ConsoleWrite($report & @CRLF)
 		$last_report = $report
@@ -401,9 +401,13 @@ Func _SetAsReceiver($vTitle)
 	$vTitle &= $MHAdditionalIdentifier;add on our additionalIdentifier which is unlikely to be used exept by scripts using this UDF
 
 	If WInExists($vtitle) and WinGetHandle($vTitle) <> $MHhwmd_Receiver then ;already a window exists with this title and it's not ours highly unlikely unless 2 copies of the script are running
+		Msgbox(16 + 262144,"ERROR", "Only run one LiLi USB Creator at a time please")
+		Exit
+		#cs
 		Msgbox(16 + 262144,"Message Handler Error","The Local_ReceiverID_Name " & StringTrimRight($vTitle,StringLen($MHAdditionalIdentifier)) & " already exists." & @crlf & _
 			"A unique Local_ReceiverID_Name must be specified." & @crlf & _
 			"Messages will not be received unless a unique Local_ReceiverID_Name is used!")
+		#ce
 		Return SetError(1,2,-1)
 	EndIf
 
