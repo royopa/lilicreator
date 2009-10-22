@@ -45,6 +45,10 @@ Global $MD5_ISO, $compatible_md5, $compatible_filename, $release_number = -1
 Global $foo
 Global $for_winactivate
 
+; Global variables for Graphical Part
+Global Const $LWA_ALPHA = 0x2
+Global Const $LWA_COLORKEY = 0x1
+
 Opt("GUIOnEventMode", 1)
 
 
@@ -73,24 +77,27 @@ Else
 EndIf
 
 
-
-
+#include <GuiConstants.au3>
 #include <GuiConstantsEx.au3>
 #include <GuiListView.au3>
 #include <GuiImageList.au3>
+#include <WinApi.au3>
 #include <GDIPlus.au3>
 #include <Constants.au3>
 #include <ProgressConstants.au3>
 #include <WindowsConstants.au3>
 #include <ButtonConstants.au3>
 #include <StaticConstants.au3>
+#include <EditConstants.au3>
 #include <Array.au3>
-#include <About.au3>
 #include <File.au3>
 #include <md5.au3>
 #include <INet.au3>
 #include <IE.au3>
 #include <WinHTTP.au3>
+
+; LiLi's components
+#include <About.au3>
 #include <Automatic_Bug_Report.au3>
 #include <Ressources.au3>
 #include <Graphics.au3>
@@ -342,7 +349,6 @@ AdlibEnable("Control_Hover", 150)
 GUIRegisterMsg($WM_PAINT, "DrawAll")
 WinActivate($for_winactivate)
 GUISetState($GUI_SHOW, $CONTROL_GUI)
-
 
 ; Main part
 While 1
@@ -1176,38 +1182,49 @@ Func Check_source_integrity($linux_live_file)
 		Else
 			; Filename is not known but trying to find what it is with its name => INTELLIGENT PROCESSING
 			SendReport("Start-Check_source_integrity (start intelligent processing)")
-			; Ubuntu based
+
 			If StringInStr($shortname, "9.04") Or StringInStr($shortname, "ubuntu") Or StringInStr($shortname, "netbook-remix") Or StringInStr($shortname, "Fluxbuntu") Or StringInStr($shortname, "gnewsense") Then
+				; Ubuntu 9.04 based
 				$temp_index = _ArraySearch($compatible_filename, "ubuntu-9.04-desktop-i386.iso")
 				$release_number = $temp_index
 				Step2_Check("warning")
 				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
-				; Ubuntu Karmic (>=9.10) based
 			ElseIf StringInStr($shortname, "9.10") Or StringInStr($shortname, "karmic") Then
+				; Ubuntu Karmic (>=9.10) based
 				$temp_index = _ArraySearch($compatible_filename, "ubuntu-9.10-beta-desktop-i386.iso")
 				$release_number = $temp_index
 				Step2_Check("warning")
 				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
-				; Kuki based (Ubuntu)
 			ElseIf StringInStr($shortname, "kuki") Then
+				; Kuki based (Ubuntu)
 				$temp_index = _ArraySearch($compatible_filename, "kuki-2.8-20090829Final.iso")
 				$release_number = $temp_index
 				Step2_Check("warning")
 				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
-				; Fedora Based
 			ElseIf StringInStr($shortname, "fedora") Or StringInStr($shortname, "F10") Or StringInStr($shortname, "F11") Then
+				; Fedora Based
 				$temp_index = _ArraySearch($compatible_filename, "Fedora-11-i686-Live.iso")
 				$release_number = $temp_index
 				Step2_Check("warning")
 				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
-				; Mint Based
 			ElseIf StringInStr($shortname, "mint") Then
+				; Mint Based
 				$temp_index = _ArraySearch($compatible_filename, "LinuxMint-7.iso")
 				$release_number = $temp_index
 				Step2_Check("warning")
 				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
+			ElseIf StringInStr($shortname, "clonezilla") Then
+				; Clonezilla
+				$temp_index = _ArraySearch($compatible_filename, "regular_linux.iso")
+				$release_number = $temp_index
+				Step2_Check("good")
+			ElseIf StringInStr($shortname, "gparted") Then
+				; Gparted
+				$temp_index = _ArraySearch($compatible_filename, "regular_linux.iso")
+				$release_number = $temp_index
+				Step2_Check("good")
+			ElseIf StringInStr($shortname, "crunch") Then
 				; CrunchBang Based
-			ElseIf StringInStr($shortname, "crunchbang") Then
 				$temp_index = _ArraySearch($compatible_filename, "crunchbang-9.04.01.i386.iso")
 				$release_number = $temp_index
 				Step2_Check("warning")

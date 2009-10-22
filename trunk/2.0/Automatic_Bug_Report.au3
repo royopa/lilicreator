@@ -265,18 +265,16 @@ Func MyErrFunc()
 EndFunc;==>MyErrFunc
 
 ;#=#Function#===============================================================#
-;#  Title .........: __Debug ( $txt )                                       #
+;#  Name ..........: __Debug ( $txt )                                       #
 ;#  Description....: Debug Function for _ErrorHandler.au3                   #
 ;#  Parameters.....: $txt = Error Message Text from StdoutRead              #
 ;#  Date ..........: 7.9.08                                                 #
 ;#  Authors .......: jennico (jennicoattminusonlinedotde)                   #
-;#                   @MrCreatoR                                             #
 ;#==========================================================================#
 
 Func __Debug($txt)
     WinSetState(@ScriptName,"",@SW_HIDE)
     $a=StringSplit($txt,@CRLF,1)
-    $scitePath=RegRead("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\SciTE.exe","")
     Dim $b=StringSplit($a[1],") : ==> ",1),$number=StringMid($b[1],StringInStr($b[1],"(")+1)
     Dim $code="Error Code: "&@TAB&StringTrimRight($b[2],2),$line="Line: "&@TAB&$number&" => "&$a[3]
     Dim $file="File: "&@TAB&StringReplace($b[1]," ("&$number,""),$count=StringLen($code),$height=180
@@ -284,7 +282,8 @@ Func __Debug($txt)
     If StringLen($line)>$count Then $count=StringLen($line)
     If StringLen($a[2])>$count Then $count=StringLen($a[2])
     If $count*6>@DesktopWidth-50 Then Dim $count=(@DesktopWidth-50)/6,$height=240
-    $pid=Run($scitePath&' "'&@ScriptFullPath&'" /goto:'&$number&","&StringLen($a[2])-1)
+    Run(RegRead("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\SciTE.exe","")& _
+        ' "'&@ScriptFullPath&'" /goto:'&$number&","&StringLen($a[2])-1)
     $x=InputBox(" Please Correct this line:",$code&@CRLF&@CRLF&$file&@CRLF&@CRLF& _
         $line,StringTrimRight($a[2],1),"",$count*6,$height)
     WinSetState(@ScriptName,"",@SW_SHOW)
@@ -298,8 +297,6 @@ Func __Debug($txt)
     FileClose($open)
     ControlSend(@ScriptDir,"","ToolbarWindow32","^R")
 EndFunc
-
-
 
 
 ; #FUNCTION# ====================================================================================================================
