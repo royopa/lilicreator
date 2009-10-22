@@ -34,16 +34,21 @@ EndFunc
 Func Clean_old_installs($drive_letter,$release_in_list)
 	SendReport("Start-Clean_old_installs ( Drive : "& $drive_letter &" - Release : "& $release_in_list &" )")
 	If IniRead($settings_ini, "General", "skip_cleaning", "no") == "yes" Then Return 0
-
 	UpdateStatus("Nettoyage des installations précédentes ( 2min )")
-	$distribution = ReleaseGetDistribution($release_in_list)
-
-	; Common Linux Live files
-	DirRemove2($drive_letter & "\isolinux\", 1)
-	DirRemove2($drive_letter & "\syslinux\", 1)
+	DeleteFilesInDir($files_in_source)
 	FileDelete2($drive_letter & "\autorun.inf")
-	; Only clean for the distribution that will be installed
-	if $distribution = "Ubuntu" OR $distribution = "default" Then
+	FileDelete2($drive_letter & "\lili.ico")
+
+
+
+
+	if IniRead($settings_ini, "General", "skip_full_cleaning", "no") <> "yes" Then
+
+		; Common Linux Live files
+		DirRemove2($drive_letter & "\isolinux\", 1)
+		DirRemove2($drive_letter & "\syslinux\", 1)
+		FileDelete2($drive_letter & "\autorun.inf")
+
 
 		; Classic Ubuntu files
 		DirRemove2($drive_letter & "\.disk\", 1)
@@ -65,7 +70,7 @@ Func Clean_old_installs($drive_letter,$release_in_list)
 		FileDelete2($drive_letter & "\mint4win.exe")
 		DirRemove2($drive_letter & "\drivers\",1)
 		FileDelete2($drive_letter & "\.disc_id")
-	Elseif $distribution = "Mandriva" OR $distribution = "default" Then
+
 		; Mandriva files
 		FileDelete2($drive_letter & "\README.pdf")
 		FileDelete2($drive_letter & "\LISEZMOI.pdf")
@@ -74,13 +79,32 @@ Func Clean_old_installs($drive_letter,$release_in_list)
 		DirRemove2($drive_letter & "\isolinux\",1)
 		DirRemove2($drive_letter & "\autorun\",1)
 		DirRemove2($drive_letter & "\boot\",1)
-	Else
+
 		; Fedora files
 		FileDelete2($drive_letter & "\README")
 		FileDelete2($drive_letter & "\GPL")
 		DirRemove2($drive_letter & "\LiveOS\",1)
 		DirRemove2($drive_letter & "\EFI\",1)
+
+		; other files
+		FileDelete2($drive_letter & "\Clonezilla-Live-Version")
+		FileDelete2($drive_letter & "\COPYING")
+		DirRemove2($drive_letter & "\KNOPPIX\",1)
+		DirRemove2($drive_letter & "\lamppix\",1)
+		DirRemove2($drive_letter & "\ntpasswd\",1)
+		DirRemove2($drive_letter & "\bootprog\",1)
+		DirRemove2($drive_letter & "\bootdisk\",1)
+		FileDelete2($drive_letter & "\sysrcd.dat")
+		FileDelete2($drive_letter & "\sysrcd.md5")
+		FileDelete2($drive_letter & "\usbstick.htm")
+		FileDelete2($drive_letter & "\grldr")
+		FileDelete2($drive_letter & "\menu.lst")
+		FileDelete2($drive_letter & "\BootCD.txt")
+		DirRemove2($drive_letter & "\HBCD\",1)
+
+
 	EndIf
+
 	SendReport("End-Clean_old_installs")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -319,6 +343,22 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+Func isolinux2syslinux($syslinux_path)
+	$syslinux_cfg = FileOpen($syslinux_path&"isolinux.cfg",0)
+	If $syslinux_cfg <> -1 Then
+		$lines=""
+		While 1
+			$lines &= FileReadLine($syslinux_cfg)& @CRLF
+			If @error = -1 Then ExitLoop
+		Wend
+		FileClose($syslinux_cfg)
+		$lines = StringReplace($lines,"isolinux/","syslinux/")
+		$syslinux_cfg = FileOpen($syslinux_path&"syslinux.cfg",2)
+		FileWrite ( $syslinux_cfg , $lines )
+		FileClose($syslinux_cfg)
+	EndIf
+EndFunc
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 #cs
@@ -344,12 +384,26 @@ Func Rename_and_move_files($drive_letter, $release_in_list)
 	Elseif ReleaseGetVariant($release_in_list) = "default" Then
 		; Default Linux processing, no intelligence
 		RunWait3("cmd /c rename " & $drive_letter & "\boot\isolinux syslinux", @ScriptDir, @SW_HIDE)
-		FileRename( $drive_letter & "\boot\syslinux\isolinux.cfg", $drive_letter & "\boot\syslinux\syslinux.cfg")
+		;FileRename( $drive_letter & "\boot\syslinux\isolinux.cfg", $drive_letter & "\boot\syslinux\syslinux.cfg")
 
 		RunWait3("cmd /c rename " & $drive_letter & "\isolinux syslinux", @ScriptDir, @SW_HIDE)
-		FileRename( $drive_letter & "\syslinux\isolinux.cfg", $drive_letter & "\syslinux\syslinux.cfg")
+		RunWait3("cmd /c rename " & $drive_letter & "\HBCD\isolinux syslinux", @ScriptDir, @SW_HIDE)
+		;FileRename( $drive_letter & "\syslinux\isolinux.cfg", $drive_letter & "\syslinux\syslinux.cfg")
 
-		FileRename( $drive_letter & "isolinux.cfg", $drive_letter & "syslinux.cfg")
+		;FileRename( $drive_letter & "isolinux.cfg", $drive_letter & "syslinux.cfg")
+		;FileRename( $drive_letter & "\HBCD\isolinux.cfg", $drive_letter & "syslinux.cfg")
+
+		if FileExists($drive_letter & "\boot\syslinux\isolinux.cfg") Then
+			$syslinux_path = $drive_letter & "\boot\syslinux\"
+		Elseif FileExists($drive_letter & "\syslinux\isolinux.cfg") Then
+			$syslinux_path = $drive_letter & "\syslinux\"
+		Elseif FileExists($drive_letter & "\isolinux.cfg") Then
+			$syslinux_path = $drive_letter & "\"
+		Elseif FileExists($drive_letter & "\HBCD\isolinux.cfg") Then
+			$syslinux_path = $drive_letter & "\HBCD\"
+		EndIf
+		isolinux2syslinux($syslinux_path)
+
 	Else
 		FileRename( $drive_letter & "\syslinux\isolinux.cfg", $drive_letter & "\syslinux\isolinux.cfg-old")
 	EndIf
@@ -412,7 +466,8 @@ Func Hide_live_files($drive_letter)
 	If IniRead($settings_ini, "General", "skip_hiding", "no") == "yes" Then return 0
 
 	UpdateStatus("Masquage des fichiers")
-
+	HideFilesInDir($files_in_source)
+	#cs
 	; Common Linux Live files
 	HideFile($drive_letter & "\isolinux\")
 	HideFile($drive_letter & "\syslinux\")
@@ -456,7 +511,7 @@ Func Hide_live_files($drive_letter)
 
 	; Other distribs
 
-
+	#ce
 
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -635,6 +690,7 @@ Func Create_autorun($drive_letter,$release_in_list)
 	RunWait3("cmd /c attrib /D /S +S +H " & $drive_letter & "\lili.ico", @ScriptDir, @SW_HIDE)
 	$icon = "lili.ico"
 
+	#cs
 	if StringInStr($group1, $codename) > 0 Then
 		;$icon = "umenu.exe,0"
 		$menu = "umenu.exe"
@@ -648,6 +704,7 @@ Func Create_autorun($drive_letter,$release_in_list)
 		; others : Fedora, CrunchBang
 		$menu = ""
 	EndIf
+	#ce
 
 	IniWrite($drive_letter & "\autorun.inf", "autorun", "icon", $icon)
 	IniWrite($drive_letter & "\autorun.inf", "autorun", "open", "")
@@ -660,10 +717,25 @@ Func Create_autorun($drive_letter,$release_in_list)
 		IniWrite($drive_letter &"\autorun.inf", "autorun", "shell\linuxlive2", "----> VirtualBox Interface")
 		IniWrite($drive_letter & "\autorun.inf", "autorun", "shell\linuxlive2\command", "VirtualBox\VirtualBox.exe")
 	EndIf
+
+	$i=3
+	for $file in $files_in_source
+		if get_extension($file) = "exe" Then
+			if $i=3 Then
+				IniWrite($drive_letter  & "\autorun.inf", "autorun", "shell\linuxlive"&$i, "----> CD Menu ("& $file &")")
+			Else
+				IniWrite($drive_letter  & "\autorun.inf", "autorun", "shell\linuxlive"&$i, "----> CD Menu ("& $file &")")
+			EndIf
+			IniWrite($drive_letter & "\autorun.inf", "autorun", "shell\linuxlive"&$i&"\command", $drive_letter&"\"&$file)
+			$i=$i+1
+		EndIf
+	Next
+	#cs
 	if $menu <> "" Then
 		IniWrite($drive_letter  & "\autorun.inf", "autorun", "shell\linuxlive3", "----> LinuxLive Menu")
 		IniWrite($drive_letter & "\autorun.inf", "autorun", "shell\linuxlive3\command", $menu)
 	EndIf
+	#ce
 	HideFile($drive_letter & "\autorun.inf")
 	SendReport("End-Create_autorun")
 EndFunc

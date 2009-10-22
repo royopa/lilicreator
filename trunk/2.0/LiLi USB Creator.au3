@@ -17,7 +17,7 @@
 ; Author's Website : www.slym.fr
 ; e-Mail           : contact@linuxliveusb.com
 ; License          : GPL v3.0
-; Version          : 2.0 RC2
+; Version          : 2.0
 ; Download         : http://www.linuxliveusb.com
 ; Support          : http://www.linuxliveusb.com/bugs/
 ; Compiled with    : AutoIT v3.2.12.1
@@ -36,12 +36,12 @@ Global $downloaded_virtualbox_filename
 
 ; Global variables used for the onEvent Functions
 ; Globals images and GDI+ elements
-Global $GUI, $CONTROL_GUI, $EXIT_BUTTON, $MIN_BUTTON, $DRAW_REFRESH, $DRAW_ISO, $DRAW_CD, $DRAW_DOWNLOAD, $DRAW_BACK, $DRAW_BACK_HOVER, $DRAW_LAUNCH, $HELP_STEP1, $HELP_STEP2, $HELP_STEP3, $HELP_STEP4, $HELP_STEP5, $label_iso, $label_cd, $label_download, $label_step2_status
+Global $GUI, $CONTROL_GUI, $EXIT_BUTTON, $MIN_BUTTON, $DRAW_REFRESH, $DRAW_ISO, $DRAW_CD, $DRAW_DOWNLOAD, $DRAW_BACK, $DRAW_BACK_HOVER, $DRAW_LAUNCH, $HELP_STEP1, $HELP_STEP2, $HELP_STEP3, $HELP_STEP4, $HELP_STEP5, $label_iso, $label_cd, $label_download, $label_step2_status,$live_mode_only_label
 Global $ZEROGraphic, $EXIT_NORM, $EXIT_OVER, $MIN_NORM, $MIN_OVER, $PNG_GUI, $CD_PNG, $CD_HOVER_PNG, $ISO_PNG, $ISO_HOVER_PNG, $DOWNLOAD_PNG, $DOWNLOAD_HOVER_PNG, $BACK_PNG, $BACK_HOVER_PNG, $LAUNCH_PNG, $LAUNCH_HOVER_PNG, $HELP, $BAD, $GOOD, $WARNING, $BACK_AREA
 Global $download_menu_active = 0, $cleaner, $cleaner2
 Global $combo_linux, $download_manual, $download_auto, $slider, $slider_visual
 Global $best_mirror, $iso_size, $filename, $progress_bar, $label_step2_status
-Global $MD5_ISO, $compatible_md5, $compatible_filename, $release_number = -1
+Global $MD5_ISO, $compatible_md5, $compatible_filename, $release_number = -1,$files_in_source
 Global $foo
 Global $for_winactivate
 
@@ -263,6 +263,11 @@ GUICtrlSetColor(-1, 0xFFFFFF)
 $slider_visual_mode = GUICtrlCreateLabel(Translate("(Mode Live)"), 160 + $offsetx3 + $offsetx0, 258 + $offsety3 + $offsety0, 100, 20)
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
+$live_mode_only_label = GUICtrlCreateLabel(Translate("Mode Live"), 77 + $offsetx3 + $offsetx0, 233 + $offsety3 + $offsety0, 300, 100)
+GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
+GUICtrlSetColor(-1, 0xFFFFFF)
+GUICtrlSetFont($live_mode_only_label, 16)
+GUICtrlSetState($live_mode_only_label,$GUI_HIDE)
 
 ; Text and controls for step 4
 $offsetx4 = 10
@@ -497,6 +502,26 @@ Func FileDelete2($arg1)
 	SendReport("End-FileDelete2")
 EndFunc   ;==>FileDelete2
 
+Func HideFilesInDir($list_of_files)
+	FOR $file IN $list_of_files
+		HideFile($selected_drive&"\"&$file)
+	Next
+EndFunc
+
+Func isDir($file_to_test)
+	return StringInStr(FileGetAttrib($file_to_test), "D")
+EndFunc
+
+Func DeleteFilesInDir($list_of_files)
+	FOR $file IN $list_of_files
+		if isDir($selected_drive&"\"&$file) Then
+			DirRemove2($selected_drive&"\"&$file,1)
+		Else
+			FileDelete2($selected_drive&"\"&$file)
+		EndIf
+	Next
+EndFunc
+
 Func HideFile($file_or_folder)
 	SendReport("Start-HideFile ( " & $file_or_folder & " )")
 	UpdateLog("Hiding file : " & $file_or_folder)
@@ -540,6 +565,71 @@ Func _FileCopy2($arg1, $arg2)
 	UpdateLog("Copying folder " & $arg1 & " to " & $arg2)
 	SendReport("End-_FileCopy2")
 EndFunc   ;==>_FileCopy2
+
+
+
+Func InitializeFilesInSource($path)
+	If isDir($path) == 1  Then
+		InitializeFilesInCD($path)
+	Else
+		InitializeFilesInISO($path)
+	EndIf
+EndFunc
+
+; Create a list of files in ISO
+Func InitializeFilesInISO($iso_to_list)
+	If ProcessExists("7z.exe") > 0 Then ProcessClose("7z.exe")
+	FileDelete(@ScriptDir & "\tools\filelist.txt")
+	$foo = RunWait(@ComSpec & " /c " & '7z.exe' & ' l -slt "'&$iso_to_list&'" > filelist.txt', @ScriptDir&"\tools\", @SW_HIDE)
+	AnalyzeFileList()
+EndFunc
+
+; Analyze the listfile and only select files and folders at the root (will be used to clean previous installs and hide the newly created)
+Func AnalyzeFileList()
+	Local $line,$filelist, $files[1]
+	Global $files_in_source
+	$filelist = FileOpen(@ScriptDir & "\tools\filelist.txt", 0)
+	While 1
+		$line = FileReadLine($filelist)
+		If @error = -1 Then ExitLoop
+		if StringRegExp($line,"^Path = ",0) AND StringInStr($line,"\")==0  AND StringInStr($line,"[BOOT]")==0 Then
+			 _ArrayAdd($files, StringReplace($line,"Path = ",""))
+		EndIf
+	Wend
+	FileClose($filelist)
+	FileDelete(@ScriptDir & "\tools\filelist.txt")
+	_ArrayDelete($files, 0)
+	$files_in_source = $files
+EndFunc
+
+Func InitializeFilesInCD($searchdir)
+	Local $files[1]
+	Global $files_in_source
+	If StringRight($searchdir, 1) <> "\" Then $searchdir = $searchdir & "\"
+
+	$search = FileFindFirstFile($searchdir&"*")
+	If isDir($searchdir&$search) Then _ArrayAdd($files, $search)
+
+	; Check if the search was successful
+	If $search = -1 Then
+		MsgBox(0, "Error", "No files/directories matched the search pattern")
+		Exit
+	EndIf
+	$attrib=""
+	While 1
+		$file = FileFindNextFile($search)
+		If @error Then ExitLoop
+		 _ArrayAdd($files, $file)
+	WEnd
+	; Close the search handle
+	FileClose($search)
+	_ArrayDelete($files, 0)
+	$files_in_source = $files
+EndFunc
+
+
+
+
 
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////// Launching third party tools                       ///////////////////////////////////////////////////////////////////////////////
@@ -1113,14 +1203,13 @@ Func Check_source_integrity($linux_live_file)
 
 	; Pre-Checking
 	If get_extension($linux_live_file) = "img" Then
-		GUICtrlSetState($slider, $GUI_DISABLE)
-		GUICtrlSetState($slider_visual, $GUI_DISABLE)
-		GUICtrlSetState($virtualbox, $GUI_UNCHECKED)
-		GUICtrlSetState($virtualbox, $GUI_DISABLE)
+
+		Disable_Persistent_Mode()
+		Disable_VirtualBox_Option()
+
 		Step2_Check("good")
 
 		$file_set_mode = "img"
-		Step3_Check("good")
 
 		If DriveSpaceTotal($selected_drive) > 700 Then
 			Step1_Check("good")
@@ -1131,9 +1220,8 @@ Func Check_source_integrity($linux_live_file)
 		SendReport("IN-Check_Source (img selected :" & $linux_live_file & ")")
 		MsgBox(64, "", Translate("Les fichiers .IMG sont supportés de façon expérimentale.") & @CRLF & Translate("Seul le mode Live est actuellement disponible dans l'étape 3 et l'option de virtualisation est désactivée."))
 	Else
-		GUICtrlSetState($slider, $GUI_ENABLE)
-		GUICtrlSetState($slider_visual, $GUI_ENABLE)
-		GUICtrlSetState($virtualbox, $GUI_ENABLE)
+		Enable_Persistent_Mode()
+		Enable_VirtualBox_Option()
 		SendReport("IN-Check_Source (iso selected :" & $linux_live_file & ")")
 		$file_set_mode = "iso"
 	EndIf
@@ -1183,15 +1271,15 @@ Func Check_source_integrity($linux_live_file)
 			; Filename is not known but trying to find what it is with its name => INTELLIGENT PROCESSING
 			SendReport("Start-Check_source_integrity (start intelligent processing)")
 
-			If StringInStr($shortname, "9.04") Or StringInStr($shortname, "ubuntu") Or StringInStr($shortname, "netbook-remix") Or StringInStr($shortname, "Fluxbuntu") Or StringInStr($shortname, "gnewsense") Then
-				; Ubuntu 9.04 based
-				$temp_index = _ArraySearch($compatible_filename, "ubuntu-9.04-desktop-i386.iso")
+			If StringInStr($shortname, "9.10") Or StringInStr($shortname, "karmic") Then
+				; Ubuntu Karmic (>=9.10) based
+				$temp_index = _ArraySearch($compatible_filename, "ubuntu-9.10-beta-desktop-i386.iso")
 				$release_number = $temp_index
 				Step2_Check("warning")
 				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
-			ElseIf StringInStr($shortname, "9.10") Or StringInStr($shortname, "karmic") Then
-				; Ubuntu Karmic (>=9.10) based
-				$temp_index = _ArraySearch($compatible_filename, "ubuntu-9.10-beta-desktop-i386.iso")
+			ElseIf StringInStr($shortname, "9.04") Or StringInStr($shortname, "ubuntu") Or StringInStr($shortname, "netbook-remix") Or StringInStr($shortname, "Fluxbuntu") Or StringInStr($shortname, "gnewsense") Then
+				; Ubuntu 9.04 based
+				$temp_index = _ArraySearch($compatible_filename, "ubuntu-9.04-desktop-i386.iso")
 				$release_number = $temp_index
 				Step2_Check("warning")
 				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
@@ -1234,6 +1322,7 @@ Func Check_source_integrity($linux_live_file)
 				$temp_index = _ArraySearch($compatible_filename, "regular_linux.iso")
 				$release_number = $temp_index
 				Step2_Check("warning")
+				Disable_Persistent_Mode()
 				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
 			#cs
 			Else
@@ -1469,6 +1558,36 @@ EndFunc   ;==>OpenHelpPage
 ; ///////////////////////////////// Gui Buttons handling                        ///////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+Func Disable_Persistent_Mode()
+	GUICtrlSetState($slider, $GUI_HIDE)
+	GUICtrlSetState($slider_visual, $GUI_HIDE)
+	GUICtrlSetState($label_max, $GUI_HIDE)
+	GUICtrlSetState($label_min, $GUI_HIDE)
+	GUICtrlSetState($slider_visual_Mo,$GUI_HIDE)
+	GUICtrlSetState($slider_visual_mode,$GUI_HIDE)
+	GUICtrlSetState($live_mode_only_label,$GUI_SHOW)
+	Step3_Check("good")
+EndFunc
+
+Func Enable_Persistent_Mode()
+	GUICtrlSetState($slider, $GUI_SHOW)
+	GUICtrlSetState($slider_visual, $GUI_SHOW)
+	GUICtrlSetState($label_max, $GUI_SHOW)
+	GUICtrlSetState($label_min, $GUI_SHOW)
+	GUICtrlSetState($slider_visual_Mo,$GUI_SHOW)
+	GUICtrlSetState($slider_visual_mode,$GUI_SHOW)
+	GUICtrlSetState($live_mode_only_label,$GUI_HIDE)
+EndFunc
+
+Func Disable_VirtualBox_Option()
+		GUICtrlSetState($virtualbox, $GUI_UNCHECKED)
+		GUICtrlSetState($virtualbox, $GUI_DISABLE)
+EndFunc
+
+Func Enable_VirtualBox_Option()
+		GUICtrlSetState($virtualbox, $GUI_CHECKED)
+		GUICtrlSetState($virtualbox, $GUI_ENABLE)
+EndFunc
 
 ; Clickable parts of images
 Func GUI_Exit()
@@ -1589,11 +1708,14 @@ EndFunc   ;==>GUI_Choose_ISO
 Func GUI_Choose_CD()
 	SendReport("Start-GUI_Choose_CD")
 
-	;TODO : Recode support for CD
+	#cs
+	TODO : Recode support for CD
 	MsgBox(16, "Sorry", "Sorry but CD Support is broken. Please use ISO or Download button.")
 	Step2_Check("bad")
 	$file_set = 0;
 	Return ""
+	#ce
+
 	$folder_file = FileSelectFolder(Translate("Sélectionner le CD live de Linux ou son répertoire"), "")
 	If @error Then
 		SendReport("IN-CD_AREA (no CD)")
@@ -1601,9 +1723,7 @@ Func GUI_Choose_CD()
 		Step2_Check("bad")
 		$file_set = 0;
 	Else
-		GUICtrlSetState($slider, $GUI_ENABLE)
-		GUICtrlSetState($slider_visual, $GUI_ENABLE)
-		GUICtrlSetState($virtualbox, $GUI_ENABLE)
+		Disable_Persistent_Mode()
 		SendReport("IN-CD_AREA (CD selected :" & $folder_file & ")")
 		$file_set = $folder_file;
 		$file_set_mode = "folder"
@@ -2010,7 +2130,11 @@ Func GUI_Launch_Creation()
 
 		UpdateStatus("Etape 1 à 3 valides")
 
-		If GUICtrlRead($formater) <> $GUI_CHECKED Then Clean_old_installs($selected_drive, $release_number)
+		; Cleaning old installs only if needed
+		If $file_set_mode <> "img" Then
+				InitializeFilesInSource($file_set)
+				If GUICtrlRead($formater) <> $GUI_CHECKED Then Clean_old_installs($selected_drive, $release_number)
+		EndIf
 
 		If GUICtrlRead($virtualbox) == $GUI_CHECKED Then $virtualbox_check = Download_virtualBox()
 
