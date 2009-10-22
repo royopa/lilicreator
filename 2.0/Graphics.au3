@@ -2,7 +2,7 @@
 ; ///////////////////////////////// Graphical Part                                ///////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Global $GUI
+
 
 Func GetVertOffset($hgui)
 ;Const $SM_CYCAPTION = 4
@@ -43,11 +43,6 @@ Func SetBitmap($hGUI, $hImage, $iOpacity)
 	_WinAPI_DeleteObject($hBitmap)
 	_WinAPI_DeleteDC($hMemDC)
 EndFunc   ;==>SetBitmap
-
-
-
-Global Const $LWA_ALPHA = 0x2
-Global Const $LWA_COLORKEY = 0x1
 
 ;############# EndExample #########
 
@@ -154,12 +149,6 @@ EndFunc   ;==>_WinAPI_GetLayeredWindowAttributes
 
 #ce ----------------------------------------------------------------------------
 
-#include-once
-#include <GuiConstants.au3>
-#include <WIndowsConstants.au3>
-#include <EditConstants.au3>
-#include <WinApi.au3>
-#include <GdiPlus.au3>
 
 Global $_Progress_ahCallBack[3] = [-1, -1, 0], $_Progress_Bars[1][15] = [[-1]], $iPercent = 0;
 
