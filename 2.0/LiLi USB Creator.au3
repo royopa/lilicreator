@@ -31,6 +31,7 @@ Global $blacklist_ini = @ScriptDir & "\tools\settings\black_list.ini"
 Global $log_dir = @ScriptDir & "\logs\"
 Global $help_file_name = "Help.chm"
 Global $help_available_langs = "en,fr,sp"
+Global $variants_using_default_mode = "default,gparted,debian,clonezilla,damnsmall"
 Global $lang, $anonymous_id
 Global $downloaded_virtualbox_filename
 
@@ -1230,6 +1231,8 @@ Func Check_source_integrity($linux_live_file)
 	; No check if it's an img file or if the user do not want to
 	If IniRead($settings_ini, "General", "skip_checking", "no") == "yes" Or get_extension($linux_live_file) = "img" Then
 		Step2_Check("good")
+		$temp_index = _ArraySearch($compatible_filename, "regular_linux.iso")
+		$release_number = $temp_index
 		Return ""
 	EndIf
 
@@ -1244,6 +1247,7 @@ Func Check_source_integrity($linux_live_file)
 			MsgBox(4096, Translate("Vérification") & " OK", Translate("La version est compatible et le fichier est valide"))
 			Step2_Check("good")
 			$release_number = $temp_index
+			Check_If_Default_Should_Be_Used($release_number)
 			Return ""
 		Else
 			$temp_index = 0
@@ -1306,11 +1310,19 @@ Func Check_source_integrity($linux_live_file)
 				$temp_index = _ArraySearch($compatible_filename, "regular_linux.iso")
 				$release_number = $temp_index
 				Step2_Check("good")
+				Disable_Persistent_Mode()
 			ElseIf StringInStr($shortname, "gparted") Then
 				; Gparted
 				$temp_index = _ArraySearch($compatible_filename, "regular_linux.iso")
 				$release_number = $temp_index
 				Step2_Check("good")
+				Disable_Persistent_Mode()
+			ElseIf StringInStr($shortname, "debian") Then
+				; Debian
+				$temp_index = _ArraySearch($compatible_filename, "regular_linux.iso")
+				$release_number = $temp_index
+				Step2_Check("good")
+				Disable_Persistent_Mode()
 			ElseIf StringInStr($shortname, "crunch") Then
 				; CrunchBang Based
 				$temp_index = _ArraySearch($compatible_filename, "crunchbang-9.04.01.i386.iso")
@@ -1322,22 +1334,21 @@ Func Check_source_integrity($linux_live_file)
 				$temp_index = _ArraySearch($compatible_filename, "regular_linux.iso")
 				$release_number = $temp_index
 				Step2_Check("warning")
-				Disable_Persistent_Mode()
 				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
-			#cs
-			Else
-				; Filename is not known and MD5 is not OK -> NOT COMPATIBLE
-				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("Merci de vérifier la liste de compatibilité dans le guide d'utilisation.") & @CRLF & Translate("Si votre version est bien dans la liste c'est que le fichier est corrompu et qu'il faut le télécharger à nouveau"))
-				Step2_Check("bad")
-				$release_number = -1
-			#ce
 			EndIf
-			SendReport("Start-Check_source_integrity (end intelligent processing)")
+			SendReport("End-Check_source_integrity (end intelligent processing)")
 		EndIf
 	EndIf
+	Check_If_Default_Should_Be_Used($release_number)
 	SendReport("End-Check_source_integrity")
 EndFunc   ;==>Check_source_integrity
 
+
+Func Check_If_Default_Should_Be_Used($release_in_list)
+	if StringInStr($variants_using_default_mode,ReleaseGetVariant($release_in_list)) Then
+		Disable_Persistent_Mode()
+	EndIf
+EndFunc
 
 ; Check the ISO against black list
 Func Check_if_version_non_grata($version_name)
