@@ -381,7 +381,7 @@ Func Rename_and_move_files($drive_letter, $release_in_list)
 	FileRename( $drive_letter & "\syslinux\text.cfg", $drive_letter & "\syslinux\text.cfg-old")
 	if ReleaseGetVariant($release_in_list) = "ubuntu" Then
 		FileRename( $drive_letter & "\syslinux\isolinux.cfg", $drive_letter & "\syslinux\syslinux.cfg")
-	Elseif ReleaseGetVariant($release_in_list) = "default" Then
+	Elseif StringInStr($variants_using_default_mode,ReleaseGetVariant($release_in_list)) Then
 		; Default Linux processing, no intelligence
 		RunWait3("cmd /c rename " & $drive_letter & "\boot\isolinux syslinux", @ScriptDir, @SW_HIDE)
 		;FileRename( $drive_letter & "\boot\syslinux\isolinux.cfg", $drive_letter & "\boot\syslinux\syslinux.cfg")
@@ -437,7 +437,7 @@ Func Create_boot_menu($drive_letter,$release_in_list)
 		Ubuntu_WriteTextCFG($drive_letter,$variant)
 	Elseif $distribution == "Ubuntu" Then
 		Mandriva_WriteTextCFG($drive_letter)
-	Elseif $distribution <> "default" Then
+	Elseif StringInStr($variants_using_default_mode,ReleaseGetVariant($release_in_list)) =0 Then
 		; No processing for default Linux, just using the original isolinux config)
 		; Fedora
 		Fedora_WriteTextCFG($drive_letter)
@@ -539,7 +539,7 @@ Func Create_persistence_file($drive_letter,$release_in_list,$persistence_size,$h
 	If IniRead($settings_ini, "General", "skip_persistence", "no") == "yes" Then Return 0
 
 	; No persistence for default Linux
-	If ReleaseGetDistribution($release_in_list) = "default" Then Return 0
+	If StringInStr($variants_using_default_mode,ReleaseGetVariant($release_in_list)) Then Return 0
 
 	If $persistence_size > 0 Then
 		UpdateStatus("Création du fichier de persistance")
@@ -593,7 +593,7 @@ Func Install_boot_sectors($drive_letter)
 		Else
 			$sysarg = " "
 		EndIf
-		RunWait3(@ScriptDir & '\tools\syslinux.exe -m -a' & $sysarg & ' -d ' & $drive_letter & '\syslinux ' & $drive_letter, @ScriptDir, @SW_HIDE)
+		RunWait3('"' & @ScriptDir & '\tools\syslinux.exe" -m -a' & $sysarg & ' -d ' & $drive_letter & '\syslinux ' & $drive_letter, @ScriptDir, @SW_HIDE)
 
 	SendReport("End-Install_boot_sectors")
 EndFunc
@@ -680,31 +680,11 @@ Func Create_autorun($drive_letter,$release_in_list)
 	If FileExists($drive_letter & "\autorun.inf") Then FileDelete($drive_letter & "\autorun.inf")
 	$codename = ReleaseGetCodename($release_in_list)
 
-	; Grouping release with same files
-	$group1 = "ubuntu810,xubuntu810,kubuntu810"
-	$group2 = "mint6,mint7"
-	$group3 = "ubuntu904,xubuntu904,kubuntu904,netbook_remix910,ubuntu910a6"
-
 	; Using LiLi icon
 	FileCopy(@ScriptDir & "\tools\img\lili.ico", $drive_letter & "\lili.ico",1)
 	RunWait3("cmd /c attrib /D /S +S +H " & $drive_letter & "\lili.ico", @ScriptDir, @SW_HIDE)
 	$icon = "lili.ico"
 
-	#cs
-	if StringInStr($group1, $codename) > 0 Then
-		;$icon = "umenu.exe,0"
-		$menu = "umenu.exe"
-	Elseif StringInStr($group2, $codename) > 0 Then
-		;$icon = "lmmenu.exe,0"
-		$menu = "lmmenu.exe"
-	Elseif StringInStr($group3, $codename) > 0 Then
-		;$icon = "wubi.exe,0"
-		$menu = "wubi.exe --cdmenu"
-	Else
-		; others : Fedora, CrunchBang
-		$menu = ""
-	EndIf
-	#ce
 
 	IniWrite($drive_letter & "\autorun.inf", "autorun", "icon", $icon)
 	IniWrite($drive_letter & "\autorun.inf", "autorun", "open", "")
@@ -730,12 +710,6 @@ Func Create_autorun($drive_letter,$release_in_list)
 			$i=$i+1
 		EndIf
 	Next
-	#cs
-	if $menu <> "" Then
-		IniWrite($drive_letter  & "\autorun.inf", "autorun", "shell\linuxlive3", "----> LinuxLive Menu")
-		IniWrite($drive_letter & "\autorun.inf", "autorun", "shell\linuxlive3\command", $menu)
-	EndIf
-	#ce
 	HideFile($drive_letter & "\autorun.inf")
 	SendReport("End-Create_autorun")
 EndFunc
