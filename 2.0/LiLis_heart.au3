@@ -48,7 +48,7 @@ Func Clean_old_installs($drive_letter,$release_in_list)
 		DirRemove2($drive_letter & "\isolinux\", 1)
 		DirRemove2($drive_letter & "\syslinux\", 1)
 		FileDelete2($drive_letter & "\autorun.inf")
-
+		FileDelete2($drive_letter & "\ldlinux.sys")
 
 		; Classic Ubuntu files
 		DirRemove2($drive_letter & "\.disk\", 1)
@@ -466,6 +466,7 @@ Func Hide_live_files($drive_letter)
 	If IniRead($settings_ini, "General", "skip_hiding", "no") == "yes" Then return 0
 
 	UpdateStatus("Masquage des fichiers")
+	HideFile($drive_letter & "\syslinux\")
 	HideFilesInDir($files_in_source)
 	#cs
 	; Common Linux Live files
@@ -752,9 +753,10 @@ EndFunc
 
 Func Final_check()
 	SendReport("Start-Final_check")
+	Local $avert_mem = ""
+	Local $avert_admin = ""
 	$mem = MemGetStats()
-	$avert_mem = ""
-	$avert_admin = ""
+
 
 	; If not admin and virtaulbox option has been selected => WARNING
 	If Not IsAdmin() Then $avert_admin = Translate("Vous n'avez pas les droits suffisants pour démarrer VirtualBox sur cette machine.") & @CRLF & Translate("Enregistrez-vous sur le compte administrateur ou lancez le logiciel avec les droits d'administrateur pour qu'il fonctionne.")

@@ -116,6 +116,11 @@ Func ReleaseGetCodename($release_in_list)
 	Return $releases[$release_in_list][$R_CODE]
 EndFunc
 
+Func ReleaseGetFilename($release_in_list)
+	if $release_in_list <=0 Then Return "NotFound"
+	Return $releases[$release_in_list][$R_FILENAME]
+EndFunc
+
 Func ReleaseGetMD5($release_in_list)
 	if $release_in_list <=0 Then Return "NotFound"
 	Return $releases[$release_in_list][$R_FILE_MD5]
@@ -152,8 +157,12 @@ Func ReleaseGetDescription($release_in_list)
 EndFunc
 
 Func URLToHostname($url)
-	$temp = StringSplit($url,"/")
-	Return $temp[3]
+	if StringInStr($url,"/") >= 3 Then
+		$temp = StringSplit($url,"/")
+		Return $temp[3]
+	Else
+		Return ""
+	EndIf
 EndFunc
 
 Func path_to_name($filepath)
