@@ -45,11 +45,7 @@ Func _About($Title, $MainLabel, $CopyRLabel, $VerLabel, $NameURL1, $URL1, $NameU
             If $Msg = $LinkLabel[$i] Then
                 $LinkVisitedColor[$i] = 0xAC00A9
                 GUICtrlSetColor($LinkLabel[$i], $LinkVisitedColor[$i])
-                If Eval("URL" & $i) == "User_Guide" Then
-					OpenHelpPage("presentation")
-				Else
 					ShellExecute(Eval("URL" & $i))
-				EndIf
 		   EndIf
         Next
         If WinActive($GUI) Then
