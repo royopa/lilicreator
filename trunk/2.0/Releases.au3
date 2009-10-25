@@ -4,7 +4,7 @@
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ; Set the list for compatibility
-Global $compatibility_ini = @ScriptDir & "\tools\settings\compatibility_list.ini"
+
 
 ; Global variables for releases attributes
 Global Const $R_CODE = 0,$R_NAME=1,$R_DISTRIBUTION=2, $R_DISTRIBUTION_VERSION=3,$R_FILENAME=4,$R_FILE_MD5=5,$R_RELEASE_DATE=6,$R_WEB=7,$R_DOWNLOAD_PAGE=8,$R_DOWNLOAD_SIZE=9,$R_INSTALL_SIZE=10,$R_DESCRIPTION=11
@@ -36,7 +36,7 @@ Func Get_Compatibility_List()
 		$releases[$i][$R_WEB]=IniRead($compatibility_ini, $sections[$i], "Web","NotFound")
 		$releases[$i][$R_DOWNLOAD_PAGE]=IniRead($compatibility_ini, $sections[$i], "Download_page","NotFound")
 		$releases[$i][$R_DOWNLOAD_SIZE]=IniRead($compatibility_ini, $sections[$i], "Donwload_Size","NotFound")
-		$releases[$i][$R_INSTALL_SIZE]=IniRead($compatibility_ini, $sections[$i], "Install_Size","NotFound")
+		$releases[$i][$R_INSTALL_SIZE]=IniRead($compatibility_ini, $sections[$i], "Install_Size","800")
 		$releases[$i][$R_DESCRIPTION]=IniRead($compatibility_ini, $sections[$i], "Description","NotFound")
 		$releases[$i][$R_MIRROR1]=IniRead($compatibility_ini, $sections[$i], "Mirror1","NotFound")
 		$releases[$i][$R_MIRROR2]=IniRead($compatibility_ini, $sections[$i], "Mirror2","NotFound")
@@ -147,7 +147,7 @@ Func ReleaseGetVariantVersion($release_in_list)
 EndFunc
 
 Func ReleaseGetInstallSize($release_in_list)
-	if $release_in_list <=0 Then Return -1
+	if $release_in_list <=0 Then Return 800
 	Return $releases[$release_in_list][$R_INSTALL_SIZE]
 EndFunc
 
