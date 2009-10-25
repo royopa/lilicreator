@@ -27,6 +27,7 @@
 Global Const $software_version = "2.0"
 Global Const $lang_ini = @ScriptDir & "\tools\settings\langs.ini"
 Global Const $settings_ini = @ScriptDir & "\tools\settings\settings.ini"
+Global Const $compatibility_ini = @ScriptDir & "\tools\settings\compatibility_list.ini"
 Global Const $blacklist_ini = @ScriptDir & "\tools\settings\black_list.ini"
 Global Const $variants_using_default_mode = "default,gparted,debian,clonezilla,damnsmall"
 Global Const $log_dir = @ScriptDir & "\logs\"
@@ -36,7 +37,7 @@ Global $downloaded_virtualbox_filename
 
 ; Global variables used for the onEvent Functions
 ; Globals images and GDI+ elements
-Global $GUI, $CONTROL_GUI, $EXIT_BUTTON, $MIN_BUTTON, $DRAW_REFRESH, $DRAW_ISO, $DRAW_CD, $DRAW_DOWNLOAD, $DRAW_BACK, $DRAW_BACK_HOVER, $DRAW_LAUNCH, $HELP_STEP1, $HELP_STEP2, $HELP_STEP3, $HELP_STEP4, $HELP_STEP5, $label_iso, $label_cd, $label_download, $label_step2_status,$live_mode_only_label
+Global $GUI, $CONTROL_GUI, $EXIT_BUTTON, $MIN_BUTTON, $DRAW_REFRESH, $DRAW_ISO, $DRAW_CD, $DRAW_DOWNLOAD, $DRAW_BACK, $DRAW_BACK_HOVER, $DRAW_LAUNCH, $HELP_STEP1, $HELP_STEP2, $HELP_STEP3, $HELP_STEP4, $HELP_STEP5, $label_iso, $label_cd, $label_download, $label_step2_status,$download_label2,$OR_label,$live_mode_only_label
 Global $ZEROGraphic, $EXIT_NORM, $EXIT_OVER, $MIN_NORM, $MIN_OVER, $PNG_GUI, $CD_PNG, $CD_HOVER_PNG, $ISO_PNG, $ISO_HOVER_PNG, $DOWNLOAD_PNG, $DOWNLOAD_HOVER_PNG, $BACK_PNG, $BACK_HOVER_PNG, $LAUNCH_PNG, $LAUNCH_HOVER_PNG, $HELP, $BAD, $GOOD, $WARNING, $BACK_AREA
 Global $download_menu_active = 0, $cleaner, $cleaner2
 Global $combo_linux, $download_manual, $download_auto, $slider, $slider_visual
@@ -268,6 +269,7 @@ GUICtrlSetColor(-1, 0xFFFFFF)
 $label_max = GUICtrlCreateLabel("?? " & Translate("Mo"), 250 + $offsetx3 + $offsetx0, 228 + $offsety3 + $offsety0, 50, 20)
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
+
 $slider = GUICtrlCreateSlider(60 + $offsetx3 + $offsetx0, 225 + $offsety3 + $offsety0, 180, 20)
 GUICtrlSetLimit($slider, 0, 0)
 GUICtrlSetOnEvent(-1, "GUI_Persistence_Slider")
@@ -283,8 +285,7 @@ $live_mode_only_label = GUICtrlCreateLabel(Translate("Mode Live"), 77 + $offsetx
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
 GUICtrlSetFont($live_mode_only_label, 16)
-GUICtrlSetState($live_mode_only_label,$GUI_HIDE)
-
+Disable_Persistent_Mode()
 ; Text and controls for step 4
 $offsetx4 = 10
 $offsety4 = 195
@@ -816,8 +817,16 @@ EndFunc   ;==>Refresh_DriveList
 
 Func SpaceAfterLinuxLiveMB($disk)
 	SendReport("Start-SpaceAfterLinuxLiveMB (Disk: " & $disk & " )")
+	Local $install_size
+
+	if ReleaseGetCodename($release_number)="default" Then
+		$install_size=Round(FileGetSize($file_set)/1048576)+20
+	Else
+		$install_size = ReleasegetInstallSize($release_number)
+	EndIf
+	MsgBox(0,"kjhkh","install size="&$install_size)
 	If GUICtrlRead($formater) == $GUI_CHECKED Then
-		$spacefree = DriveSpaceTotal($disk) - 810
+		$spacefree = DriveSpaceTotal($disk) - $install_size
 		If $spacefree >= 0 And $spacefree <= 4000 Then
 			Return Round($spacefree / 100, 0) * 100
 		ElseIf $spacefree >= 0 And $spacefree > 4000 Then
@@ -828,7 +837,7 @@ Func SpaceAfterLinuxLiveMB($disk)
 			Return 0
 		EndIf
 	Else
-		$spacefree = DriveSpaceFree($disk) - 810
+		$spacefree = DriveSpaceFree($disk) - $install_size
 		If $spacefree >= 0 And $spacefree <= 4000 Then
 			Return Round($spacefree / 100, 0) * 100
 		ElseIf $spacefree >= 0 And $spacefree > 4000 Then
@@ -843,8 +852,15 @@ EndFunc   ;==>SpaceAfterLinuxLiveMB
 
 Func SpaceAfterLinuxLiveGB($disk)
 	SendReport("Start-SpaceAfterLinuxLiveGB (Disk: " & $disk & " )")
+
+	if ReleaseGetCodename($release_number)="default" Then
+		$install_size=Round(FileGetSize($file_set)/1048576)+20
+	Else
+		$install_size = ReleasegetInstallSize($release_number)
+	EndIf
+	MsgBox(0,"kjhkh","install size="&$install_size)
 	If GUICtrlRead($formater) == $GUI_CHECKED Then
-		$spacefree = DriveSpaceTotal($disk) - 810
+		$spacefree = DriveSpaceTotal($disk) - ReleasegetInstallSize($release_number)
 		If $spacefree >= 0 Then
 			SendReport("End-SpaceAfterLinuxLiveGB (Free : "& Round($spacefree / 1024, 1) &"GB )")
 			Return Round($spacefree / 1024, 1)
@@ -853,7 +869,7 @@ Func SpaceAfterLinuxLiveGB($disk)
 			Return 0
 		EndIf
 	Else
-		$spacefree = DriveSpaceFree($disk) - 810
+		$spacefree = DriveSpaceFree($disk) - ReleasegetInstallSize($release_number)
 		If $spacefree >= 0 Then
 			SendReport("End-SpaceAfterLinuxLiveGB (Free : "& Round($spacefree / 1024, 1) &"GB )")
 			Return Round($spacefree / 1024, 1)
@@ -1813,18 +1829,27 @@ Func GUI_Download()
 	GUICtrlSetState($label_iso, $GUI_HIDE)
 
 	; Drawing new menu
-	$combo_linux = GUICtrlCreateCombo(">> " & "Select your favourite Linux", 38 + $offsetx0, 238 + $offsety0, 300, -1, 3)
+	$combo_linux = GUICtrlCreateCombo(">> " & "Select your favourite Linux", 38 + $offsetx0, 240 + $offsety0, 300, -1, 3)
 	GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 	GUICtrlSetColor(-1, 0xFFFFFF)
 	GUICtrlSetOnEvent(-1, "GUI_Select_Linux")
 	Get_Compatibility_List()
 	GUICtrlSetData($combo_linux, Print_For_ComboBox())
 
-	$download_manual = GUICtrlCreateButton("Download Manually", 38 + $offsetx0, 231 + $offsety0 + 50, 130)
+	$download_label2 = GUICtrlCreateLabel(Translate("Télécharger"), 38 + $offsetx0 + 110, 210 + $offsety0 + 55, 150)
+	GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
+	GUICtrlSetColor(-1, 0xFFFFFF)
+	GUICtrlSetFont(-1, 10)
+
+	$download_manual = GUICtrlCreateButton(Translate("manuellement"), 38 + $offsetx0+20, 235 + $offsety0 + 50, 110)
 	GUICtrlSetOnEvent(-1, "GUI_Download_Manually")
 	GUICtrlSetState(-1, $GUI_DISABLE)
 
-	$download_auto = GUICtrlCreateButton("Download Automatically", 38 + $offsetx0 + 160, 231 + $offsety0 + 50, 130)
+	$OR_label = GUICtrlCreateLabel(Translate("OU"), 38 + $offsetx0 + 135, 235 + $offsety0 + 55, 20)
+	GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
+	GUICtrlSetColor(-1, 0xFFFFFF)
+	GUICtrlSetFont(-1, 10)
+	$download_auto = GUICtrlCreateButton(Translate("automatiquement"), 38 + $offsetx0 + 160, 235 + $offsety0 + 50, 110)
 	GUICtrlSetOnEvent(-1, "GUI_Download_Automatically")
 	GUICtrlSetState(-1, $GUI_DISABLE)
 
@@ -1842,6 +1867,10 @@ Func GUI_Back_Download()
 	GUICtrlSetState($download_manual, $GUI_HIDE)
 	GUICtrlSetState($download_auto, $GUI_HIDE)
 	GUICtrlSetState($label_step2_status, $GUI_HIDE)
+	GUICtrlSetState($download_label2, $GUI_HIDE)
+	GUICtrlSetState($OR_label, $GUI_HIDE)
+
+
 	$cleaner = GUICtrlCreateLabel("", 38 + $offsetx0, 238 + $offsety0, 300, 30)
 	$cleaner2 = GUICtrlCreateLabel("", 5 + $offsetx0, 300 + $offsety0, 32, 32)
 	GUICtrlSetState($cleaner, $GUI_SHOW)
@@ -1869,7 +1898,7 @@ Func GUI_Select_Linux()
 		GUICtrlSetState($download_manual, $GUI_ENABLE)
 		GUICtrlSetState($download_auto, $GUI_ENABLE)
 	Else
-		MsgBox(48, "Attention", "Please select a linux to continue")
+		MsgBox(48, Translate("Attention"), Translate("Merci de sélectionner un Linux pour continuer"))
 		GUICtrlSetState($download_manual, $GUI_DISABLE)
 		GUICtrlSetState($download_auto, $GUI_DISABLE)
 	EndIf
@@ -1900,17 +1929,18 @@ Func DownloadRelease($release_in_list, $automatic_download)
 	GUICtrlSetState($download_manual, $GUI_HIDE)
 	GUICtrlSetState($download_auto, $GUI_HIDE)
 	GUICtrlSetState($BACK_AREA, $GUI_HIDE)
-
+	GUICtrlSetState($download_label2, $GUI_HIDE)
+	GUICtrlSetState($OR_label, $GUI_HIDE)
 	$progress_bar = _ProgressCreate(38 + $offsetx0, 238 + $offsety0, 300, 30)
 	_ProgressSetImages($progress_bar, @ScriptDir & "\tools\img\progress_green.jpg", @ScriptDir & "\tools\img\progress_background.jpg")
 	_ProgressSetFont($progress_bar, "", -1, -1, 0x000000, 0)
 
 	$DRAW_BACK = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $BACK_PNG, 0, 0, 32, 32, 5 + $offsetx0, 300 + $offsety0, 32, 32)
 
-	$label_step2_status = GUICtrlCreateLabel("Looking for the fastest mirror", 38 + $offsetx0, 231 + $offsety0 + 50, 300, 80)
+	$label_step2_status = GUICtrlCreateLabel(Translate("Recherche du miroir le plus rapide"), 38 + $offsetx0, 231 + $offsety0 + 50, 300, 80)
 	GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 	GUICtrlSetColor(-1, 0xFFFFFF)
-	UpdateStatusStep2("Choosing fastest mirror")
+	UpdateStatusStep2("Recherche du miroir le plus rapide")
 
 
 	For $i = $R_MIRROR1 To $R_MIRROR10
@@ -1925,7 +1955,7 @@ Func DownloadRelease($release_in_list, $automatic_download)
 			If @error = 0 Then
 				$tested_mirrors = $tested_mirrors + 1
 				_ProgressSet($progress_bar, $tested_mirrors * 100 / $available_mirrors)
-				_ProgressSetText($progress_bar, "Testing : " & URLToHostname($mirror))
+				_ProgressSetText($progress_bar, Translate("Test du miroir") &" : " & URLToHostname($mirror))
 			Else
 				$temp_latency = 10000
 			EndIf
@@ -1937,7 +1967,7 @@ Func DownloadRelease($release_in_list, $automatic_download)
 	Next
 
 	If _ArrayMin($latency, 1, $R_MIRROR1, $R_MIRROR10) = 10000 Then
-		UpdateStatusStep2("No online mirror found !" & @CRLF & "Please check your internet connection or try with another linux")
+		UpdateStatusStep2(Translate("Aucun miroir en ligne")&" !" & @CRLF & Translate("Merci de vérifier la connexion à internet ou d'essayer un autre Linux"))
 		_ProgressSet($progress_bar, 100)
 
 	Else
@@ -1947,7 +1977,7 @@ Func DownloadRelease($release_in_list, $automatic_download)
 		$best_mirror = $releases[$release_in_list][_ArrayMinIndex($latency, 1, $R_MIRROR1, $R_MIRROR10)]
 		If $automatic_download = 0 Then
 			; Download manually
-			UpdateStatusStep2("Select this file as the source when download will be completed.")
+			UpdateStatusStep2("Sélectionner le fichier une fois que le téléchargement sera fini")
 			DisplayMirrorList($latency,$release_in_list)
 		Else
 			; Download automatically
@@ -1955,10 +1985,10 @@ Func DownloadRelease($release_in_list, $automatic_download)
 			$filename = unix_path_to_name($best_mirror)
 			$inet_success = InetGet($best_mirror, @ScriptDir & "\" & $filename, 1, 1)
 			If $inet_success Then
-				UpdateStatusStep2("Downloading " & $filename & @CRLF & "From " & URLToHostname($best_mirror))
+				UpdateStatusStep2(Translate("Téléchargement de")&" " & $filename & @CRLF & Translate("depuis") & " " & URLToHostname($best_mirror))
 				Download_State()
 			Else
-				UpdateStatusStep2("Error while trying to download, please check you internet connection or try another linux")
+				UpdateStatusStep2(Translate("Erreur lors du téléchargement")&@CRLF&Translate("Merci de vérifier la connexion à internet ou d'essayer un autre Linux"))
 			EndIf
 		EndIf
 	EndIf
@@ -1976,12 +2006,12 @@ Func DisplayMirrorList($latency_table, $release_in_list)
 
 	; Create GUI
 	GUICreate("Select the mirror", 350, 250)
-	$hListView = GUICtrlCreateListView("  Latency  |  Server Name  | ", 0, 0, 350, 200)
+	$hListView = GUICtrlCreateListView("  "&Translate("Latence")&"  |  "&Translate("Serveur")&"  | ", 0, 0, 350, 200)
 	_GUICtrlListView_SetColumnWidth($hListView, 0, 80)
 	_GUICtrlListView_SetColumnWidth($hListView, 1, 230)
 	$hImage = _GUIImageList_Create()
-	$copy_it = GUICtrlCreateButton("Copy in my clipboard",30,210, 120, 30)
-	$launch_it = GUICtrlCreateButton("Launch in my browser",200,210, 120, 30)
+	$copy_it = GUICtrlCreateButton(Translate("Copier le lien"),30,210, 120, 30)
+	$launch_it = GUICtrlCreateButton(Translate("Lancer dans le navigateur"),200,210, 120, 30)
 
 
 	Local $latency_server[$R_MIRROR10-$R_MIRROR1+1][3]
@@ -1994,10 +2024,10 @@ Func DisplayMirrorList($latency_table, $release_in_list)
 		EndIf
 	Next
 	_GUICtrlListView_EnableGroupView($hListView)
-	_GUICtrlListView_InsertGroup($hListView, -1, 1, "Best mirrors")
-	_GUICtrlListView_InsertGroup($hListView, -1, 2, "Good mirrors")
-	_GUICtrlListView_InsertGroup($hListView, -1, 3, "Bad mirrors")
-	_GUICtrlListView_InsertGroup($hListView, -1, 4, "Dead mirrors")
+	_GUICtrlListView_InsertGroup($hListView, -1, 1, Translate("Meilleurs miroirs"))
+	_GUICtrlListView_InsertGroup($hListView, -1, 2, Translate("Miroirs rapides"))
+	_GUICtrlListView_InsertGroup($hListView, -1, 3, Translate("Miroirs lents"))
+	_GUICtrlListView_InsertGroup($hListView, -1, 4, Translate("Miroirs morts"))
 
 	_ArraySort($latency_server, 0, 0, 0, 0)
 
@@ -2084,7 +2114,7 @@ Func Download_State()
 	_ProgressSet($progress_bar, 100)
 	_ProgressSetText($progress_bar, "100% ( " & Round($iso_size / (1024 * 1024)) & " / " & Round($iso_size / (1024 * 1024)) & " " & "MB" & " )")
 
-	UpdateStatusStep2("File has been successfully downloaded, a check will begin in few seconds.")
+	UpdateStatusStep2(Translate("Le téléchargement est maintenant fini")&@CRLF&Translate("La vérification va commencer dans quelques secondes"))
 	Sleep(3000)
 	$file_set = @ScriptDir & "\" & $filename
 	Check_source_integrity($file_set)
