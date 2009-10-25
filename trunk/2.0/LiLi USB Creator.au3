@@ -1051,7 +1051,7 @@ Func Ubuntu_WriteTextCFG($selected_drive, $variant)
 	$codename = ReleaseGetCodename($release_number)
 
 	; Karmic Koala have a renamed initrd file
-	If $codename = "ubuntu910a6" OR $codename = "ubuntu910beta" Then
+	If $codename = "ubuntu910a6" OR $codename = "ubuntu910beta" OR $codename = "ubuntu910rc1" Then
 		$initrd_file = "initrd.lz"
 	Else
 		$initrd_file = "initrd.gz"
@@ -1165,7 +1165,51 @@ Func Fedora_WriteTextCFG($drive_letter)
 	$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
 	FileWrite($file, $boot_text)
 	FileClose($file)
+	UpdateLog("IN-Fedora_WriteTextCFG : Creating syslinux config file :" & @CRLF & $boot_text)
 	SendReport("End-Fedora_WriteTextCFG")
+EndFunc   ;==>Fedora_WriteTextCFG
+
+
+Func CentOS_WriteTextCFG($drive_letter)
+	SendReport("Start-CentOS_WriteTextCFG ( Drive : " & $drive_letter & " )")
+	Local $boot_text = "", $uuid
+	$uuid = Get_Disk_UUID($drive_letter)
+	$boot_text &= @LF & "default vesamenu.c32" _
+			 & @LF & "timeout 100" _
+			 & @LF & "menu background splash.jpg" _
+			 & @LF & "menu title Welcome to CentOS !" _
+			 & @LF & "menu color border 0 #ffffffff #00000000" _
+			 & @LF & "menu color sel 7 #ffffffff #ff000000" _
+			 & @LF & "menu color title 0 #ffffffff #00000000" _
+			 & @LF & "menu color tabmsg 0 #ffffffff #00000000" _
+			 & @LF & "menu color unsel 0 #ffffffff #00000000" _
+			 & @LF & "menu color hotsel 0 #ff000000 #ffffffff" _
+			 & @LF & "menu color hotkey 7 #ffffffff #ff000000" _
+			 & @LF & "menu color timeout_msg 0 #ffffffff #00000000" _
+			 & @LF & "menu color timeout 0 #ffffffff #00000000" _
+			 & @LF & "menu color cmdline 0 #ffffffff #00000000" _
+			 & @LF & "menu hidden" _
+			 & @LF & "menu hiddenrow 5" _
+			 & @LF & "label linux0" _
+			 & @LF & "  menu label " & Translate("Mode Live") _
+			 & @LF & "  kernel vmlinuz0" _
+			 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat rw liveimg quiet " _
+			 & @LF & "menu default" _
+			 & @LF & "label check0" _
+			 & @LF & "  menu label " & Translate("Verification des fichiers") _
+			 & @LF & "  kernel vmlinuz0" _
+			 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat rw liveimg quiet check" _
+			 & @LF & "label memtest" _
+			 & @LF & " menu label " & Translate("Test de la RAM") _
+			 & @LF & "  kernel memtest" _
+			 & @LF & "label local" _
+			 & @LF & "  menu label Boot from local drive" _
+			 & @LF & "  localboot 0xffff"
+	$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
+	FileWrite($file, $boot_text)
+	FileClose($file)
+	UpdateLog("IN-CentOS_WriteTextCFG : Creating CentOS syslinux config file :" & @CRLF & $boot_text)
+	SendReport("End-CentOS_WriteTextCFG")
 EndFunc   ;==>Fedora_WriteTextCFG
 
 Func Mandriva_WriteTextCFG($drive_letter)
@@ -1355,6 +1399,13 @@ Func Check_source_integrity($linux_live_file)
 				Step2_Check("good")
 				Disable_Persistent_Mode()
 				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : "&ReleaseGetCodename($release_number) & " )")
+			ElseIf StringInStr($shortname, "centos") Then
+				; CentOS
+				$temp_index = _ArraySearch($compatible_filename, "CentOS-5.4-i386-LiveCD.iso")
+				$release_number = $temp_index
+				Step2_Check("good")
+				Disable_Persistent_Mode()
+				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : "&ReleaseGetCodename($release_number) & " )")
 			ElseIf StringInStr($shortname, "crunch") Then
 				; CrunchBang Based
 				$temp_index = _ArraySearch($compatible_filename, "crunchbang-9.04.01.i386.iso")
@@ -1374,6 +1425,9 @@ Func Check_source_integrity($linux_live_file)
 		EndIf
 	EndIf
 	Check_If_Default_Should_Be_Used($release_number)
+	; CentOS cannot use Persistent mode
+	if ReleaseGetCodename($release_number) ="centos54" Then Disable_Persistent_Mode()
+
 	SendReport("End-Check_source_integrity")
 EndFunc   ;==>Check_source_integrity
 
