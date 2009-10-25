@@ -432,14 +432,14 @@ Func Create_boot_menu($drive_letter,$release_in_list)
 	If IniRead($drive_letter, "General", "skip_boot_text", "no") == "yes" Then Return 0
 	$variant = ReleaseGetVariant($release_in_list)
 	$distribution = ReleaseGetDistribution($release_in_list)
-	;UpdateStatus(Translate("Détection automatique du type de variante") & " : " & $variant)
 	if $distribution == "Ubuntu" Then
+		SendReport("IN-Create_boot_menu for Ubuntu")
 		Ubuntu_WriteTextCFG($drive_letter,$variant)
-	Elseif $distribution == "Ubuntu" Then
-		Mandriva_WriteTextCFG($drive_letter)
-	Elseif StringInStr($variants_using_default_mode,ReleaseGetVariant($release_in_list)) =0 Then
-		; No processing for default Linux, just using the original isolinux config)
-		; Fedora
+	Elseif $distribution == "Fedora" AND $variant ="CentOS" Then
+		SendReport("IN-Create_boot_menu for CentOS")
+		CentOS_WriteTextCFG($drive_letter)
+	Elseif $distribution == "Fedora" Then
+		SendReport("IN-Create_boot_menu for Fedora")
 		Fedora_WriteTextCFG($drive_letter)
 	EndIf
 	SendReport("End-Create_boot_menu")
