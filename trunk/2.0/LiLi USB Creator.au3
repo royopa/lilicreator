@@ -29,7 +29,7 @@ Global Const $lang_ini = @ScriptDir & "\tools\settings\langs.ini"
 Global Const $settings_ini = @ScriptDir & "\tools\settings\settings.ini"
 Global Const $compatibility_ini = @ScriptDir & "\tools\settings\compatibility_list.ini"
 Global Const $blacklist_ini = @ScriptDir & "\tools\settings\black_list.ini"
-Global Const $variants_using_default_mode = "default,gparted,debian,clonezilla,damnsmall"
+Global Const $variants_using_default_mode = "default,gparted,debian,clonezilla,damnsmall,puppy431"
 Global Const $log_dir = @ScriptDir & "\logs\"
 
 Global $lang, $anonymous_id
@@ -824,7 +824,7 @@ Func SpaceAfterLinuxLiveMB($disk)
 	Else
 		$install_size = ReleasegetInstallSize($release_number)
 	EndIf
-	MsgBox(0,"kjhkh","install size="&$install_size)
+
 	If GUICtrlRead($formater) == $GUI_CHECKED Then
 		$spacefree = DriveSpaceTotal($disk) - $install_size
 		If $spacefree >= 0 And $spacefree <= 4000 Then
@@ -858,7 +858,7 @@ Func SpaceAfterLinuxLiveGB($disk)
 	Else
 		$install_size = ReleasegetInstallSize($release_number)
 	EndIf
-	MsgBox(0,"kjhkh","install size="&$install_size)
+
 	If GUICtrlRead($formater) == $GUI_CHECKED Then
 		$spacefree = DriveSpaceTotal($disk) - ReleasegetInstallSize($release_number)
 		If $spacefree >= 0 Then
