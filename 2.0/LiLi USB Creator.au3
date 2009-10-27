@@ -4,7 +4,7 @@
 #AutoIt3Wrapper_Compression=3
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.0.88.9
+#AutoIt3Wrapper_Res_Fileversion=2.0.88.10
 #AutoIt3Wrapper_Res_FileVersion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_SaveSource=y
@@ -29,7 +29,7 @@ Global Const $lang_ini = @ScriptDir & "\tools\settings\langs.ini"
 Global Const $settings_ini = @ScriptDir & "\tools\settings\settings.ini"
 Global Const $compatibility_ini = @ScriptDir & "\tools\settings\compatibility_list.ini"
 Global Const $blacklist_ini = @ScriptDir & "\tools\settings\black_list.ini"
-Global Const $variants_using_default_mode = "default,gparted,debian,clonezilla,damnsmall,puppy431"
+Global Const $variants_using_default_mode = "default,gparted,debian,clonezilla,damnsmall,puppy431,toutou412"
 Global Const $log_dir = @ScriptDir & "\logs\"
 
 Global $lang, $anonymous_id
@@ -1411,6 +1411,20 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "debian") Then
 				; Debian
 				$temp_index = _ArraySearch($compatible_filename, "debian-live-502-i386-gnome-desktop.iso")
+				$release_number = $temp_index
+				Step2_Check("good")
+				Disable_Persistent_Mode()
+				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : "&ReleaseGetCodename($release_number) & " )")
+			ElseIf StringInStr($shortname, "toutou") Then
+				; Toutou Linux
+				$temp_index = _ArraySearch($compatible_filename, "ToutouLinux_4.1.2.iso")
+				$release_number = $temp_index
+				Step2_Check("good")
+				Disable_Persistent_Mode()
+				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : "&ReleaseGetCodename($release_number) & " )")
+			ElseIf StringInStr($shortname, "puppy") Then
+				; Puppy Linux
+				$temp_index = _ArraySearch($compatible_filename, "pup-431.iso")
 				$release_number = $temp_index
 				Step2_Check("good")
 				Disable_Persistent_Mode()
