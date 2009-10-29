@@ -31,7 +31,6 @@ Global Const $compatibility_ini = @ScriptDir & "\tools\settings\compatibility_li
 Global Const $blacklist_ini = @ScriptDir & "\tools\settings\black_list.ini"
 Global Const $variants_using_default_mode = "default,gparted,debian,clonezilla,damnsmall,puppy431,toutou412"
 Global Const $log_dir = @ScriptDir & "\logs\"
-Global $actual_pid=@AutoItPID
 
 Global $lang, $anonymous_id
 Global $downloaded_virtualbox_filename
@@ -1362,7 +1361,7 @@ Func Check_source_integrity($linux_live_file)
 
 			If StringInStr($shortname, "9.10") Or StringInStr($shortname, "karmic") Then
 				; Ubuntu Karmic (>=9.10) based
-				$temp_index = _ArraySearch($compatible_filename, "ubuntu-9.10-rc-desktop-i386.iso")
+				$temp_index = _ArraySearch($compatible_filename, "ubuntu-9.10-desktop-i386.iso")
 				$release_number = $temp_index
 				Step2_Check("warning")
 				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : "&ReleaseGetCodename($release_number) & " )")
@@ -2031,7 +2030,7 @@ Func DisplayMirrorList($latency_table, $release_in_list)
 	_GUICtrlListView_SetColumnWidth($hListView, 1, 230)
 	$hImage = _GUIImageList_Create()
 	$copy_it = GUICtrlCreateButton(Translate("Copier le lien"),30,210, 120, 30)
-	$launch_it = GUICtrlCreateButton(Translate("Lancer dans le navigateur"),200,210, 120, 30)
+	$launch_it = GUICtrlCreateButton(Translate("Lancer dans le navigateur"),180,210, 150, 30)
 
 
 	Local $latency_server[$R_MIRROR10-$R_MIRROR1+1][3]
