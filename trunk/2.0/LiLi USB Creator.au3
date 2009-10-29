@@ -31,6 +31,7 @@ Global Const $compatibility_ini = @ScriptDir & "\tools\settings\compatibility_li
 Global Const $blacklist_ini = @ScriptDir & "\tools\settings\black_list.ini"
 Global Const $variants_using_default_mode = "default,gparted,debian,clonezilla,damnsmall,puppy431,toutou412"
 Global Const $log_dir = @ScriptDir & "\logs\"
+Global $actual_pid=@AutoItPID
 
 Global $lang, $anonymous_id
 Global $downloaded_virtualbox_filename
@@ -1965,14 +1966,19 @@ Func DownloadRelease($release_in_list, $automatic_download)
 	For $i = $R_MIRROR1 To $R_MIRROR10
 		$mirror = $releases[$release_in_list][$i]
 		If StringStripWS($mirror, 1) <> "" Then
+
 			$temp_latency = Ping(URLToHostname($mirror), 1000)
+			$tested_mirrors = $tested_mirrors + 1
 			If @error = 0 Then
-				$tested_mirrors = $tested_mirrors + 1
-				_ProgressSet($progress_bar, $tested_mirrors * 100 / $available_mirrors)
-				_ProgressSetText($progress_bar, Translate("Test du miroir") &" : " & URLToHostname($mirror))
+				$temp_size = Round(InetGetSize($mirror)/1048576)
+				if $temp_size < 5 OR $temp_size > 5000 Then
+					$temp_latency = 10000
+				EndIf
 			Else
 				$temp_latency = 10000
 			EndIf
+			_ProgressSet($progress_bar, $tested_mirrors * 100 / $available_mirrors)
+			_ProgressSetText($progress_bar, Translate("Test du miroir") &" : " & URLToHostname($mirror))
 		Else
 			$temp_latency = 10000
 		EndIf
