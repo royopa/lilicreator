@@ -33,6 +33,7 @@ Global $user_system
 Global $oMyRet[2]
 Global $oMyError
 
+Global $iPID
 $lang = _Language()
 
 
@@ -398,7 +399,8 @@ Func _SetAsReceiver($vTitle)
 	$vTitle &= $MHAdditionalIdentifier;add on our additionalIdentifier which is unlikely to be used exept by scripts using this UDF
 
 	If WInExists($vtitle) and WinGetHandle($vTitle) <> $MHhwmd_Receiver then ;already a window exists with this title and it's not ours highly unlikely unless 2 copies of the script are running
-		Msgbox(16 + 262144,"ERROR", "Only run one LiLi USB Creator at a time please")
+		;Msgbox(16 + 262144,"ERROR", "Only run one LiLi USB Creator at a time please - PID :"&$iPID&"PID reporter:"&@AutoItPID )
+		if $iPID Then ProcessClose($iPID)
 		Exit
 		#cs
 		Msgbox(16 + 262144,"Message Handler Error","The Local_ReceiverID_Name " & StringTrimRight($vTitle,StringLen($MHAdditionalIdentifier)) & " already exists." & @crlf & _
