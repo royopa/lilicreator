@@ -434,7 +434,7 @@ Func Create_boot_menu($drive_letter,$release_in_list)
 	$distribution = ReleaseGetDistribution($release_in_list)
 	if $distribution == "Ubuntu" Then
 		SendReport("IN-Create_boot_menu for Ubuntu")
-		Ubuntu_WriteTextCFG($drive_letter,$variant)
+		Ubuntu_WriteTextCFG($drive_letter,$release_in_list)
 	Elseif $distribution == "Fedora" AND $variant ="CentOS" Then
 		SendReport("IN-Create_boot_menu for CentOS")
 		CentOS_WriteTextCFG($drive_letter)
@@ -692,7 +692,7 @@ Func Create_autorun($drive_letter,$release_in_list)
 	IniWrite($drive_letter & "\autorun.inf", "autorun", "label", "LinuxLive Key")
 
 	; If virtualbox is installed
-	if FileExists($drive_letter & "\VirtualBox\Virtualize_This_Key.exe") OR FileExists($drive_letter & "VirtualBox\VirtualBox.exe") Then
+	if FileExists($drive_letter & "\VirtualBox\Virtualize_This_Key.exe") OR FileExists($drive_letter & "VirtualBox\VirtualBox.exe") OR GUICtrlRead($virtualbox) == $GUI_CHECKED Then
 		IniWrite($drive_letter & "\autorun.inf", "autorun", "shell\linuxlive", "----> LinuxLive!")
 		IniWrite($drive_letter & "\autorun.inf", "autorun", "shell\linuxlive\command", "VirtualBox\Virtualize_This_Key.exe")
 		IniWrite($drive_letter &"\autorun.inf", "autorun", "shell\linuxlive2", "----> VirtualBox Interface")

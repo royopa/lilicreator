@@ -4,7 +4,7 @@
 #AutoIt3Wrapper_Compression=3
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.0.88.10
+#AutoIt3Wrapper_Res_Fileversion=2.0.88.12
 #AutoIt3Wrapper_Res_FileVersion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_SaveSource=y
@@ -37,7 +37,7 @@ Global $downloaded_virtualbox_filename
 
 ; Global variables used for the onEvent Functions
 ; Globals images and GDI+ elements
-Global $GUI, $CONTROL_GUI, $EXIT_BUTTON, $MIN_BUTTON, $DRAW_REFRESH, $DRAW_ISO, $DRAW_CD, $DRAW_DOWNLOAD, $DRAW_BACK, $DRAW_BACK_HOVER, $DRAW_LAUNCH, $HELP_STEP1, $HELP_STEP2, $HELP_STEP3, $HELP_STEP4, $HELP_STEP5, $label_iso, $label_cd, $label_download, $label_step2_status,$download_label2,$OR_label,$live_mode_only_label
+Global $GUI, $CONTROL_GUI, $EXIT_BUTTON, $MIN_BUTTON, $DRAW_REFRESH, $DRAW_ISO, $DRAW_CD, $DRAW_DOWNLOAD, $DRAW_BACK, $DRAW_BACK_HOVER, $DRAW_LAUNCH, $HELP_STEP1, $HELP_STEP2, $HELP_STEP3, $HELP_STEP4, $HELP_STEP5, $label_iso, $label_cd, $label_download, $label_step2_status,$download_label2,$OR_label,$live_mode_only_label,$virtualbox
 Global $ZEROGraphic, $EXIT_NORM, $EXIT_OVER, $MIN_NORM, $MIN_OVER, $PNG_GUI, $CD_PNG, $CD_HOVER_PNG, $ISO_PNG, $ISO_HOVER_PNG, $DOWNLOAD_PNG, $DOWNLOAD_HOVER_PNG, $BACK_PNG, $BACK_HOVER_PNG, $LAUNCH_PNG, $LAUNCH_HOVER_PNG, $HELP, $BAD, $GOOD, $WARNING, $BACK_AREA
 Global $download_menu_active = 0, $cleaner, $cleaner2
 Global $combo_linux, $download_manual, $download_auto, $slider, $slider_visual
@@ -1058,22 +1058,24 @@ Func Get_Disk_UUID($drive_letter)
 EndFunc   ;==>Get_Disk_UUID
 
 
-Func Ubuntu_WriteTextCFG($selected_drive, $variant)
-	SendReport("Start-Ubuntu_WriteTextCFG (Drive : " & $selected_drive & " - Variant : " & $variant & " )")
-	Local $boot_text, $kbd_code
+Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
+	SendReport("Start-Ubuntu_WriteTextCFG (Drive : " & $selected_drive & " -  Codename: " & ReleaseGetCodename($release_in_list) & " )")
+	Local $boot_text, $kbd_code, $ubuntu_variant
 	$boot_text = ""
 	$kbd_code = GetKbdCode()
 
-	$codename = ReleaseGetCodename($release_number)
+	;$codename = ReleaseGetCodename($release_number)
+	$ubuntu_variant = ReleaseGetVariant($release_in_list)
+	$distrib_version = ReleaseGetDistributionVersion($release_in_list)
 
 	; Karmic Koala have a renamed initrd file
-	If $codename = "ubuntu910a6" OR $codename = "ubuntu910beta" OR $codename = "ubuntu910rc1" Then
+	If $distrib_version="9.10" Then
 		$initrd_file = "initrd.lz"
 	Else
 		$initrd_file = "initrd.gz"
 	EndIf
 
-	If $variant = "mint" Then
+	If $ubuntu_variant = "mint" Then
 		$boot_text = "default vesamenu.c32" _
 				 & @LF & "timeout 100" _
 				 & @LF & "menu background splash.jpg" _
@@ -1090,7 +1092,7 @@ Func Ubuntu_WriteTextCFG($selected_drive, $variant)
 				 & @LF & "menu color cmdline 0 #ffffffff #00000000" _
 				 & @LF & "menu hidden" _
 				 & @LF & "menu hiddenrow 5"
-	ElseIf $variant = "custom" Or $variant = "crunchbang" Then
+	ElseIf $ubuntu_variant = "custom" Or $ubuntu_variant = "crunchbang" Then
 		$boot_text &= "DISPLAY isolinux.txt" _
 				 & @LF & "TIMEOUT 300" _
 				 & @LF & "PROMPT 1" _
@@ -1101,15 +1103,15 @@ Func Ubuntu_WriteTextCFG($selected_drive, $variant)
 
 	$boot_text &= @LF & "label persist" & @LF & "menu label ^" & Translate("Mode Persistant") _
 			 & @LF & "  kernel /casper/vmlinuz" _
-			 & @LF & "  append  " & $kbd_code & "noprompt cdrom-detect/try-usb=true persistent file=/cdrom/preseed/" & $variant & ".seed boot=casper initrd=/casper/" & $initrd_file & " splash--" _
+			 & @LF & "  append  " & $kbd_code & "noprompt cdrom-detect/try-usb=true persistent file=/cdrom/preseed/" & $ubuntu_variant & ".seed boot=casper initrd=/casper/" & $initrd_file & " splash--" _
 			 & @LF & "label live" _
 			 & @LF & "  menu label ^" & Translate("Mode Live") _
 			 & @LF & "  kernel /casper/vmlinuz" _
-			 & @LF & "  append   " & $kbd_code & "noprompt cdrom-detect/try-usb=true file=/cdrom/preseed/" & $variant & ".seed boot=casper initrd=/casper/" & $initrd_file & " splash--" _
+			 & @LF & "  append   " & $kbd_code & "noprompt cdrom-detect/try-usb=true file=/cdrom/preseed/" & $ubuntu_variant  & ".seed boot=casper initrd=/casper/" & $initrd_file & " splash--" _
 			 & @LF & "label live-install" _
 			 & @LF & "  menu label ^" & Translate("Installer") _
 			 & @LF & "  kernel /casper/vmlinuz" _
-			 & @LF & "  append   " & $kbd_code & "noprompt cdrom-detect/try-usb=true persistent file=/cdrom/preseed/" & $variant & ".seed boot=casper only-ubiquity initrd=/casper/" & $initrd_file & " splash --" _
+			 & @LF & "  append   " & $kbd_code & "noprompt cdrom-detect/try-usb=true persistent file=/cdrom/preseed/" & $ubuntu_variant  & ".seed boot=casper only-ubiquity initrd=/casper/" & $initrd_file & " splash --" _
 			 & @LF & "label check" _
 			 & @LF & "  menu label ^" & Translate("Verification des fichiers") _
 			 & @LF & "  kernel /casper/vmlinuz" _
@@ -1122,19 +1124,19 @@ Func Ubuntu_WriteTextCFG($selected_drive, $variant)
 	FileWrite($file, $boot_text)
 	FileClose($file)
 
-	If $variant = "kuki" Then
+	If $ubuntu_variant = "kuki" Then
 		FileCopy(@ScriptDir & "\tools\kuki-isolinux.txt", $selected_drive & "\syslinux\isolinux.txt", 1)
 		FileCopy(@ScriptDir & "\tools\kuki-syslinux.cfg", $selected_drive & "\syslinux\syslinux.cfg", 1)
-	ElseIf $variant = "mint" Or $variant = "custom" Then
+	ElseIf $ubuntu_variant = "mint" Or $ubuntu_variant = "custom" Then
 		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
 		FileWrite($file, $boot_text)
 		FileClose($file)
-	ElseIf $variant = "crunchbang" Then
+	ElseIf $ubuntu_variant = "crunchbang" Then
 		FileDelete2($selected_drive & "\syslinux\isolinux.txt")
 		FileCopy(@ScriptDir & "\tools\crunchbang-isolinux.txt", $selected_drive & "\syslinux\isolinux.txt", 1)
 	EndIf
 
-	If $variant <> "ubuntu" And $variant <> "kuki" Then
+	If $ubuntu_variant <> "ubuntu" And $ubuntu_variant <> "kuki" Then
 		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
 		FileWrite($file, $boot_text)
 		FileClose($file)
