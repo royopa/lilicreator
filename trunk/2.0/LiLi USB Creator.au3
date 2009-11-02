@@ -4,7 +4,7 @@
 #AutoIt3Wrapper_Compression=3
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.0.88.12
+#AutoIt3Wrapper_Res_Fileversion=2.0.88.15
 #AutoIt3Wrapper_Res_FileVersion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_SaveSource=y
@@ -1361,14 +1361,21 @@ Func Check_source_integrity($linux_live_file)
 			; Filename is not known but trying to find what it is with its name => INTELLIGENT PROCESSING
 			SendReport("IN-Check_source_integrity (start intelligent processing)")
 
-			If StringInStr($shortname, "9.10") Or StringInStr($shortname, "karmic") Then
+			If StringInStr($shortname, "9.10") AND StringInStr($shortname, "netbook") Then
+				; Ubuntu Karmic (>=9.10) based
+				$temp_index = _ArraySearch($compatible_filename, "ubuntu-9.10-netbook-remix-i386.iso")
+				$release_number = $temp_index
+				Step2_Check("warning")
+				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : "&ReleaseGetCodename($release_number) & " )")
+				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
+			ElseIf StringInStr($shortname, "9.10") Or StringInStr($shortname, "karmic") Or StringInStr($shortname, "ubuntu") Then
 				; Ubuntu Karmic (>=9.10) based
 				$temp_index = _ArraySearch($compatible_filename, "ubuntu-9.10-desktop-i386.iso")
 				$release_number = $temp_index
 				Step2_Check("warning")
 				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : "&ReleaseGetCodename($release_number) & " )")
 				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
-			ElseIf StringInStr($shortname, "9.04") Or StringInStr($shortname, "ubuntu") Or StringInStr($shortname, "netbook-remix") Or StringInStr($shortname, "Fluxbuntu") Or StringInStr($shortname, "gnewsense") Then
+			ElseIf StringInStr($shortname, "9.04") Or StringInStr($shortname, "Fluxbuntu") Or StringInStr($shortname, "gnewsense") Then
 				; Ubuntu 9.04 based
 				$temp_index = _ArraySearch($compatible_filename, "ubuntu-9.04-desktop-i386.iso")
 				$release_number = $temp_index
