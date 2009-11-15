@@ -266,7 +266,12 @@ Func Uncompress_ISO_on_key($drive_letter,$iso_file,$release_in_list)
 	If IniRead($settings_ini, "General", "skip_copy", "no") == "yes" Then Return 0
 	If ProcessExists("7z.exe") > 0 Then ProcessClose("7z.exe")
 	UpdateStatus(Translate("Décompression de l'ISO sur la clé") & " ( 5-10" & Translate("min") & " )")
-	$install_size = ReleaseGetInstallSize($release_in_list)
+
+	if ReleaseGetCodename($release_in_list)="default" Then
+		$install_size=Round(FileGetSize($iso_file)/1048576)
+	Else
+		$install_size = ReleasegetInstallSize($release_number)
+	EndIf
 
 	; Just in case ...
 	If $install_size < 5 Then $install_size = 730
@@ -399,8 +404,12 @@ Func Rename_and_move_files($drive_letter, $release_in_list)
 			$syslinux_path = $drive_letter & "\syslinux\"
 		Elseif FileExists($drive_letter & "\isolinux.cfg") Then
 			$syslinux_path = $drive_letter & "\"
+		Elseif FileExists($drive_letter & "\BOOT\SYSLINUX\syslinux.cfg") Then
+			$syslinux_path = $drive_letter & "\BOOT\SYSLINUX\"
 		Elseif FileExists($drive_letter & "\HBCD\isolinux.cfg") Then
 			$syslinux_path = $drive_letter & "\HBCD\"
+		Else
+			$syslinux_path = $drive_letter & "\"
 		EndIf
 		isolinux2syslinux($syslinux_path)
 
@@ -594,7 +603,7 @@ Func Install_boot_sectors($drive_letter)
 		Else
 			$sysarg = " "
 		EndIf
-		RunWait3('"' & @ScriptDir & '\tools\syslinux.exe" -m -a' & $sysarg & ' -d ' & $drive_letter & '\syslinux ' & $drive_letter, @ScriptDir, @SW_HIDE)
+		RunWait3('"' & @ScriptDir & '\tools\syslinux.exe" -maf' & $sysarg & ' -d ' & $drive_letter & '\syslinux ' & $drive_letter, @ScriptDir, @SW_HIDE)
 
 	SendReport("End-Install_boot_sectors")
 EndFunc
@@ -651,7 +660,7 @@ Func Uncompress_virtualbox_on_key($drive_letter)
 
 	; Unzipping to the key
 	UpdateStatus(Translate("Décompression de Virtualbox sur la clé") & " ( 4" & Translate("min") & " )")
-	Run7zip2('"' & @ScriptDir & '\tools\7z.exe" x "' & @ScriptDir & "\tools\" & $downloaded_virtualbox_filename & '" -r -aoa -o' & $drive_letter, 90)
+	Run7zip2('"' & @ScriptDir & '\tools\7z.exe" x "' & @ScriptDir & "\tools\" & $downloaded_virtualbox_filename & '" -r -aoa -o' & $drive_letter, 140)
 
 	; maybe check after ?
 	SendReport("End-Uncompress_virtualbox_on_key")
