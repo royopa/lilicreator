@@ -4,7 +4,7 @@
 #AutoIt3Wrapper_Compression=3
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.0.88.16
+#AutoIt3Wrapper_Res_Fileversion=2.1.88.17
 #AutoIt3Wrapper_Res_FileVersion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_SaveSource=y
@@ -22,6 +22,7 @@
 ; Support          : http://www.linuxliveusb.com/bugs/
 ; Compiled with    : AutoIT v3.2.12.1
 
+#RequireAdmin
 
 ; Global constants
 Global Const $software_version = "2.1"
@@ -29,7 +30,7 @@ Global $lang_ini = @ScriptDir & "\tools\languages\"
 Global Const $settings_ini = @ScriptDir & "\tools\settings\settings.ini"
 Global Const $compatibility_ini = @ScriptDir & "\tools\settings\compatibility_list.ini"
 Global Const $blacklist_ini = @ScriptDir & "\tools\settings\black_list.ini"
-Global Const $variants_using_default_mode = "default,gparted,debian,clonezilla,damnsmall,puppy431,toutou412,pclinuxos20092KDE,pmagic45"
+Global Const $variants_using_default_mode = "default,gparted,debian,clonezilla,damnsmall,puppy431,toutou412,pclinuxos20092KDE,pmagic45,slax612"
 Global Const $log_dir = @ScriptDir & "\logs\"
 
 Global $lang, $anonymous_id
@@ -157,12 +158,14 @@ $LAUNCH_HOVER_PNG = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\launch_h
 $REFRESH_PNG = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\refresh.png")
 $BACK_PNG = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\back.png")
 $BACK_HOVER_PNG = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\back_hover.png")
+$PNG_GUI = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\GUI.png")
+#cs
 If FileExists(@ScriptDir & "\tools\img\GUI_" & $lang & ".png") Then
 	$PNG_GUI = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\GUI_" & $lang & ".png")
 Else
 	$PNG_GUI = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\GUI_English.png")
 EndIf
-
+#ce
 
 
 SendReport("Creating GUI")
@@ -184,6 +187,11 @@ $CONTROL_GUI = GUICreate("CONTROL_GUI", 450, 750, 0, $LAYERED_GUI_CORRECTION, $W
 $offsetx0 = 27
 $offsety0 = 23
 
+; Label of Step 1
+GUICtrlCreateLabel(Translate("ETAPE 1 : CHOISIR LA CLE"), 28 + $offsetx0, 108 + $offsety0, 400, 30)
+GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
+GUICtrlSetColor(-1, 0xFFFFFF)
+GUICtrlSetFont(-1, 10,400,0,"Tahoma")
 
 ; Clickable parts of images
 $EXIT_AREA = GUICtrlCreateLabel("", 335 + $offsetx0, -20 + $offsety0, 20, 20)
@@ -254,6 +262,12 @@ Step3_Check("bad")
 SendReport("Creating GUI (buttons)")
 
 ; Text for step 2
+
+GUICtrlCreateLabel(Translate("ETAPE 2 : CHOISIR LA SOURCE"), 28 + $offsetx0, 204 + $offsety0, 400, 30)
+GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
+GUICtrlSetColor(-1, 0xFFFFFF)
+GUICtrlSetFont(-1, 10,400,0,"Tahoma")
+
 $label_iso = GUICtrlCreateLabel("ISO / IMG", 50 + $offsetx0, 302 + $offsety0, 50, 50)
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
@@ -270,6 +284,12 @@ GUICtrlSetColor(-1, 0xFFFFFF)
 ; Text and controls for step 3
 $offsetx3 = 60
 $offsety3 = 150
+
+GUICtrlCreateLabel(Translate("ETAPE 3 : PERSISTANCE"), 28+$offsetx0, 194 + $offsety3 + $offsety0, 400, 30)
+GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
+GUICtrlSetColor(-1, 0xFFFFFF)
+GUICtrlSetFont(-1, 10,400,0,"Tahoma")
+
 $label_min = GUICtrlCreateLabel("0 " & Translate("Mo"), 30 + $offsetx3 + $offsetx0, 228 + $offsety3 + $offsety0, 30, 20)
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
@@ -293,9 +313,16 @@ GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
 GUICtrlSetFont($live_mode_only_label, 16)
 Disable_Persistent_Mode()
+
 ; Text and controls for step 4
 $offsetx4 = 10
 $offsety4 = 195
+
+GUICtrlCreateLabel(Translate("ETAPE 4 : OPTIONS"), 28+$offsetx0, 259 + $offsety4 + $offsety0, 400, 30)
+GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
+GUICtrlSetColor(-1, 0xFFFFFF)
+GUICtrlSetFont(-1, 10,400,0,"Tahoma")
+
 $hide_files = GUICtrlCreateCheckbox("", 30 + $offsetx4 + $offsetx0, 285 + $offsety4 + $offsety0, 13, 13)
 GUICtrlSetState(-1, $GUI_CHECKED)
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
@@ -328,6 +355,12 @@ GUICtrlSetColor(-1, 0xFFFFFF)
 
 
 ; Text and controls for step 5
+
+GUICtrlCreateLabel(Translate("ETAPE 5 : INSTALLER"), 28+$offsetx0, 371 + $offsety4 + $offsety0, 400, 30)
+GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
+GUICtrlSetColor(-1, 0xFFFFFF)
+GUICtrlSetFont(-1, 10,400,0,"Tahoma")
+
 $label_step6_statut = GUICtrlCreateLabel("<- " & Translate("Cliquer l'éclair pour lancer l'installation"), 50 + $offsetx4 + $offsetx0, 410 + $offsety4 + $offsety0, 300, 60)
 GUICtrlSetFont($label_step6_statut, 9, 800, 0, "Arial")
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
@@ -674,8 +707,8 @@ Func Run7zip($cmd, $taille)
 			UpdateStatusNoLog(Translate("Décompression de l'ISO sur la clé") & " ( ± " & $percentage & "% )")
 		EndIf
 		;If @error Then ExitLoop
-		$line &= StdoutRead($foo)
 		Sleep(500)
+		$line &= StdoutRead($foo)
 	WEnd
 	UpdateLog($line)
 	SendReport("End-Run7zip")
@@ -695,9 +728,9 @@ Func Run7zip2($cmd, $taille)
 			UpdateStatusNoLog(Translate("Décompression de VirtualBox sur la clé") & " ( ± " & $percentage & "% )")
 		EndIf
 		;If @error Then ExitLoop
-		$line &= StdoutRead($foo)
 		;UpdateStatus2($line)
 		Sleep(500)
+		$line &= StdoutRead($foo)
 	WEnd
 	UpdateLog($line)
 	SendReport("End-Run7zip2")
@@ -749,8 +782,8 @@ Func RunWait3($soft, $arg1, $arg2)
 	$foo = Run($soft, @ScriptDir, @SW_HIDE, $STDOUT_CHILD + $STDERR_CHILD)
 	$line = @CRLF
 	While True
-		$line &= StdoutRead($foo)
 		If @error Then ExitLoop
+		$line &= StdoutRead($foo)
 	WEnd
 	UpdateLog("                   " & $line)
 	SendReport("End-RunWait3")
@@ -1451,9 +1484,16 @@ Func Check_source_integrity($linux_live_file)
 				Step2_Check("good")
 				Disable_Persistent_Mode()
 				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : "&ReleaseGetCodename($release_number) & " )")
-			ElseIf StringInStr($shortname, "puppy") Then
+			ElseIf StringInStr($shortname, "puppy") OR StringInStr($shortname, "pup-") Then
 				; Puppy Linux
 				$temp_index = _ArraySearch($compatible_filename, "pup-431.iso")
+				$release_number = $temp_index
+				Step2_Check("good")
+				Disable_Persistent_Mode()
+				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : "&ReleaseGetCodename($release_number) & " )")
+			ElseIf StringInStr($shortname, "slax") Then
+				; Slax
+				$temp_index = _ArraySearch($compatible_filename, "slax-6.1.2.iso")
 				$release_number = $temp_index
 				Step2_Check("good")
 				Disable_Persistent_Mode()
@@ -2539,7 +2579,7 @@ Select
 Func _Language()
 	SendReport("Start-_Language")
 	$force_lang = IniRead($settings_ini, "General", "force_lang", "no")
-	If $force_lang <> "no" And FileExists($lang_ini&$force_lang&".ini") Then
+	If $force_lang <> "no" And (FileExists($lang_ini&$force_lang&".ini") OR $force_lang="French") Then
 		$lang_ini=$lang_ini&$force_lang&".ini"
 		SendReport("End-_Language (Force Lang="&$force_lang&")")
 		Return $force_lang
@@ -2559,6 +2599,8 @@ Func _Language()
 			$lang_found="Italian"
 		Case StringInStr("0414,0814", @OSLang)
 			$lang_found="Norwegian"
+		Case StringInStr("0411", @OSLang)
+			$lang_found="Japanese"
 		Case Else
 			$lang_found="English"
 	EndSelect
