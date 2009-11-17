@@ -4,7 +4,7 @@
 #AutoIt3Wrapper_Compression=3
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.0.88.16
+#AutoIt3Wrapper_Res_Fileversion=2.0.88.15
 #AutoIt3Wrapper_Res_FileVersion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_SaveSource=y
@@ -24,12 +24,12 @@
 
 
 ; Global constants
-Global Const $software_version = "2.1"
-Global $lang_ini = @ScriptDir & "\tools\languages\"
+Global Const $software_version = "2.0"
+Global Const $lang_ini = @ScriptDir & "\tools\settings\langs.ini"
 Global Const $settings_ini = @ScriptDir & "\tools\settings\settings.ini"
 Global Const $compatibility_ini = @ScriptDir & "\tools\settings\compatibility_list.ini"
 Global Const $blacklist_ini = @ScriptDir & "\tools\settings\black_list.ini"
-Global Const $variants_using_default_mode = "default,gparted,debian,clonezilla,damnsmall,puppy431,toutou412,pclinuxos20092KDE,pmagic45"
+Global Const $variants_using_default_mode = "default,gparted,debian,clonezilla,damnsmall,puppy431,toutou412"
 Global Const $log_dir = @ScriptDir & "\logs\"
 
 Global $lang, $anonymous_id
@@ -69,15 +69,8 @@ If DirGetSize(@ScriptDir & "\tools\", 2) <> -1 Then
 	Else
 		; Generate an unique ID for anonymous crash reports and stats
 		If IniRead($settings_ini, "General", "unique_ID", "none") = "none" Or IniRead($settings_ini, "General", "unique_ID", "none") = "" Then
-			$anonymous_id = RegRead("HKEY_CURRENT_USER\SOFTWARE\LinuxLive\", "AnonymousID")
-			if $anonymous_id = "" Then
-				$anonymous_id = Chr(Random(Asc("A"), Asc("Z"), 1)) & Chr(Random(Asc("A"), Asc("Z"), 1)) & Chr(Random(Asc("A"), Asc("Z"), 1)) & Chr(Random(Asc("A"), Asc("Z"), 1)) & Chr(Random(Asc("A"), Asc("Z"), 1)) & Chr(Random(Asc("A"), Asc("Z"), 1)) & Chr(Random(Asc("A"), Asc("Z"), 1)) & Chr(Random(Asc("A"), Asc("Z"), 1))
-				RegWrite("HKEY_CURRENT_USER\SOFTWARE\LinuxLive\", "AnonymousID", "REG_SZ", $anonymous_id)
-				IniWrite($settings_ini, "General", "unique_ID", $anonymous_id)
-			Else
-
-				IniWrite($settings_ini, "General", "unique_ID", $anonymous_id)
-			EndIf
+			$anonymous_id = Chr(Random(Asc("A"), Asc("Z"), 1)) & Chr(Random(Asc("A"), Asc("Z"), 1)) & Chr(Random(Asc("A"), Asc("Z"), 1)) & Chr(Random(Asc("A"), Asc("Z"), 1)) & Chr(Random(Asc("A"), Asc("Z"), 1)) & Chr(Random(Asc("A"), Asc("Z"), 1)) & Chr(Random(Asc("A"), Asc("Z"), 1)) & Chr(Random(Asc("A"), Asc("Z"), 1))
+			IniWrite($settings_ini, "General", "unique_ID", $anonymous_id)
 		Else
 			$anonymous_id = IniRead($settings_ini, "General", "unique_ID", "none")
 		EndIf
@@ -779,7 +772,6 @@ EndFunc   ;==>Run2
 
 Func Refresh_DriveList()
 	SendReport("Start-Refresh_DriveList")
-	$system_letter=StringLeft(@SystemDir, 2)
 	; récupére la liste des disques
 	$drive_list = DriveGetDrive("REMOVABLE")
 	$all_drives = "|-> " & Translate("Choisir une clé USB") & "|"
@@ -790,7 +782,7 @@ Func Refresh_DriveList()
 				$label = DriveGetLabel($drive_list[$i])
 				$fs = DriveGetFileSystem($drive_list[$i])
 				$space = DriveSpaceTotal($drive_list[$i])
-				If NOT (($fs = "") OR ($space = 0) OR ($drive_list[$i]=$system_letter)) Then
+				If ((Not $fs = "") Or (Not $space = 0)) Then
 					$all_drives &= StringUpper($drive_list[$i]) & " " & $label & " - " & $fs & " - " & Round($space / 1024, 1) & " " & Translate("Go") & "|"
 				EndIf
 			Next
@@ -806,7 +798,7 @@ Func Refresh_DriveList()
 				$label = DriveGetLabel($drive_list[$i])
 				$fs = DriveGetFileSystem($drive_list[$i])
 				$space = DriveSpaceTotal($drive_list[$i])
-				If NOT (($fs = "") OR ($space = 0) OR ($drive_list[$i]=$system_letter) ) Then
+				If ((Not $fs = "") Or (Not $space = 0)) Then
 					$all_drives &= StringUpper($drive_list[$i]) & " " & $label & " - " & $fs & " - " & Round($space / 1024, 1) & " " & Translate("Go") & "|"
 				EndIf
 			Next
@@ -831,11 +823,6 @@ Func SpaceAfterLinuxLiveMB($disk)
 		$install_size=Round(FileGetSize($file_set)/1048576)+20
 	Else
 		$install_size = ReleasegetInstallSize($release_number)
-	EndIf
-
-	If GUICtrlRead($virtualbox) == $GUI_CHECKED Then
-		; Need 140MB for VirtualBox
-		$install_size=$install_size+140
 	EndIf
 
 	If GUICtrlRead($formater) == $GUI_CHECKED Then
@@ -870,11 +857,6 @@ Func SpaceAfterLinuxLiveGB($disk)
 		$install_size=Round(FileGetSize($file_set)/1048576)+20
 	Else
 		$install_size = ReleasegetInstallSize($release_number)
-	EndIf
-
-	If GUICtrlRead($virtualbox) == $GUI_CHECKED Then
-		; Need 140MB for VirtualBox
-		$install_size=$install_size+140
 	EndIf
 
 	If GUICtrlRead($formater) == $GUI_CHECKED Then
@@ -1308,7 +1290,6 @@ Func Check_source_integrity($linux_live_file)
 
 		Disable_Persistent_Mode()
 		Disable_VirtualBox_Option()
-		Disable_Hide_Option()
 
 		Step2_Check("good")
 
@@ -1325,7 +1306,6 @@ Func Check_source_integrity($linux_live_file)
 	Else
 		Enable_Persistent_Mode()
 		Enable_VirtualBox_Option()
-		Enable_Hide_Option()
 		SendReport("IN-Check_Source (iso selected :" & $linux_live_file & ")")
 		$file_set_mode = "iso"
 	EndIf
@@ -1461,20 +1441,6 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "centos") Then
 				; CentOS
 				$temp_index = _ArraySearch($compatible_filename, "CentOS-5.4-i386-LiveCD.iso")
-				$release_number = $temp_index
-				Step2_Check("good")
-				Disable_Persistent_Mode()
-				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : "&ReleaseGetCodename($release_number) & " )")
-			ElseIf StringInStr($shortname, "pmagic") Then
-				; Parted Magic
-				$temp_index = _ArraySearch($compatible_filename, "pmagic-4.5.iso")
-				$release_number = $temp_index
-				Step2_Check("good")
-				Disable_Persistent_Mode()
-				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : "&ReleaseGetCodename($release_number) & " )")
-			ElseIf StringInStr($shortname, "pclinuxos") Then
-				; PCLinuxOS
-				$temp_index = _ArraySearch($compatible_filename, "pclinuxos-2009.2.iso")
 				$release_number = $temp_index
 				Step2_Check("good")
 				Disable_Persistent_Mode()
@@ -1728,16 +1694,6 @@ EndFunc
 Func Enable_VirtualBox_Option()
 		GUICtrlSetState($virtualbox, $GUI_CHECKED)
 		GUICtrlSetState($virtualbox, $GUI_ENABLE)
-EndFunc
-
-Func Disable_Hide_Option()
-		GUICtrlSetState($hide_files, $GUI_UNCHECKED)
-		GUICtrlSetState($hide_files, $GUI_DISABLE)
-EndFunc
-
-Func Enable_Hide_Option()
-		GUICtrlSetState($hide_files, $GUI_CHECKED)
-		GUICtrlSetState($hide_files, $GUI_ENABLE)
 EndFunc
 
 ; Clickable parts of images
@@ -2539,32 +2495,40 @@ Select
 Func _Language()
 	SendReport("Start-_Language")
 	$force_lang = IniRead($settings_ini, "General", "force_lang", "no")
-	If $force_lang <> "no" And FileExists($lang_ini&$force_lang&".ini") Then
-		$lang_ini=$lang_ini&$force_lang&".ini"
-		SendReport("End-_Language (Force Lang="&$force_lang&")")
+	$temp = IniReadSectionNames($lang_ini)
+	$available_langs = _ArrayToString($temp)
+	If $force_lang <> "no" And (StringInStr($available_langs, $force_lang) > 0) Then
+		SendReport("End-_Language (Force Lang)")
 		Return $force_lang
 	EndIf
 	Select
 		Case StringInStr("0409,0809,0c09,1009,1409,1809,1c09,2009,2409,2809,2c09,3009,3409", @OSLang)
-			$lang_found="English"
+			SendReport("End-_Language (English)")
+			Return "English"
 		Case StringInStr("040c,080c,0c0c,100c,140c,180c", @OSLang)
-			$lang_found="French"
+			SendReport("End-_Language (French)")
+			Return "French"
 		Case StringInStr("040a,080a,0c0a,100a,140a,180a,1c0a,200a,240a,280a,2c0a,300a,340a,380a,3c0a,400a,440a,480a,4c0a,500a", @OSLang)
-			$lang_found="Spanish"
+			SendReport("End-_Language (Spanish)")
+			Return "Spanish"
 		Case StringInStr("0407,0807,0c07,1007,1407", @OSLang)
-			$lang_found="German"
+			SendReport("End-_Language (German)")
+			Return "German"
 		Case StringInStr("0416,0816", @OSLang)
-			$lang_found="Portuguese"
+			SendReport("End-_Language (Portuguese)")
+			Return "Portuguese";
 		Case StringInStr("0410,0810", @OSLang)
-			$lang_found="Italian"
+			SendReport("End-_Language (Italian)")
+			Return "Italian"
 		Case StringInStr("0414,0814", @OSLang)
-			$lang_found="Norwegian"
+			SendReport("End-_Language (Norwegian)")
+			Return "Norwegian"
 		Case Else
-			$lang_found="English"
+			SendReport("End-_Language Default : English")
+			Return "English"
+
 	EndSelect
-	$lang_ini=$lang_ini&$lang_found&".ini"
-	SendReport("End-_Language "&$lang_found)
-	Return $lang_found
+	SendReport("End-_Language")
 EndFunc   ;==>_Language
 
 Func Translate($txt)
