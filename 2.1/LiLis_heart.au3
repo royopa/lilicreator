@@ -475,8 +475,9 @@ Func Hide_live_files($drive_letter)
 	If IniRead($settings_ini, "General", "skip_hiding", "no") == "yes" Then return 0
 
 	UpdateStatus("Masquage des fichiers")
-	HideFile($drive_letter & "\syslinux\")
 	HideFilesInDir($files_in_source)
+	HideFile($drive_letter & "\syslinux\")
+	HideFile($drive_letter & "\syslinux.cfg")
 	#cs
 	; Common Linux Live files
 	HideFile($drive_letter & "\isolinux\")
@@ -667,11 +668,6 @@ Func Uncompress_virtualbox_on_key($drive_letter)
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-
-
-
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
