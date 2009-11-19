@@ -418,6 +418,15 @@ Func Rename_and_move_files($drive_letter, $release_in_list)
 	EndIf
 
 
+	; Fix for Parted Magic 4.6
+	If ReleaseGetVariant($release_in_list) ="pmagic" Then
+		DirMove( $drive_letter & "\pmagic-usb-4.6\boot", $drive_letter,1)
+		DirMove( $drive_letter & "\pmagic-usb-4.6\pmagic", $drive_letter,1)
+		FileMove($drive_letter & "\pmagic-usb-4.6\readme.txt",$drive_letter,1)
+		FileMove( $drive_letter & "\PMAGIC\MODULES\PMAGIC_4_6.SQFS", $drive_letter & "\PMAGIC\MODULES\pmagic-4.6.sqfs",1)
+		FileDelete( $drive_letter & "\pmagic-usb-4.6\")
+	EndIf
+
 	SendReport("End-Rename_and_move_files")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -478,6 +487,14 @@ Func Hide_live_files($drive_letter)
 	HideFilesInDir($files_in_source)
 	HideFile($drive_letter & "\syslinux\")
 	HideFile($drive_letter & "\syslinux.cfg")
+
+	; Fix for Parted Magic 4.6
+	If ReleaseGetVariant($release_number)="pmagic" Then
+			HideFile($drive_letter & "\pmagic\")
+			HideFile($drive_letter & "\readme.txt")
+			HideFile( $drive_letter & "\boot\")
+	EndIf
+
 	#cs
 	; Common Linux Live files
 	HideFile($drive_letter & "\isolinux\")
@@ -764,7 +781,7 @@ Func Final_check()
 
 
 	; If not admin and virtaulbox option has been selected => WARNING
-	If Not IsAdmin() Then $avert_admin = Translate("Vous n'avez pas les droits suffisants pour démarrer VirtualBox sur cette machine.") & @CRLF & Translate("Enregistrez-vous sur le compte administrateur ou lancez le logiciel avec les droits d'administrateur pour qu'il fonctionne.")
+	;If Not IsAdmin() Then $avert_admin = Translate("Vous n'avez pas les droits suffisants pour démarrer VirtualBox sur cette machine.") & @CRLF & Translate("Enregistrez-vous sur le compte administrateur ou lancez le logiciel avec les droits d'administrateur pour qu'il fonctionne.")
 
 	; If not enough RAM => WARNING
 	If Round($mem[2] / 1024) < 256 Then $avert_mem = Translate("Vous avez moins de 256Mo de mémoire vive disponible.") & @CRLF & Translate("Cela ne suffira pas pour lancer LinuxLive directement sous windows.")
