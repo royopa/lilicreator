@@ -31,7 +31,7 @@ Global $lang_ini = @ScriptDir & "\tools\languages\"
 Global Const $settings_ini = @ScriptDir & "\tools\settings\settings.ini"
 Global Const $compatibility_ini = @ScriptDir & "\tools\settings\compatibility_list.ini"
 Global Const $blacklist_ini = @ScriptDir & "\tools\settings\black_list.ini"
-Global Const $variants_using_default_mode = "default,gparted,debian,clonezilla,damnsmall,puppy431,toutou412,pclinuxos20092KDE,pmagic45,pmagic46,slax612"
+Global Const $variants_using_default_mode = "default,gparted,debian,clonezilla,damnsmall,puppy431,toutou412,pclinuxos20092KDE,pmagic45,pmagic46,slax612,slitaz20,tinycore25"
 Global Const $log_dir = @ScriptDir & "\logs\"
 
 Global $lang, $anonymous_id
@@ -44,7 +44,7 @@ Global $ZEROGraphic, $EXIT_NORM, $EXIT_OVER, $MIN_NORM, $MIN_OVER, $PNG_GUI, $CD
 Global $download_menu_active = 0, $cleaner, $cleaner2
 Global $combo_linux, $download_manual, $download_auto, $slider, $slider_visual
 Global $best_mirror, $iso_size, $filename, $progress_bar, $label_step2_status
-Global $MD5_ISO ="" , $compatible_md5, $compatible_filename, $release_number = -1,$files_in_source
+Global $MD5_ISO ="" , $compatible_md5, $compatible_filename, $release_number = -1,$files_in_source,$prefetched_linux_list
 Global $foo
 Global $for_winactivate
 
@@ -56,7 +56,6 @@ Global Const $LWA_COLORKEY = 0x1
 Global $mem = StringSplit("-1,-1,-1,-1,-1,-1,-1", ",")
 
 Opt("GUIOnEventMode", 1)
-
 
 ; Checking if Tools folder exists (contains tools and settings)
 If DirGetSize(@ScriptDir & "\tools\", 2) <> -1 Then
@@ -98,6 +97,7 @@ EndIf
 #include <GDIPlus.au3>
 #include <Constants.au3>
 #include <ProgressConstants.au3>
+#include <ComboConstants.au3>
 #include <WindowsConstants.au3>
 #include <ButtonConstants.au3>
 #include <StaticConstants.au3>
@@ -173,8 +173,9 @@ SendReport("Creating GUI")
 
 $GUI = GUICreate("LiLi USB Creator", 450, 750, -1, -1, $WS_POPUP, $WS_EX_LAYERED)
 GUISetOnEvent($GUI_EVENT_CLOSE, "GUI_Events")
-GUISetOnEvent($GUI_EVENT_MINIMIZE, "GUI_Events")
-GUISetOnEvent($GUI_EVENT_RESTORE, "GUI_Events")
+GUISetOnEvent($GUI_EVENT_MINIMIZE, "GUI_Minimize")
+GUISetOnEvent($GUI_EVENT_RESTORE, "GUI_Restore")
+GUISetOnEvent($GUI_EVENT_MAXIMIZE, "GUI_Restore")
 
 SetBitmap($GUI, $PNG_GUI, 255)
 GUIRegisterMsg($WM_NCHITTEST, "WM_NCHITTEST")
@@ -182,7 +183,7 @@ GUISetState(@SW_SHOW, $GUI)
 
 ; Old offset was 18
 $LAYERED_GUI_CORRECTION = GetVertOffset($GUI)
-$CONTROL_GUI = GUICreate("CONTROL_GUI", 450, 750, 0, $LAYERED_GUI_CORRECTION, $WS_POPUP, BitOR($WS_EX_LAYERED, $WS_EX_MDICHILD), $GUI)
+$CONTROL_GUI = GUICreate("LiLi USB Creator", 450, 750, 0, $LAYERED_GUI_CORRECTION, $WS_POPUP, BitOR($WS_EX_LAYERED, $WS_EX_MDICHILD), $GUI)
 
 ; Offset for applied on every items
 $offsetx0 = 27
@@ -401,8 +402,9 @@ $version_in_file = "none"
 SendStats()
 SendReport(LogSystemConfig())
 
-; initialize list of compatible releases
+; initialize list of compatible releases (load the compatibility_list.ini)
 Get_Compatibility_List()
+$prefetched_linux_list=Print_For_ComboBox()
 
 ; Hovering Buttons
 AdlibEnable("Control_Hover", 150)
@@ -419,7 +421,7 @@ While 1
 		GUICtrlSetData($combo, GUICtrlRead($combo))
 		$combo_updated = 1
 	EndIf
-	Sleep(60000)
+	Sleep(1000)
 WEnd
 
 Func DrawAll()
@@ -1366,7 +1368,7 @@ Func Check_source_integrity($linux_live_file)
 
 
 	; No check if it's an img file or if the user do not want to
-	If IniRead($settings_ini, "General", "skip_checking", "no") == "yes" Or get_extension($linux_live_file) = "img" Then
+	If IniRead($settings_ini, "General", "skip_recognition", "no") == "yes" Or get_extension($linux_live_file) = "img" Then
 		Step2_Check("good")
 		$temp_index = _ArraySearch($compatible_filename, "regular_linux.iso")
 		$release_number = $temp_index
@@ -1392,9 +1394,13 @@ Func Check_source_integrity($linux_live_file)
 		EndIf
 	EndIf
 
-	$MD5_ISO = MD5_ISO($linux_live_file)
-
-	$temp_index = _ArraySearch($compatible_md5, $MD5_ISO)
+	If IniRead($settings_ini, "General", "skip_md5", "no") == "no"  Then
+		$MD5_ISO = MD5_ISO($linux_live_file)
+		$temp_index = _ArraySearch($compatible_md5, $MD5_ISO)
+	Else
+		$MD5_ISO = "123"
+		$temp_index=-1
+	EndIf
 
 	SendReport("IN-Check_source_integrity- Intelligent Processing")
 	If $temp_index > 0 Then
@@ -1421,42 +1427,42 @@ Func Check_source_integrity($linux_live_file)
 				$release_number = $temp_index
 				Step2_Check("warning")
 				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : "&ReleaseGetCodename($release_number) & " )")
-				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
+				;MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
 			ElseIf StringInStr($shortname, "9.10") Or StringInStr($shortname, "karmic") Or StringInStr($shortname, "ubuntu") Then
 				; Ubuntu Karmic (>=9.10) based
 				$temp_index = _ArraySearch($compatible_filename, "ubuntu-9.10-desktop-i386.iso")
 				$release_number = $temp_index
 				Step2_Check("warning")
 				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : "&ReleaseGetCodename($release_number) & " )")
-				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
+				;MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
 			ElseIf StringInStr($shortname, "9.04") Or StringInStr($shortname, "Fluxbuntu") Or StringInStr($shortname, "gnewsense") Then
 				; Ubuntu 9.04 based
 				$temp_index = _ArraySearch($compatible_filename, "ubuntu-9.04-desktop-i386.iso")
 				$release_number = $temp_index
 				Step2_Check("warning")
 				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : "&ReleaseGetCodename($release_number) & " )")
-				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
+				;MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
 			ElseIf StringInStr($shortname, "kuki") Then
 				; Kuki based (Ubuntu)
 				$temp_index = _ArraySearch($compatible_filename, "kuki-2.8-20090829Final.iso")
 				$release_number = $temp_index
 				Step2_Check("warning")
 				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : "&ReleaseGetCodename($release_number) & " )")
-				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
+				;MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
 			ElseIf StringInStr($shortname, "fedora") Or StringInStr($shortname, "F10") Or StringInStr($shortname, "F11") Then
 				; Fedora Based
 				$temp_index = _ArraySearch($compatible_filename, "Fedora-11-i686-Live.iso")
 				$release_number = $temp_index
 				Step2_Check("warning")
 				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : "&ReleaseGetCodename($release_number) & " )")
-				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
+				;MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
 			ElseIf StringInStr($shortname, "mint") Then
 				; Mint Based
 				$temp_index = _ArraySearch($compatible_filename, "LinuxMint-7.iso")
 				$release_number = $temp_index
 				Step2_Check("warning")
 				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : "&ReleaseGetCodename($release_number) & " )")
-				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
+				;MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
 			ElseIf StringInStr($shortname, "clonezilla") Then
 				; Clonezilla
 				$temp_index = _ArraySearch($compatible_filename, "clonezilla-live-1.2.2-31.iso")
@@ -1520,13 +1526,27 @@ Func Check_source_integrity($linux_live_file)
 				Step2_Check("good")
 				Disable_Persistent_Mode()
 				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : "&ReleaseGetCodename($release_number) & " )")
+			ElseIf StringInStr($shortname, "slitaz") Then
+				; Slitaz
+				$temp_index = _ArraySearch($compatible_filename, "slitaz-2.0.iso")
+				$release_number = $temp_index
+				Step2_Check("good")
+				Disable_Persistent_Mode()
+				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : "&ReleaseGetCodename($release_number) & " )")
+			ElseIf StringInStr($shortname, "tinycore") Then
+				; Tiny Core
+				$temp_index = _ArraySearch($compatible_filename, "tinycore_2.5.iso")
+				$release_number = $temp_index
+				Step2_Check("good")
+				Disable_Persistent_Mode()
+				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : "&ReleaseGetCodename($release_number) & " )")
 			ElseIf StringInStr($shortname, "crunch") Then
 				; CrunchBang Based
 				$temp_index = _ArraySearch($compatible_filename, "crunchbang-9.04.01.i386.iso")
 				$release_number = $temp_index
 				Step2_Check("warning")
 				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : "&ReleaseGetCodename($release_number) & " )")
-				MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
+				;MsgBox(48, Translate("Attention"), Translate("Cette version de Linux n'est pas compatible avec ce logiciel.") & @CRLF & Translate("LinuxLive USB Creator essaiera quand même de l'installer en utilisant les même paramètres que pour") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
 			Else
 				; Any Linux, except those known not to work in Live mode
 				$temp_index = _ArraySearch($compatible_filename, "regular_linux.iso")
@@ -1539,7 +1559,7 @@ Func Check_source_integrity($linux_live_file)
 		EndIf
 	EndIf
 	Check_If_Default_Should_Be_Used($release_number)
-	; CentOS cannot use Persistent mode
+	; CentOS cannot use Persistent mode but also does not use default mode
 	if ReleaseGetCodename($release_number) ="centos54" Then Disable_Persistent_Mode()
 
 	SendReport("End-Check_source_integrity")
@@ -1818,6 +1838,14 @@ Func GUI_Minimize()
 	GUISetState(@SW_MINIMIZE, $GUI)
 EndFunc   ;==>GUI_Minimize
 
+Func GUI_Restore()
+			GUISetState($GUI_SHOW, $GUI)
+			GUISetState($GUI_SHOW, $CONTROL_GUI)
+			GUIRegisterMsg($WM_PAINT, "DrawAll")
+			WinActivate($for_winactivate)
+			ControlFocus("LiLi USB Creator", "",  $combo )
+EndFunc   ;==>GUI_Minimize
+
 Func GUI_Choose_Drive()
 	SendReport("Start-GUI_Choose_Drive")
 	$selected_drive = StringLeft(GUICtrlRead($combo), 2)
@@ -1937,12 +1965,13 @@ Func GUI_Download()
 	GUICtrlSetState($label_iso, $GUI_HIDE)
 
 	; Drawing new menu
-	$combo_linux = GUICtrlCreateCombo(">> " & "Select your favourite Linux", 38 + $offsetx0, 240 + $offsety0, 300, -1, 3)
+	$combo_linux = GUICtrlCreateCombo(">> " & Translate("Select your favourite Linux"), 38 + $offsetx0, 240 + $offsety0, 300, -1, BitOR($CBS_DROPDOWNLIST,$WS_VSCROLL))
+
 	GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 	GUICtrlSetColor(-1, 0xFFFFFF)
 	GUICtrlSetOnEvent(-1, "GUI_Select_Linux")
-	Get_Compatibility_List()
-	GUICtrlSetData($combo_linux, Print_For_ComboBox())
+
+	GUICtrlSetData($combo_linux, $prefetched_linux_list )
 
 	$download_label2 = GUICtrlCreateLabel(Translate("Télécharger"), 38 + $offsetx0 + 110, 210 + $offsety0 + 55, 150)
 	GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
@@ -1965,6 +1994,7 @@ Func GUI_Download()
 	$DRAW_BACK = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $BACK_PNG, 0, 0, 32, 32, 5 + $offsetx0, 300 + $offsety0, 32, 32)
 	GUICtrlSetCursor(-1, 0)
 	GUICtrlSetOnEvent(-1, "GUI_Back_Download")
+
 	SendReport("End-GUI_Download")
 EndFunc   ;==>GUI_Download
 
@@ -2039,6 +2069,7 @@ Func DownloadRelease($release_in_list, $automatic_download)
 	GUICtrlSetState($BACK_AREA, $GUI_HIDE)
 	GUICtrlSetState($download_label2, $GUI_HIDE)
 	GUICtrlSetState($OR_label, $GUI_HIDE)
+
 	$progress_bar = _ProgressCreate(38 + $offsetx0, 238 + $offsety0, 300, 30)
 	_ProgressSetImages($progress_bar, @ScriptDir & "\tools\img\progress_green.jpg", @ScriptDir & "\tools\img\progress_background.jpg")
 	_ProgressSetFont($progress_bar, "", -1, -1, 0x000000, 0)
@@ -2107,6 +2138,7 @@ Func DownloadRelease($release_in_list, $automatic_download)
 	EndIf
 	Sleep(3000)
 	_ProgressDelete($progress_bar)
+
 	GUI_Back_Download()
 	SendReport("End-DownloadRelease")
 EndFunc   ;==>DownloadRelease
@@ -2457,16 +2489,22 @@ Func Final_Help($selected_drive)
 EndFunc   ;==>Final_Help
 
 Func GUI_Events()
+
 	SendReport("Start-GUI_Events (GUI_CtrlID=" & @GUI_CtrlId & " )")
 	Select
 		Case @GUI_CtrlId = $GUI_EVENT_CLOSE
 			GUI_Exit()
 		Case @GUI_CtrlId = $GUI_EVENT_MINIMIZE
 			GUISetState(@SW_MINIMIZE, @GUI_WinHandle)
+			GUISetState(@SW_MINIMIZE, $GUI)
+			GUISetState(@SW_MINIMIZE, $CONTROL_GUI)
 		Case @GUI_CtrlId = $GUI_EVENT_RESTORE
-			WinActivate($for_winactivate)
+			GUISetState($GUI_SHOW, @GUI_WinHandle)
+			GUISetState($GUI_SHOW, $GUI)
 			GUISetState($GUI_SHOW, $CONTROL_GUI)
-
+			GUIRegisterMsg($WM_PAINT, "DrawAll")
+			WinActivate($for_winactivate)
+			ControlFocus("LiLi USB Creator", "",  $combo )
 	EndSelect
 	SendReport("End-GUI_Events")
 EndFunc   ;==>GUI_Events

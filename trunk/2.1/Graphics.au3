@@ -187,7 +187,7 @@ Func _ProgressCreate($x, $y, $w = 204, $h = 24, $Col = 0xFFFF00, $GradCol = 0x00
 	If $BG = -1 Then $BG = 0xAAAA00
 	If $GradCol = -1 Then $GradCol = 0x00FF00
 	If $GradBG = -1 Then $GradBG = 0xFF0000
-	_GDIPlus_Startup()
+	;_GDIPlus_Startup()
 	Local $graphic = _GDIPlus_GraphicsCreateFromHWND(GUICtrlGetHandle($_Progress_Bars[$ID][0]))
 	Local $bitmap = _GDIPlus_BitmapCreateFromGraphics($w, $h, $graphic)
 	Local $backbuffer = _GDIPlus_ImageGetGraphicsContext($bitmap)
@@ -264,7 +264,7 @@ Func _ProgressDelete(ByRef $ID)
 	$_Progress_Bars[$ID][8] = -1
 
 
-	_GDIPlus_Shutdown()
+	;_GDIPlus_Shutdown()
 	Return SetError($error, 0, $error=0)
 EndFunc   ;==>_ProgressDelete
 
