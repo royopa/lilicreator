@@ -17,7 +17,9 @@ Func GetVertOffset($hgui)
 EndFunc  ;==>GetVertOffset
 
 Func WM_NCHITTEST($hWnd, $iMsg, $iwParam, $ilParam)
-	If ($hWnd = $GUI) And ($iMsg = $WM_NCHITTEST) Then Return $HTCAPTION
+	If ($hWnd = $GUI) And ($iMsg = $WM_NCHITTEST) Then
+		Return $HTCAPTION
+	EndIf
 EndFunc   ;==>WM_NCHITTEST
 
 Func SetBitmap($hGUI, $hImage, $iOpacity)
