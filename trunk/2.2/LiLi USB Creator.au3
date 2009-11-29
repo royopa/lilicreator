@@ -1,17 +1,18 @@
 #NoTrayIcon
+#RequireAdmin
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
-#AutoIt3Wrapper_Icon=tools\img\lili.ico
+#AutoIt3Wrapper_icon=tools\img\lili.ico
 #AutoIt3Wrapper_Compression=3
+#AutoIt3Wrapper_UseUpx=n
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.2.88.18
-#AutoIt3Wrapper_Res_FileVersion_AutoIncrement=Y
+#AutoIt3Wrapper_Res_Fileversion=2.2.88.22
+#AutoIt3Wrapper_Res_Fileversion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
-#AutoIt3Wrapper_Res_Field=AutoIt Version|%AutoItVer%
 #AutoIt3Wrapper_Res_SaveSource=y
-#AutoIt3Wrapper_Version=P
+#AutoIt3Wrapper_Res_Field=AutoIt Version|%AutoItVer%
 #AutoIt3Wrapper_Res_Field=Site|http://www.linuxliveusb.com
-#AutoIt3Wrapper_Au3Check_Parameters=-w 4
+#AutoIt3Wrapper_AU3Check_Parameters=-w 4
 #AutoIt3Wrapper_Run_After=upx.exe --best --compress-resources=0 "%out%"
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 ; Author           : Thibaut Lauzière (Slÿm)
@@ -23,7 +24,6 @@
 ; Support          : http://www.linuxliveusb.com/bugs/
 ; Compiled with    : AutoIT v3.2.12.1
 
-#RequireAdmin
 
 ; Global constants
 Global Const $software_version = "2.2"
@@ -104,7 +104,6 @@ EndIf
 #include <EditConstants.au3>
 #include <Array.au3>
 #include <File.au3>
-#include <md5.au3>
 #include <INet.au3>
 #include <IE.au3>
 #include <WinHTTP.au3>
@@ -114,6 +113,7 @@ EndIf
 #include <Automatic_Bug_Report.au3>
 #include <Ressources.au3>
 #include <Graphics.au3>
+#include <md5.au3>
 #include <Releases.au3>
 #include <LiLis_heart.au3>
 
@@ -160,14 +160,6 @@ $REFRESH_PNG = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\refresh.png")
 $BACK_PNG = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\back.png")
 $BACK_HOVER_PNG = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\back_hover.png")
 $PNG_GUI = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\GUI.png")
-#cs
-If FileExists(@ScriptDir & "\tools\img\GUI_" & $lang & ".png") Then
-	$PNG_GUI = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\GUI_" & $lang & ".png")
-Else
-	$PNG_GUI = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\GUI_English.png")
-EndIf
-#ce
-
 
 SendReport("Creating GUI")
 
@@ -2258,6 +2250,7 @@ Func Download_State()
 	$begin = TimerInit()
 	$oldgetbytesread = @InetGetBytesRead
 
+	$iso_size_mb = RoundForceDecimal($iso_size / (1024 * 1024))
 	While @InetGetActive
 		$percent_downloaded = Int((100 * @InetGetBytesRead / $iso_size))
 		_ProgressSet($progress_bar, $percent_downloaded)
@@ -2268,7 +2261,7 @@ Func Download_State()
 			$begin = TimerInit()
 			$oldgetbytesread = @InetGetBytesRead
 		EndIf
-		_ProgressSetText($progress_bar, $percent_downloaded & "% ( " & RoundForceDecimal(@InetGetBytesRead / (1024 * 1024)) & " / " & RoundForceDecimal($iso_size / (1024 * 1024)) & " " & "MB" & " ) " & $estimated_time)
+		_ProgressSetText($progress_bar, $percent_downloaded & "% ( " & RoundForceDecimal(@InetGetBytesRead / (1024 * 1024)) & " / " & $iso_size_mb & " " & "MB" & " ) " & $estimated_time)
 		Sleep(300)
 	WEnd
 
@@ -2290,6 +2283,9 @@ Func HumanTime($sec)
 
 	$minutes = Floor($sec / 60) - $hours * 60
 	$seconds = Floor($sec) - $minutes * 60
+
+	; to avoid displaying bullshit
+	if $minutes < 0 OR $hours < 0  OR $seconds < 0 Then Return ""
 
 	If $sec > 3600 Then
 		$human_time = $hours & "h " & $minutes & "m "
