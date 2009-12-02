@@ -6,7 +6,7 @@
 #AutoIt3Wrapper_UseUpx=n
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.2.88.22
+#AutoIt3Wrapper_Res_Fileversion=2.2.88.23
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_SaveSource=y
@@ -168,6 +168,11 @@ GUISetOnEvent($GUI_EVENT_CLOSE, "GUI_Events")
 GUISetOnEvent($GUI_EVENT_MINIMIZE, "GUI_Minimize")
 GUISetOnEvent($GUI_EVENT_RESTORE, "GUI_Restore")
 GUISetOnEvent($GUI_EVENT_MAXIMIZE, "GUI_Restore")
+HotKeySet("{Esc}","GUI_Exit")
+HotKeySet("{UP}","GUI_MoveUp")
+HotKeySet("{DOWN}","GUI_MoveDown")
+HotKeySet("{LEFT}","GUI_MoveLeft")
+HotKeySet("{RIGHT}","GUI_MoveRight")
 
 SetBitmap($GUI, $PNG_GUI, 255)
 GUIRegisterMsg($WM_NCHITTEST, "WM_NCHITTEST")
@@ -175,7 +180,7 @@ GUISetState(@SW_SHOW, $GUI)
 
 ; Old offset was 18
 $LAYERED_GUI_CORRECTION = GetVertOffset($GUI)
-$CONTROL_GUI = GUICreate("LiLi USB Creator", 450, 750, 0, $LAYERED_GUI_CORRECTION, $WS_POPUP, BitOR($WS_EX_LAYERED, $WS_EX_MDICHILD), $GUI)
+$CONTROL_GUI = GUICreate("LinuxLive USB Creator", 450, 750, 0, $LAYERED_GUI_CORRECTION, $WS_POPUP, BitOR($WS_EX_LAYERED, $WS_EX_MDICHILD), $GUI)
 
 ; Offset for applied on every items
 $offsetx0 = 27
@@ -473,7 +478,7 @@ EndFunc   ;==>Redraw_Traffic_Lights
 Func Control_Hover()
 	Global $previous_hovered_control
 	Local $CursorCtrl
-	If WinActive("CONTROL_GUI") Or WinActive("LiLi USB Creator") Then
+	If WinActive("LinuxLive USB Creator") Or WinActive("LiLi USB Creator") Then
 
 		$CursorCtrl = GUIGetCursorInfo()
 		If Not @error Then
@@ -583,6 +588,21 @@ Func HideFile($file_or_folder)
 			UpdateLog("                   " & "File not found")
 		Else
 			UpdateLog("                   " & "Error while hiding")
+		EndIf
+	EndIf
+	SendReport("End-HideFile")
+EndFunc   ;==>HideFile
+
+Func ShowFile($file_or_folder)
+	SendReport("Start-HideFile ( " & $file_or_folder & " )")
+	UpdateLog("Showing file : " & $file_or_folder)
+	If FileSetAttrib($file_or_folder, "-SH") == 1 Then
+		UpdateLog("                   " & "File showed")
+	Else
+		If FileExists($file_or_folder) Then
+			UpdateLog("                   " & "File not showed")
+		Else
+			UpdateLog("                   " & "Error while showing")
 		EndIf
 	EndIf
 	SendReport("End-HideFile")
@@ -1811,36 +1831,72 @@ EndFunc
 
 ; Clickable parts of images
 Func GUI_Exit()
-	SendReport("Start-GUI_Exit")
-	if @InetGetActive Then InetGet("abort")
-	if $foo Then ProcessClose($foo)
-	GUIDelete($CONTROL_GUI)
-	GUIDelete($GUI)
-	_ProgressDelete($progress_bar)
-	_GDIPlus_GraphicsDispose($ZEROGraphic)
-	_GDIPlus_ImageDispose($EXIT_NORM)
-	_GDIPlus_ImageDispose($EXIT_OVER)
-	_GDIPlus_ImageDispose($MIN_NORM)
-	_GDIPlus_ImageDispose($MIN_OVER)
-	_GDIPlus_ImageDispose($PNG_GUI)
-	_GDIPlus_ImageDispose($CD_PNG)
-	_GDIPlus_ImageDispose($CD_HOVER_PNG)
-	_GDIPlus_ImageDispose($ISO_PNG)
-	_GDIPlus_ImageDispose($ISO_HOVER_PNG)
-	_GDIPlus_ImageDispose($DOWNLOAD_PNG)
-	_GDIPlus_ImageDispose($DOWNLOAD_HOVER_PNG)
-	_GDIPlus_ImageDispose($LAUNCH_PNG)
-	_GDIPlus_ImageDispose($LAUNCH_HOVER_PNG)
-	_GDIPlus_ImageDispose($HELP)
-	_GDIPlus_ImageDispose($BAD)
-	_GDIPlus_ImageDispose($GOOD)
-	_GDIPlus_ImageDispose($WARNING)
-	_GDIPlus_ImageDispose($BACK_PNG)
-	_GDIPlus_ImageDispose($BACK_HOVER_PNG)
-	_GDIPlus_Shutdown()
-	SendReport("End-GUI_Exit")
-	Exit
-EndFunc   ;==>GUI_Exit
+	If WinActive("LinuxLive USB Creator") Or WinActive("LiLi USB Creator") Then
+		SendReport("Start-GUI_Exit")
+		if @InetGetActive Then InetGet("abort")
+		if $foo Then ProcessClose($foo)
+		GUIDelete($CONTROL_GUI)
+		GUIDelete($GUI)
+		_ProgressDelete($progress_bar)
+		_GDIPlus_GraphicsDispose($ZEROGraphic)
+		_GDIPlus_ImageDispose($EXIT_NORM)
+		_GDIPlus_ImageDispose($EXIT_OVER)
+		_GDIPlus_ImageDispose($MIN_NORM)
+		_GDIPlus_ImageDispose($MIN_OVER)
+		_GDIPlus_ImageDispose($PNG_GUI)
+		_GDIPlus_ImageDispose($CD_PNG)
+		_GDIPlus_ImageDispose($CD_HOVER_PNG)
+		_GDIPlus_ImageDispose($ISO_PNG)
+		_GDIPlus_ImageDispose($ISO_HOVER_PNG)
+		_GDIPlus_ImageDispose($DOWNLOAD_PNG)
+		_GDIPlus_ImageDispose($DOWNLOAD_HOVER_PNG)
+		_GDIPlus_ImageDispose($LAUNCH_PNG)
+		_GDIPlus_ImageDispose($LAUNCH_HOVER_PNG)
+		_GDIPlus_ImageDispose($HELP)
+		_GDIPlus_ImageDispose($BAD)
+		_GDIPlus_ImageDispose($GOOD)
+		_GDIPlus_ImageDispose($WARNING)
+		_GDIPlus_ImageDispose($BACK_PNG)
+		_GDIPlus_ImageDispose($BACK_HOVER_PNG)
+		_GDIPlus_Shutdown()
+		SendReport("End-GUI_Exit")
+		Exit
+	EndIf
+EndFunc  ;==>GUI_Exit
+
+
+Func GUI_MoveUp()
+	If WinActive("LinuxLive USB Creator") Or WinActive("LiLi USB Creator") Then
+		$position = WinGetPos("LiLi USB Creator")
+		WinMove("LiLi USB Creator","",$position[0],$position[1]-10)
+		;Fix the focus issue
+		ControlFocus("LiLi USB Creator", "",  $REFRESH_AREA )
+	EndIf
+EndFunc
+
+Func GUI_MoveDown()
+	If WinActive("LinuxLive USB Creator") Or WinActive("LiLi USB Creator") Then
+		$position = WinGetPos("LiLi USB Creator")
+		WinMove("LiLi USB Creator","",$position[0],$position[1]+10)
+		ControlFocus("LiLi USB Creator", "",  $REFRESH_AREA )
+	EndIf
+EndFunc
+
+Func GUI_MoveLeft()
+	If WinActive("LinuxLive USB Creator") Or WinActive("LiLi USB Creator") Then
+		$position = WinGetPos("LiLi USB Creator")
+		WinMove("LiLi USB Creator","",$position[0]-10,$position[1])
+		ControlFocus("LinuxLive USB Creator", "",  $REFRESH_AREA)
+	EndIf
+EndFunc
+
+Func GUI_MoveRight()
+	If WinActive("LinuxLive USB Creator") Or WinActive("LiLi USB Creator") Then
+		$position = WinGetPos("LiLi USB Creator")
+		WinMove("LiLi USB Creator","",$position[0]+10,$position[1])
+		ControlFocus("LinuxLive USB Creator", "",  $REFRESH_AREA )
+	EndIf
+EndFunc
 
 Func GUI_Minimize()
 	GUISetState(@SW_MINIMIZE, $GUI)
@@ -1851,7 +1907,7 @@ Func GUI_Restore()
 			GUISetState($GUI_SHOW, $CONTROL_GUI)
 			GUIRegisterMsg($WM_PAINT, "DrawAll")
 			WinActivate($for_winactivate)
-			ControlFocus("LiLi USB Creator", "",  $combo )
+			ControlFocus("LiLi USB Creator", "",  $REFRESH_AREA )
 EndFunc   ;==>GUI_Minimize
 
 Func GUI_Choose_Drive()
@@ -2434,8 +2490,11 @@ Func GUI_Launch_Creation()
 
 			Create_persistence_file($selected_drive, $release_number, GUICtrlRead($slider_visual), GUICtrlRead($hide_files))
 
-			Install_boot_sectors($selected_drive)
+			Install_boot_sectors($selected_drive,GUICtrlRead($hide_files))
 		EndIf
+
+		; Create Autorun menu
+		Create_autorun($selected_drive, $release_number)
 
 		If (GUICtrlRead($hide_files) == $GUI_CHECKED) Then Hide_live_files($selected_drive)
 
@@ -2455,8 +2514,7 @@ Func GUI_Launch_Creation()
 
 		EndIf
 
-		; Create Autorun menu
-		Create_autorun($selected_drive, $release_number)
+
 
 		; Creation is now done
 		UpdateStatus("Votre clé LinuxLive est maintenant prête !")
@@ -2516,7 +2574,7 @@ Func GUI_Events()
 			GUISetState($GUI_SHOW, $CONTROL_GUI)
 			GUIRegisterMsg($WM_PAINT, "DrawAll")
 			WinActivate($for_winactivate)
-			ControlFocus("LiLi USB Creator", "",  $combo )
+			ControlFocus("LiLi USB Creator", "",  $REFRESH_AREA )
 	EndSelect
 	SendReport("End-GUI_Events")
 EndFunc   ;==>GUI_Events
