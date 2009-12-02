@@ -32,8 +32,8 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Clean_old_installs($drive_letter,$release_in_list)
-	SendReport("Start-Clean_old_installs ( Drive : "& $drive_letter &" - Release : "& $release_in_list &" )")
 	If IniRead($settings_ini, "General", "skip_cleaning", "no") == "yes" Then Return 0
+	SendReport("Start-Clean_old_installs ( Drive : "& $drive_letter &" - Release : "& $release_in_list &" )")
 	UpdateStatus("Nettoyage des installations précédentes ( 2min )")
 	DeleteFilesInDir($files_in_source)
 	FileDelete2($drive_letter & "\autorun.inf")
@@ -262,8 +262,9 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Func Uncompress_ISO_on_key($drive_letter,$iso_file,$release_in_list)
-	SendReport("Start-Uncompress_ISO_on_key ( Drive : "& $drive_letter &" - File : "& $iso_file &" - Release : "& $release_in_list &" )")
 	If IniRead($settings_ini, "General", "skip_copy", "no") == "yes" Then Return 0
+	SendReport("Start-Uncompress_ISO_on_key ( Drive : "& $drive_letter &" - File : "& $iso_file &" - Release : "& $release_in_list &" )")
+
 	If ProcessExists("7z.exe") > 0 Then ProcessClose("7z.exe")
 	UpdateStatus(Translate("Décompression de l'ISO sur la clé") & " ( 5-10" & Translate("min") & " )")
 
@@ -299,8 +300,8 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Func Create_Stick_From_CD($drive_letter,$path_to_cd)
-	SendReport("Start-Create_Stick_From_CD ( Drive : "& $drive_letter &" - CD Folder : "& $path_to_cd &" )")
 	If IniRead($settings_ini, "General", "skip_copy", "no") == "yes" Then Return 0
+	SendReport("Start-Create_Stick_From_CD ( Drive : "& $drive_letter &" - CD Folder : "& $path_to_cd &" )")
 	_FileCopy2($path_to_cd & "\*.*", $drive_letter & "\")
 	SendReport("End-Create_Stick_From_CD")
 EndFunc
@@ -378,8 +379,8 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Func Rename_and_move_files($drive_letter, $release_in_list)
-	SendReport("Start-Rename_and_move_files")
 	If IniRead($settings_ini, "General", "skip_moving_renaming", "no") == "yes" Then Return 0
+	SendReport("Start-Rename_and_move_files")
 	UpdateStatus(Translate("Renommage et déplacement de quelques fichiers"))
 
 	RunWait3("cmd /c rename " & $drive_letter & "\isolinux syslinux", @ScriptDir, @SW_HIDE)
@@ -446,8 +447,8 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Create_boot_menu($drive_letter,$release_in_list)
-	SendReport("Start-Create_boot_menu")
 	If IniRead($drive_letter, "General", "skip_boot_text", "no") == "yes" Then Return 0
+	SendReport("Start-Create_boot_menu")
 	$variant = ReleaseGetVariant($release_in_list)
 	$distribution = ReleaseGetDistribution($release_in_list)
 	if $distribution == "Ubuntu" Then
@@ -480,13 +481,17 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Hide_live_files($drive_letter)
-	SendReport("Start-Hide_live_files")
 	If IniRead($settings_ini, "General", "skip_hiding", "no") == "yes" Then return 0
+	SendReport("Start-Hide_live_files")
 
 	UpdateStatus("Masquage des fichiers")
 	HideFilesInDir($files_in_source)
 	HideFile($drive_letter & "\syslinux\")
 	HideFile($drive_letter & "\syslinux.cfg")
+
+	HideFile($drive_letter & "\autorun.bak")
+	HideFile($drive_letter & "\lili.ico")
+	HideFile($drive_letter & "\autorun.inf")
 
 	; Fix for Parted Magic 4.6
 	If ReleaseGetVariant($release_number)="pmagic" Then
@@ -563,8 +568,8 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Create_persistence_file($drive_letter,$release_in_list,$persistence_size,$hide_it)
-	SendReport("Start-Create_persistence_file")
 	If IniRead($settings_ini, "General", "skip_persistence", "no") == "yes" Then Return 0
+	SendReport("Start-Create_persistence_file")
 
 	; No persistence for default Linux
 	If StringInStr($variants_using_default_mode,ReleaseGetVariant($release_in_list)) Then Return 0
@@ -606,15 +611,16 @@ EndFunc
 	Description : Build and install boot sectors in order to make the key bootable
 	Input :
 		$drive_letter = Letter of the drive (pre-formated like "E:" )
+		$hide_it = state of user checkbox about hiding file or not
 	Output :
 		0 = sucess
 		1 = error see @error
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Func Install_boot_sectors($drive_letter)
-	SendReport("Start-Install_boot_sectors")
+Func Install_boot_sectors($drive_letter,$hide_it)
 	If IniRead($settings_ini, "General", "skip_bootsector", "no") == "yes" Then Return 0
+	SendReport("Start-Install_boot_sectors")
 		UpdateStatus("Installation des secteurs de boot")
 		If (IniRead($settings_ini, "General", "safe_syslinux", "no") == "yes") Then
 			$sysarg = " -s"
@@ -622,7 +628,7 @@ Func Install_boot_sectors($drive_letter)
 			$sysarg = " "
 		EndIf
 		RunWait3('"' & @ScriptDir & '\tools\syslinux.exe" -maf' & $sysarg & ' -d ' & $drive_letter & '\syslinux ' & $drive_letter, @ScriptDir, @SW_HIDE)
-
+	If ( $hide_it <> $GUI_CHECKED) Then ShowFile($drive_letter & '\ldlinux.sys')
 	SendReport("End-Install_boot_sectors")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -699,15 +705,16 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Create_autorun($drive_letter,$release_in_list)
+	If IniRead($settings_ini, "General", "skip_autorun", "no") == "yes" Then Return 0
+
 	SendReport("Start-Create_autorun")
-	If FileExists($drive_letter & "\autorun.inf") Then FileDelete($drive_letter & "\autorun.inf")
+	If FileExists($drive_letter & "\autorun.inf") Then FileMove($drive_letter & "\autorun.inf",$drive_letter & "\autorun.bak",1)
 	$codename = ReleaseGetCodename($release_in_list)
 
 	; Using LiLi icon
 	FileCopy(@ScriptDir & "\tools\img\lili.ico", $drive_letter & "\lili.ico",1)
-	RunWait3("cmd /c attrib /D /S +S +H " & $drive_letter & "\lili.ico", @ScriptDir, @SW_HIDE)
-	$icon = "lili.ico"
 
+	$icon = "lili.ico"
 
 	IniWrite($drive_letter & "\autorun.inf", "autorun", "icon", $icon)
 	IniWrite($drive_letter & "\autorun.inf", "autorun", "open", "")
@@ -733,7 +740,7 @@ Func Create_autorun($drive_letter,$release_in_list)
 			$i=$i+1
 		EndIf
 	Next
-	HideFile($drive_letter & "\autorun.inf")
+
 	SendReport("End-Create_autorun")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
