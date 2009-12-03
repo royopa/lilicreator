@@ -6,7 +6,7 @@
 #AutoIt3Wrapper_UseUpx=n
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.2.88.23
+#AutoIt3Wrapper_Res_Fileversion=2.2.88.26
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_SaveSource=y
@@ -33,6 +33,8 @@ Global Const $compatibility_ini = @ScriptDir & "\tools\settings\compatibility_li
 Global Const $blacklist_ini = @ScriptDir & "\tools\settings\black_list.ini"
 Global Const $variants_using_default_mode = "default,gparted,debian,clonezilla,damnsmall,puppy431,toutou412,pclinuxos20092KDE,pmagic45,pmagic46,slax612,slitaz20,tinycore25,grml200910,knoppix62"
 Global Const $log_dir = @ScriptDir & "\logs\"
+
+Global Const $check_updates_url = "http://www.linuxliveusb.com/updates/"
 
 Global $lang, $anonymous_id
 Global $downloaded_virtualbox_filename
@@ -398,6 +400,7 @@ $version_in_file = "none"
 ; Sending anonymous statistics
 SendStats()
 SendReport(LogSystemConfig())
+Check_for_updates()
 
 ; initialize list of compatible releases (load the compatibility_list.ini)
 Get_Compatibility_List()
@@ -2526,7 +2529,7 @@ Func GUI_Launch_Creation()
 
 		;Final_Help($selected_drive)
 		ShellExecute("http://www.linuxliveusb.com/using-lili.html", "", "", "", 7)
-
+		if isBeta() Then Ask_For_Feedback()
 	Else
 		UpdateStatus("Veuillez valider les étapes 1 à 3")
 	EndIf
@@ -2557,6 +2560,19 @@ Func Final_Help($selected_drive)
 	GUISetState(@SW_SHOW)
 	SendReport("End-Final_Help")
 EndFunc   ;==>Final_Help
+
+Func Ask_For_Feedback()
+		$return = MsgBox(65, "Help me to improve LiLi", "This is a Beta or RC version, click OK to leave a feedback or click Cancel to close this window")
+		If $return = 1 Then ShellExecute("http://www.linuxliveusb.com/feedback/index.php", "", "", "", 7)
+EndFunc
+
+Func isBeta()
+	if StringInStr($software_version,"RC") OR StringInStr($software_version,"Beta") OR StringInStr($software_version,"Alpha") Then
+		Return 1
+	Else
+		Return 0
+	EndIf
+EndFunc
 
 Func GUI_Events()
 
@@ -2721,3 +2737,69 @@ EndFunc   ;==>_Language
 Func Translate($txt)
 	Return IniRead($lang_ini, $lang, $txt, $txt)
 EndFunc   ;==>Translate
+
+; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+; ///////////////////////////////// Updates management                            ///////////////////////////////////////////////////////////////////////////////
+; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Func Check_for_updates()
+	SendReport("Start-Check_for_updates")
+	$check_result = _INetGetSource($check_updates_url&"?version")
+	if NOT @error AND NOT $check_result = 0 AND VersionCompare($check_result,$software_version)=1 Then
+		SendReport("IN-Check_for_updates ( Found a new version : "&$check_result&" )")
+		$return = MsgBox(68,Translate("There is a new version available"),Translate("Your LiLi's version is not up to date.")&@CRLF&@CRLF& Translate("Last version is") & " : " & $check_result & @CRLF& Translate("Your version is") & " : " &$software_version &@CRLF &@CRLF& Translate("Do want to download it ?"))
+		if $return =6 Then ShellExecute("http://www.linuxliveusb.com/")
+	EndIf
+	SendReport("End-Check_for_updates")
+EndFunc
+
+; Compare 2 versions
+;	0 =  Versions are equals
+;	1 =  Version 1 is higher
+;   2 =  Version 2 is higher
+Func VersionCompare($version1, $version2)
+	If VersionCode($version1) = VersionCode($version2) Then
+		Return 0
+	ElseIf VersionCode($version1) > VersionCode($version2) Then
+		Return 1
+	Else
+		Return 2
+	EndIf
+EndFunc   ;==>VersionCompare
+
+; Transform a label to a number
+Func SortVersionLabel($version_label)
+	Switch StringLower($version_label)
+		Case "alpha"
+			Return 0
+		Case "beta"
+			Return 1
+		Case "beta1"
+			Return 2
+		Case "beta2"
+			Return 3
+		Case "beta3"
+			Return 4
+		Case "rc1"
+			Return 5
+		Case "rc2"
+			Return 6
+		Case "rc3"
+			Return 7
+		Case Else
+			Return 8
+	EndSwitch
+EndFunc   ;==>SortVersionLabel
+
+; Transform a version name to a version code to be compared up to 3 digits like "2.3.1 Beta"
+Func VersionCode($version)
+	$parse_version=StringSplit($version," ")
+	$version_number=StringReplace($parse_version[1],".","")
+	if StringLen($version_number)=2 Then $version_number &="0"
+	if $parse_version[0] >= 2 Then
+		$version_number &= SortVersionLabel($parse_version[2])
+	Else
+		$version_number &= "8"
+	EndIf
+	Return $version_number
+EndFunc
