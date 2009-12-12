@@ -12,7 +12,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Format_FAT32($drive_letter)
 	SendReport("Start-Format_FAT32 ( Drive : "& $drive_letter &" )")
-	UpdateStatus("Formatage de la clé")
+	UpdateStatus("Formating the key")
 	RunWait3('cmd /c format /Q /X /y /V:MyLinuxLive /FS:FAT32 ' & $drive_letter, @ScriptDir, @SW_HIDE)
 	SendReport("End-Format_FAT32")
 EndFunc
@@ -34,7 +34,7 @@ EndFunc
 Func Clean_old_installs($drive_letter,$release_in_list)
 	If IniRead($settings_ini, "General", "skip_cleaning", "no") == "yes" Then Return 0
 	SendReport("Start-Clean_old_installs ( Drive : "& $drive_letter &" - Release : "& $release_in_list &" )")
-	UpdateStatus("Nettoyage des installations précédentes ( 2min )")
+	UpdateStatus("Cleaning previous installations ( 2min )")
 	DeleteFilesInDir($files_in_source)
 	FileDelete2($drive_letter & "\autorun.inf")
 	FileDelete2($drive_letter & "\lili.ico")
@@ -127,7 +127,7 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Download_virtualBox()
 	SendReport("Start-Download_virtualBox")
-				UpdateStatus("Mise en place de la virtualisation")
+				UpdateStatus("Setting up virtualization software")
 				$no_internet = 0
 				$virtualbox_size = -1
 
@@ -173,59 +173,59 @@ Func Download_virtualBox()
 				; Checking if last version has aleardy been downloaded
 				If FileExists(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename) And $virtualbox_size > 0 And $virtualbox_size == FileGetSize(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename) Then
 					; Already have last version, no download needed
-					UpdateStatus("VirtualBox a déjà été téléchargé")
+					UpdateStatus("VirtualBox already downloaded")
 					Sleep(1000)
 					$check_vbox = 2
 				ElseIf FileExists(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename) And $virtualbox_size > 0 And $virtualbox_size <> FileGetSize(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename) Then
 					; A new version is available, downloading it
-					UpdateStatus("Une nouvelle version de VirtualBox est disponible")
+					UpdateStatus("A new version of VirtualBox is available")
 					Sleep(1000)
-					UpdateStatus("Cette nouvelle version sera téléchargée")
+					UpdateStatus("This new version will be downloaded")
 					Sleep(1000)
-					UpdateStatus("Téléchargement de VirtualBox en tache de fond")
+					UpdateStatus("Downloading VirtualBox as a background task")
 					Sleep(1000)
 					InetGet($VirtualBoxUrl, @ScriptDir & "\tools\" & $downloaded_virtualbox_filename, 1, 1)
 					If @InetGetActive Then
-						UpdateStatus("Le téléchargement a bien débuté")
+						UpdateStatus("Download started succesfully")
 						$check_vbox = 1
 					Else
-						UpdateStatus("Le téléchargement n'a pas pu commencer")
+						UpdateStatus("Download failed to start")
 						Sleep(1000)
-						UpdateStatus("VirtualBox ne sera pas installé")
+						UpdateStatus("VirtualBox will not be installed")
 						$check_vbox = 0
 					EndIf
 
 				ElseIf FileExists(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename) And $virtualbox_size <= 0 Then
 					; Alerady downloaded but can't tell if it's last version and if it's good
-					UpdateStatus("VirtualBox a déjà été téléchargé")
+					UpdateStatus("VirtualBox already downloaded")
 					Sleep(1000)
-					UpdateStatus("L'intégrité de l'archive n'a pas pu être vérifiée")
+					UpdateStatus("Integrity could not be verified")
 					Sleep(1000)
-					UpdateStatus("L'installation sera tentée")
+					UpdateStatus("Will attempt installation")
 					$check_vbox = 2
 
 				ElseIf $virtualbox_size > 0 Then
 					; Does not have any version, downloading it
-					UpdateStatus("Téléchargement de VirtualBox en tache de fond")
+					UpdateStatus("Downloading VirtualBox as a background task")
 					Sleep(1000)
 					InetGet($VirtualBoxUrl, @ScriptDir & "\tools\" & $downloaded_virtualbox_filename, 1, 1)
 					If @InetGetActive Then
-						UpdateStatus("Le téléchargement a bien débuté")
+						UpdateStatus("Download started succesfully")
 						Sleep(1000)
 						$check_vbox = 1
 					Else
 						; Can't download it => aborted
-						UpdateStatus("Le téléchargement n'a pas pu commencer")
+						UpdateStatus("Download failed to start")
 						Sleep(1000)
-						UpdateStatus("VirtualBox ne sera pas installé")
+						UpdateStatus("VirtualBox will not be installed")
 						$check_vbox = 0
 					EndIf
 
 				Else
 					; Cannot start download, VirtualBox install is aborted
-					UpdateStatus("Probléme de téléchargement")
+					UpdateStatus("Cannot download")
 					Sleep(1000)
-					UpdateStatus("VirtualBox ne sera pas installé")
+					UpdateStatus("VirtualBox will not be installed")
 					$check_vbox = 0
 				EndIf
 
@@ -234,7 +234,7 @@ Func Download_virtualBox()
 				$downloaded_virtualbox_filename = "VirtualBox.zip"
 				$virtualbox_already_downloaded = 1
 				$virtualbox_size = FileGetSize(@ScriptDir & "\tools\VirtualBox.zip")
-					UpdateStatus("VirtualBox a déjà été téléchargé")
+					UpdateStatus("VirtualBox already downloaded")
 					Sleep(1000)
 					$check_vbox = 2
 					#ce
@@ -266,7 +266,7 @@ Func Uncompress_ISO_on_key($drive_letter,$iso_file,$release_in_list)
 	SendReport("Start-Uncompress_ISO_on_key ( Drive : "& $drive_letter &" - File : "& $iso_file &" - Release : "& $release_in_list &" )")
 
 	If ProcessExists("7z.exe") > 0 Then ProcessClose("7z.exe")
-	UpdateStatus(Translate("Décompression de l'ISO sur la clé") & " ( 5-10" & Translate("min") & " )")
+	UpdateStatus(Translate("Extracting ISO file on key") & " ( 5-10" & Translate("min") & " )")
 
 	if ReleaseGetCodename($release_in_list)="default" Then
 		$install_size=Round(FileGetSize($iso_file)/1048576)
@@ -339,7 +339,7 @@ Func Create_Stick_From_IMG($drive_letter,$img_file)
 				$mb_written = Ceiling(StringReplace($array[UBound($array)-1],",","")/1048576)
 				$percent_written = Ceiling(100*$mb_written/$img_size)
 				ProgressSet( $percent_written , $mb_written & " MB / "&$img_size& "MB ( "&$percent_written&"% )")
-				UpdateStatusNoLog(Translate("Ecriture de l'image sur la clé") & " " & $mb_written & " " & Translate("MB") &" / "&$img_size& Translate("MB") &" ( "&$percent_written&"% )")
+				UpdateStatusNoLog(Translate("Writing image to the usb stick") & " " & $mb_written & " " & Translate("MB") &" / "&$img_size& Translate("MB") &" ( "&$percent_written&"% )")
 				$line=""
 		EndIf
 		Sleep(500)
@@ -381,7 +381,7 @@ EndFunc
 Func Rename_and_move_files($drive_letter, $release_in_list)
 	If IniRead($settings_ini, "General", "skip_moving_renaming", "no") == "yes" Then Return 0
 	SendReport("Start-Rename_and_move_files")
-	UpdateStatus(Translate("Renommage et déplacement de quelques fichiers"))
+	UpdateStatus(Translate("Renaming some files"))
 
 	RunWait3("cmd /c rename " & $drive_letter & "\isolinux syslinux", @ScriptDir, @SW_HIDE)
 	FileRename( $drive_letter & "\syslinux\text.cfg", $drive_letter & "\syslinux\text.cfg-old")
@@ -460,6 +460,8 @@ Func Create_boot_menu($drive_letter,$release_in_list)
 	Elseif $distribution == "Fedora" Then
 		SendReport("IN-Create_boot_menu for Fedora")
 		Fedora_WriteTextCFG($drive_letter)
+	Else
+		; Do nothing, mostly for GRUB Based distributions
 	EndIf
 	SendReport("End-Create_boot_menu")
 EndFunc
@@ -484,7 +486,7 @@ Func Hide_live_files($drive_letter)
 	If IniRead($settings_ini, "General", "skip_hiding", "no") == "yes" Then return 0
 	SendReport("Start-Hide_live_files")
 
-	UpdateStatus("Masquage des fichiers")
+	UpdateStatus("Hiding files")
 	HideFilesInDir($files_in_source)
 	HideFile($drive_letter & "\syslinux\")
 	HideFile($drive_letter & "\syslinux.cfg")
@@ -575,12 +577,13 @@ Func Create_persistence_file($drive_letter,$release_in_list,$persistence_size,$h
 	If StringInStr($variants_using_default_mode,ReleaseGetVariant($release_in_list)) Then Return 0
 
 	If $persistence_size > 0 Then
-		UpdateStatus("Création du fichier de persistance")
+		UpdateStatus("Creating file for persistence")
 		Sleep(1000)
 
 		$distribe = ReleaseGetDistribution($release_in_list)
+		$variant = ReleaseGetVariant($release_in_list)
 
-		if $distribe =="Ubuntu" Then
+		if $distribe ="Ubuntu" OR $variant="BackTrack" Then
 			$persistence_file= $drive_letter & '\casper-rw'
 		Else
 			; fedora
@@ -593,10 +596,10 @@ Func Create_persistence_file($drive_letter,$release_in_list,$persistence_size,$h
 		if ($persistence_size >= 1000) Then $time_to_format=6
 		if ($persistence_size >= 2000) Then $time_to_format=10
 		if ($persistence_size >= 3000) Then $time_to_format=15
-		UpdateStatus(Translate("Formatage du fichier de persistance") & " ( ±"& $time_to_format & " " & Translate("min") & " )")
+		UpdateStatus(Translate("Formating persistence file") & " ( ±"& $time_to_format & " " & Translate("min") & " )")
 		EXT2_Format_File($persistence_file)
 	Else
-		UpdateStatus("Mode Live : pas de fichier de persistance")
+		UpdateStatus("Live mode : no persistence file")
 	EndIf
 	SendReport("End-Create_persistence_file")
 EndFunc
@@ -611,6 +614,7 @@ EndFunc
 	Description : Build and install boot sectors in order to make the key bootable
 	Input :
 		$drive_letter = Letter of the drive (pre-formated like "E:" )
+		$release_in_list = number of the release in the compatibility list (-1 if not present)
 		$hide_it = state of user checkbox about hiding file or not
 	Output :
 		0 = sucess
@@ -618,16 +622,24 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Func Install_boot_sectors($drive_letter,$hide_it)
+Func Install_boot_sectors($drive_letter,$release_in_list,$hide_it)
 	If IniRead($settings_ini, "General", "skip_bootsector", "no") == "yes" Then Return 0
 	SendReport("Start-Install_boot_sectors")
-		UpdateStatus("Installation des secteurs de boot")
-		If (IniRead($settings_ini, "General", "safe_syslinux", "no") == "yes") Then
-			$sysarg = " -s"
+	UpdateStatus("Installing boot sectors")
+	$variant = ReleaseGetVariant($release_in_list)
+	if $variant="BackTrack" Then
+		UpdateLog("Variant is using GRUB loader")
+		$physical_disk_number=GiveMePhysicalDisk($drive_letter)
+		; Security : does not install MBR sectors if on C: OR first physical disk OR if there is an error
+		if $physical_disk_number <> "ERROR" AND StringIsInt($physical_disk_number) AND $physical_disk_number >0 AND $physical_disk_number <> GiveMePhysicalDisk("C:") Then
+			RunWait3('"' & @ScriptDir & '\tools\grubinst.exe" (hd'& $physical_disk_number&')', @ScriptDir, @SW_HIDE)
+			_FileCopy2(@ScriptDir & '\tools\grldr',$drive_letter & "\grldr")
 		Else
-			$sysarg = " "
+			UpdateStatus("Error while trying to find physical disk number")
 		EndIf
-		RunWait3('"' & @ScriptDir & '\tools\syslinux.exe" -maf' & $sysarg & ' -d ' & $drive_letter & '\syslinux ' & $drive_letter, @ScriptDir, @SW_HIDE)
+	Else
+		RunWait3('"' & @ScriptDir & '\tools\syslinux.exe" -maf -d ' & $drive_letter & '\syslinux ' & $drive_letter, @ScriptDir, @SW_HIDE)
+	EndIf
 	If ( $hide_it <> $GUI_CHECKED) Then ShowFile($drive_letter & '\ldlinux.sys')
 	SendReport("End-Install_boot_sectors")
 EndFunc
@@ -653,10 +665,10 @@ Func Check_virtualbox_download()
 	Global $virtualbox_size
 	While @InetGetActive
 		$prog = Int((100 * @InetGetBytesRead / $virtualbox_size))
-		UpdateStatusNoLog(Translate("Téléchargement de VirtualBox") & "  : " & $prog & "% ( " & Round(@InetGetBytesRead / (1024 * 1024), 1) & "/" & Round($virtualbox_size / (1024 * 1024), 1) & " " & Translate("Mo") & " )")
+		UpdateStatusNoLog(Translate("Downloading VirtualBox") & "  : " & $prog & "% ( " & Round(@InetGetBytesRead / (1024 * 1024), 1) & "/" & Round($virtualbox_size / (1024 * 1024), 1) & " " & Translate("MB") & " )")
 		Sleep(300)
 	WEnd
-	UpdateStatus("Le téléchargement est maintenant fini")
+	UpdateStatus("Download complete")
 	SendReport("End-Check_virtualbox_download")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -679,11 +691,11 @@ EndFunc
 Func Uncompress_virtualbox_on_key($drive_letter)
 	SendReport("Start-Uncompress_virtualbox_on_key")
 	; Cleaning previous install of VBox
-	UpdateStatus("Nettoyage d'anciennes installations de VirtualBox")
+	UpdateStatus("Cleaning previous VirtualBox install")
 	DirRemove2($drive_letter & "\VirtualBox\", 1)
 
 	; Unzipping to the key
-	UpdateStatus(Translate("Décompression de Virtualbox sur la clé") & " ( 4" & Translate("min") & " )")
+	UpdateStatus(Translate("Extracting VirtualBox on key") & " ( 4" & Translate("min") & " )")
 	Run7zip2('"' & @ScriptDir & '\tools\7z.exe" x "' & @ScriptDir & "\tools\" & $downloaded_virtualbox_filename & '" -r -aoa -o' & $drive_letter, 140)
 
 	; maybe check after ?
@@ -788,12 +800,12 @@ Func Final_check()
 
 
 	; If not admin and virtaulbox option has been selected => WARNING
-	;If Not IsAdmin() Then $avert_admin = Translate("Vous n'avez pas les droits suffisants pour démarrer VirtualBox sur cette machine.") & @CRLF & Translate("Enregistrez-vous sur le compte administrateur ou lancez le logiciel avec les droits d'administrateur pour qu'il fonctionne.")
+	;If Not IsAdmin() Then $avert_admin = Translate("You do not have enough rights to launch VirtualBox.") & @CRLF & Translate("Please log in as an administrator or run VirtualBox with admin rights.")
 
 	; If not enough RAM => WARNING
-	If Round($mem[2] / 1024) < 256 Then $avert_mem = Translate("Vous avez moins de 256Mo de mémoire vive disponible.") & @CRLF & Translate("Cela ne suffira pas pour lancer LinuxLive directement sous windows.")
+	If Round($mem[2] / 1024) < 256 Then $avert_mem = Translate("Free memory below 256mb threshold.") & @CRLF & Translate("This is not enough to launch LinuxLive in Windows.")
 
-	If $avert_admin <> "" Or $avert_mem <> "" Then MsgBox(64, Translate("Attention"), $avert_admin & @CRLF & $avert_mem)
+	If $avert_admin <> "" Or $avert_mem <> "" Then MsgBox(64, Translate("Please read"), $avert_admin & @CRLF & $avert_mem)
 	SendReport("End-Final_check")
 EndFunc
 
