@@ -79,8 +79,8 @@ Func _OnAutoItError()
         GUICtrlSetBkColor(GUICtrlCreateLabel("",1,1,1,88),0x41689E)
         GUICtrlSetBkColor(GUICtrlCreateLabel("",398,1,1,88),0x41689E)
         GUICtrlCreateIcon("user32.dll",103,11,21,32,32)
-        GUICtrlSetBkColor(GUICtrlCreateLabel(Translate("Une erreur s'est produite.") & @CRLF & Translate("Un rapport anonyme est envoyé afin que l'erreur soit corrigée au plus vite.") ,52,8,190,60),-2)
-		$sending_status = GUICtrlCreateLabel(Translate("Statut du rapport")& " : " & Translate("Envoi en cours"),52,58,195,20)
+        GUICtrlSetBkColor(GUICtrlCreateLabel(Translate("An error occurred.") & @CRLF & Translate("An anonymous report was sent in order to fix this error as soon as possible")&"." ,52,8,190,60),-2)
+		$sending_status = GUICtrlCreateLabel(Translate("Report status")& " : " & Translate("Pending"),52,58,195,20)
 		GUICtrlSetBkColor($sending_status,-2)
 		#cs
 		GUICtrlSetBkColor(GUICtrlCreateLabel($last_report,52,41,175,15),-2)
@@ -95,7 +95,7 @@ Func _OnAutoItError()
 
 		GUICtrlSetBkColor(GUICtrlCreateLabel("",246,8,141,22),0xEFEEF2)
             GUICtrlSetState(-1,128)
-        $show=GUICtrlCreateLabel("    "& Translate("Voir le rapport"),265,12,115,15)
+        $show=GUICtrlCreateLabel("    "& Translate("Show bug report"),265,12,115,15)
             If @Compiled=0 Then GUICtrlSetData(-1,"    Debugger")
             GUICtrlSetBkColor(-1,-2)
             GUICtrlSetCursor(-1,0)
@@ -106,7 +106,7 @@ Func _OnAutoItError()
 
 		GUICtrlSetBkColor(GUICtrlCreateLabel("",246,34,141,22),0xEFEEF2)
             GUICtrlSetState(-1,128)
-        $rest=GUICtrlCreateLabel("    "& Translate("Relancer l'application"),265,38,115,15)
+        $rest=GUICtrlCreateLabel("    "& Translate("Restart application"),265,38,115,15)
             GUICtrlSetBkColor(-1,-2)
             GUICtrlSetCursor(-1,0)
 			GUICtrlSetOnEvent(-1, "GUI_Err_RunAgain")
@@ -117,7 +117,7 @@ Func _OnAutoItError()
 
 		GUICtrlSetBkColor(GUICtrlCreateLabel("",246,34,141,22),0xEFEEF2)
             GUICtrlSetState(-1,128)
-        $show=GUICtrlCreateLabel("    "& Translate("Voir le rapport"),265,38,115,15)
+        $show=GUICtrlCreateLabel("    "& Translate("Show bug report"),265,38,115,15)
             If @Compiled=0 Then GUICtrlSetData(-1,"    Debugger")
             GUICtrlSetBkColor(-1,-2)
             GUICtrlSetCursor(-1,0)
@@ -129,7 +129,7 @@ Func _OnAutoItError()
 
         GUICtrlSetBkColor(GUICtrlCreateLabel("",246,60,141,22),0xEFEEF2)
             GUICtrlSetState(-1,128)
-        $close=GUICtrlCreateLabel("     "& Translate("Arrêter l'application"),265,64,115,15)
+        $close=GUICtrlCreateLabel("     "& Translate("Close application"),265,64,115,15)
             GUICtrlSetBkColor(-1,-2)
             GUICtrlSetCursor(-1,0)
 			GUICtrlSetOnEvent(-1, "GUI_Err_Stop")
@@ -146,9 +146,9 @@ Func _OnAutoItError()
     ;   choose action to be taken
 	If IniRead($settings_ini, "General", "skip_autoreport", "no")=="no" Then
 		If SendBug() <> "OK" Then
-			GUICtrlSetData($sending_status,Translate("Statut du rapport")& " : " & Translate("Erreur (non envoyé)"))
+			GUICtrlSetData($sending_status,Translate("Report status")& " : " & Translate("Error (not sent)"))
 		Else
-			GUICtrlSetData($sending_status,Translate("Statut du rapport")& " : " & Translate("Envoyé"))
+			GUICtrlSetData($sending_status,Translate("Report status")& " : " & Translate("Sent"))
 		EndIf
 
 	Endif
@@ -163,8 +163,8 @@ Func _OnAutoItError()
 EndFunc
 
 Func GUI_Err_Debug()
-	If @Compiled=0 Then MsgBox(270400,Translate("Voir le rapport"),ConstructReport())
-	If @Compiled Then MsgBox(270400,Translate("Voir le rapport"),ConstructReport())
+	If @Compiled=0 Then MsgBox(270400,Translate("Show bug report"),ConstructReport())
+	If @Compiled Then MsgBox(270400,Translate("Show bug report"),ConstructReport())
 EndFunc
 
 Func GUI_Err_RunAgain()
@@ -226,9 +226,9 @@ Func SendBug()
 EndFunc
 
 Func ConstructReport()
-	$temp = Translate("Erreur") & " :" & @CRLF & $sErrorMsg &  @CRLF & Translate("30 " & "dernières actions") & _
+	$temp = Translate("Error") & " :" & @CRLF & $sErrorMsg &  @CRLF & Translate("30 " & "dernières actions") & _
 	": " & @CRLF & _ArrayToString($last_actions,@CRLF & "--> ") & @CRLF & $last_config  & @CRLF & _
-	Translate("Identifiant anonyme unique") &  ": " & IniRead($settings_ini, "General", "unique_ID", "none")
+	Translate("Unique anonymous ID") &  ": " & IniRead($settings_ini, "General", "unique_ID", "none")
 	Return $temp
 EndFunc
 
@@ -243,12 +243,12 @@ Func _ReceiveReport($report)
 		$last_config = $report
 	ElseIf StringLeft($report, 6) = "stats-" Then
 		$stats = StringTrimLeft($report, 6)
-		InetGetSize("http://www.linuxliveusb.com/stats/?"&$stats)
+		InetGet("http://www.linuxliveusb.com/stats/?"&$stats,"",1,1)
 	ElseIf StringLeft($report, 8) = "logfile-" Then
 		$current_logfile = StringTrimLeft($report, 6)
 	ElseIf StringLeft($report, 8) = "distrib-" Then
 		$distrib= StringTrimLeft($report, 8)
-		InetGetSize("http://www.linuxliveusb.com/stats/?distrib="&$distrib&"&id="&$anonymous_id)
+		InetGet("http://www.linuxliveusb.com/stats/?distrib="&$distrib&"&id="&$anonymous_id,"",1,1)
 	Else
 		ConsoleWrite($report & @CRLF)
 		$last_report = $report
