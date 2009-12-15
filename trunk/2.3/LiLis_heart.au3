@@ -302,7 +302,7 @@ EndFunc
 Func Create_Stick_From_CD($drive_letter,$path_to_cd)
 	If IniRead($settings_ini, "General", "skip_copy", "no") == "yes" Then Return 0
 	SendReport("Start-Create_Stick_From_CD ( Drive : "& $drive_letter &" - CD Folder : "& $path_to_cd &" )")
-	_FileCopy2($path_to_cd & "\*.*", $drive_letter & "\")
+	FileCopyShell($path_to_cd & "\*.*", $drive_letter & "\")
 	SendReport("End-Create_Stick_From_CD")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -384,20 +384,15 @@ Func Rename_and_move_files($drive_letter, $release_in_list)
 	UpdateStatus(Translate("Renaming some files"))
 
 	RunWait3("cmd /c rename " & $drive_letter & "\isolinux syslinux", @ScriptDir, @SW_HIDE)
-	FileRename( $drive_letter & "\syslinux\text.cfg", $drive_letter & "\syslinux\text.cfg-old")
-	if ReleaseGetVariant($release_in_list) = "ubuntu" Then
-		FileRename( $drive_letter & "\syslinux\isolinux.cfg", $drive_letter & "\syslinux\syslinux.cfg")
-	Elseif StringInStr($variants_using_default_mode,ReleaseGetVariant($release_in_list)) Then
+	FileCopy( $drive_letter & "\syslinux\text.cfg", $drive_letter & "\syslinux\text.cfg-old")
+
 		; Default Linux processing, no intelligence
 		RunWait3("cmd /c rename " & $drive_letter & "\boot\isolinux syslinux", @ScriptDir, @SW_HIDE)
-		;FileRename( $drive_letter & "\boot\syslinux\isolinux.cfg", $drive_letter & "\boot\syslinux\syslinux.cfg")
 
 		RunWait3("cmd /c rename " & $drive_letter & "\isolinux syslinux", @ScriptDir, @SW_HIDE)
 		RunWait3("cmd /c rename " & $drive_letter & "\HBCD\isolinux syslinux", @ScriptDir, @SW_HIDE)
-		;FileRename( $drive_letter & "\syslinux\isolinux.cfg", $drive_letter & "\syslinux\syslinux.cfg")
 
-		;FileRename( $drive_letter & "isolinux.cfg", $drive_letter & "syslinux.cfg")
-		;FileRename( $drive_letter & "\HBCD\isolinux.cfg", $drive_letter & "syslinux.cfg")
+		FileCopy2( $drive_letter & "\syslinux\isolinux.cfg", $drive_letter & "\syslinux\isolinux.cfg-old")
 
 		if FileExists($drive_letter & "\boot\syslinux\isolinux.cfg") Then
 			$syslinux_path = $drive_letter & "\boot\syslinux\"
@@ -413,10 +408,6 @@ Func Rename_and_move_files($drive_letter, $release_in_list)
 			$syslinux_path = $drive_letter & "\"
 		EndIf
 		isolinux2syslinux($syslinux_path)
-
-	Else
-		FileRename( $drive_letter & "\syslinux\isolinux.cfg", $drive_letter & "\syslinux\isolinux.cfg-old")
-	EndIf
 
 
 	; Fix for Parted Magic 4.6
@@ -633,7 +624,7 @@ Func Install_boot_sectors($drive_letter,$release_in_list,$hide_it)
 		; Security : does not install MBR sectors if on C: OR first physical disk OR if there is an error
 		if $physical_disk_number <> "ERROR" AND StringIsInt($physical_disk_number) AND $physical_disk_number >0 AND $physical_disk_number <> GiveMePhysicalDisk("C:") Then
 			RunWait3('"' & @ScriptDir & '\tools\grubinst.exe" (hd'& $physical_disk_number&')', @ScriptDir, @SW_HIDE)
-			_FileCopy2(@ScriptDir & '\tools\grldr',$drive_letter & "\grldr")
+			FileCopy2(@ScriptDir & '\tools\grldr',$drive_letter & "\grldr")
 		Else
 			UpdateStatus("Error while trying to find physical disk number")
 		EndIf
@@ -724,7 +715,7 @@ Func Create_autorun($drive_letter,$release_in_list)
 	$codename = ReleaseGetCodename($release_in_list)
 
 	; Using LiLi icon
-	FileCopy(@ScriptDir & "\tools\img\lili.ico", $drive_letter & "\lili.ico",1)
+	FileCopy2(@ScriptDir & "\tools\img\lili.ico", $drive_letter & "\lili.ico")
 
 	$icon = "lili.ico"
 

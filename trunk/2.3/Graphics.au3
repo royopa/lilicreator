@@ -12,11 +12,12 @@ Func GetVertOffset($hgui)
 ;Const $SM_CYCAPTION = 4
     Const $SM_CXFIXEDFRAME = 7
     Local $wtitle, $wclient, $wsize,$wside,$ans,$AC_SRC_ALPHA = 1
-    $wclient = WinGetClientSize($hgui)
-    $wsize = WinGetPos($hgui)
+    ;$wclient = WinGetClientSize($hgui)
+    ;$wsize = WinGetPos($hgui)
     $wtitle = DllCall('user32.dll', 'int', 'GetSystemMetrics', 'int', $SM_CYCAPTION)
     $wside = DllCall('user32.dll', 'int', 'GetSystemMetrics', 'int', $SM_CXFIXEDFRAME)
-    $ans = $wsize[3] - $wclient[1] - $wtitle[0] - 2 * $wside[0] +25
+    ;$ans = $wsize[3] - $wclient[1] - $wtitle[0] - 2 * $wside[0] +25
+	$ans = $wtitle[0] + $wside[0]
     Return $ans
 EndFunc  ;==>GetVertOffset
 

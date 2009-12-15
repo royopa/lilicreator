@@ -22,7 +22,7 @@
 ; Version          : 2.3
 ; Download         : http://www.linuxliveusb.com
 ; Support          : http://www.linuxliveusb.com/bugs/
-; Compiled with    : AutoIT v3.2.12.1
+; Compiled with    : AutoIT v3.3.0.0
 
 
 ; Global constants
@@ -31,7 +31,7 @@ Global $lang_ini = @ScriptDir & "\tools\languages\"
 Global Const $settings_ini = @ScriptDir & "\tools\settings\settings.ini"
 Global Const $compatibility_ini = @ScriptDir & "\tools\settings\compatibility_list.ini"
 Global Const $blacklist_ini = @ScriptDir & "\tools\settings\black_list.ini"
-Global Const $variants_using_default_mode = "default,gparted,debian,clonezilla,damnsmall,puppy431,toutou412,pclinuxos20092KDE,pmagic45,pmagic46,slax612,slitaz20,tinycore25,grml200910,knoppix62,gnewsense23"
+Global Const $variants_using_default_mode = "default,gparted,debian,clonezilla,damnsmall,puppy431,toutou412,pclinuxos20092KDE,pmagic45,pmagic46,slax612,slitaz20,tinycore25,grml200910,knoppix62,gnewsense23,sabayon51g"
 Global Const $log_dir = @ScriptDir & "\logs\"
 
 Global Const $check_updates_url = "http://www.linuxliveusb.com/updates/"
@@ -174,12 +174,11 @@ SetBitmap($GUI, $PNG_GUI, 255)
 GUIRegisterMsg($WM_NCHITTEST, "WM_NCHITTEST")
 GUISetState(@SW_SHOW, $GUI)
 
-; Old offset was 18
-$LAYERED_GUI_CORRECTION = GetVertOffset($GUI)
-$CONTROL_GUI = GUICreate("LinuxLive USB Creator", 450, 750, 0,$LAYERED_GUI_CORRECTION+23, $WS_POPUP, BitOR($WS_EX_LAYERED, $WS_EX_MDICHILD), $GUI)
-; Offset for applied on every items
+$CONTROL_GUI = GUICreate("LinuxLive USB Creator", 450, 750, 0,0, $WS_POPUP, BitOR($WS_EX_LAYERED, $WS_EX_MDICHILD), $GUI)
+
+; Offset applied on every items
 $offsetx0 = 27
-$offsety0 = 23
+$offsety0 = 42
 
 ; Label of Step 1
 GUICtrlCreateLabel(Translate("STEP 1 : CHOOSE YOUR KEY"), 28 + $offsetx0, 108 + $offsety0, 400, 30)
@@ -419,7 +418,7 @@ While 1
 		GUICtrlSetData($combo, GUICtrlRead($combo))
 		$combo_updated = 1
 	EndIf
-	Sleep(1000)
+	Sleep(500)
 WEnd
 
 Func DrawAll()
@@ -622,19 +621,23 @@ Func FileRename($file1, $file2)
 	SendReport("End-FileRename")
 EndFunc   ;==>FileRename
 
-Func _FileCopy($fromFile, $tofile)
-	SendReport("Start-_FileCopy (" & $fromFile & " -> " & $tofile & " )")
+Func FileCopyShell($fromFile, $tofile)
+	SendReport("Start-_FileCopyShell (" & $fromFile & " -> " & $tofile & " )")
 	Local $FOF_RESPOND_YES = 16
 	Local $FOF_SIMPLEPROGRESS = 256
 	$winShell = ObjCreate("shell.application")
 	$winShell.namespace($tofile).CopyHere($fromFile, $FOF_RESPOND_YES)
-	SendReport("End-_FileCopy")
+	SendReport("End-_FileCopyShell")
 EndFunc   ;==>_FileCopy
 
-Func _FileCopy2($arg1, $arg2)
+Func FileCopy2($arg1, $arg2)
 	SendReport("Start-_FileCopy2 ( " & $arg1 & " -> " & $arg2 & " )")
-	_FileCopy($arg1, $arg2)
 	UpdateLog("Copying file(s) " & $arg1 & " to " & $arg2)
+	If FileCopy($arg1, $arg2,1) Then
+		UpdateLog("                   File copied successfully")
+	Else
+		UpdateLog("                   Error : " & $arg1 & " has not been copied")
+	EndIf
 	SendReport("End-_FileCopy2")
 EndFunc   ;==>_FileCopy2
 
@@ -1487,7 +1490,7 @@ Func Check_source_integrity($linux_live_file)
 			; Filename is not known but trying to find what it is with its name => INTELLIGENT PROCESSING
 			SendReport("IN-Check_source_integrity (start intelligent processing)")
 
-			If StringInStr($shortname, "9.10") And StringInStr($shortname, "netbook") Then
+			If ( StringInStr($shortname, "10.04") OR StringInStr($shortname, "9.10") ) And StringInStr($shortname, "netbook") Then
 				; Ubuntu Karmic (>=9.10) based
 				$temp_index = _ArraySearch($compatible_filename, "ubuntu-9.10-netbook-remix-i386.iso")
 				$release_number = $temp_index
@@ -1508,7 +1511,7 @@ Func Check_source_integrity($linux_live_file)
 				Step2_Check("good")
 				Disable_Persistent_Mode()
 				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
-			ElseIf (StringInStr($shortname, "9.10") Or StringInStr($shortname, "karmic") Or StringInStr($shortname, "ubuntu")) Then
+			ElseIf (StringInStr($shortname, "9.10") Or StringInStr($shortname, "lucid") Or StringInStr($shortname, "karmic") Or StringInStr($shortname, "ubuntu")) Then
 				; Ubuntu Karmic (>=9.10) based
 				$temp_index = _ArraySearch($compatible_filename, "ubuntu-9.10-desktop-i386.iso")
 				$release_number = $temp_index
@@ -1634,6 +1637,19 @@ Func Check_source_integrity($linux_live_file)
 				Step2_Check("warning")
 				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
 				;MsgBox(48, Translate("Please read"), Translate("This ISO is not compatible.") & @CRLF & Translate("However, LinuxLive USB Creator will try to use same install parameters as for") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
+			ElseIf StringInStr($shortname, "sabayon") Then
+				; Sabayon Linux
+				$temp_index = _ArraySearch($compatible_filename, "Sabayon_Linux_5.1-r1_x86_G.iso")
+				$release_number = $temp_index
+				Step2_Check("good")
+				Disable_Persistent_Mode()
+				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
+			ElseIf StringInStr($shortname, "backtrack") OR StringInStr($shortname, "bt") Then
+				; BackTrack
+				$temp_index = _ArraySearch($compatible_filename, "bt4-pre-final.iso")
+				$release_number = $temp_index
+				Step2_Check("good")
+				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
 			Else
 				; Any Linux, except those known not to work in Live mode
 				$temp_index = _ArraySearch($compatible_filename, "regular_linux.iso")
