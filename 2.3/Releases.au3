@@ -15,7 +15,7 @@ Global $releases[5][30],$compatible_md5[5],$compatible_filename[5]
 Func Get_Compatibility_List()
 	$sections = IniReadSectionNames($compatibility_ini)
 	If (Not IsArray($sections)) Or (Not FileExists($compatibility_ini)) Then
-		MsgBox(32,"","Le fichier de releases "&$compatibility_ini&" est introuvable ou vide.")
+		MsgBox(32,"Error","Compatibility file "&$compatibility_ini&" was not found.")
 		GUI_Exit()
 	EndIf
 
