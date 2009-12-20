@@ -31,7 +31,7 @@ Global $lang_ini = @ScriptDir & "\tools\languages\"
 Global Const $settings_ini = @ScriptDir & "\tools\settings\settings.ini"
 Global Const $compatibility_ini = @ScriptDir & "\tools\settings\compatibility_list.ini"
 Global Const $blacklist_ini = @ScriptDir & "\tools\settings\black_list.ini"
-Global Const $variants_using_default_mode = "default,gparted,debian,clonezilla,damnsmall,puppy431,toutou412,pclinuxos20092KDE,pmagic45,pmagic46,slax612,slitaz20,tinycore25,grml200910,knoppix62,gnewsense23,sabayon51g"
+Global Const $variants_using_default_mode = "default,gparted,debian,clonezilla,damnsmall,puppy431,toutou412,pclinuxos20092KDE,pmagic45,pmagic46,slax612,slitaz20,tinycore27,grml200910,knoppix62,gnewsense23,sabayon51g"
 Global Const $log_dir = @ScriptDir & "\logs\"
 
 Global Const $check_updates_url = "http://www.linuxliveusb.com/updates/"
@@ -1625,7 +1625,7 @@ Func Check_source_integrity($linux_live_file)
 				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
 			ElseIf StringInStr($shortname, "tinycore") Then
 				; Tiny Core
-				$temp_index = _ArraySearch($compatible_filename, "tinycore_2.5.iso")
+				$temp_index = _ArraySearch($compatible_filename, "tinycore_2.7.iso")
 				$release_number = $temp_index
 				Step2_Check("good")
 				Disable_Persistent_Mode()
@@ -2827,8 +2827,12 @@ Func Check_for_updates()
 	$ping = Ping("www.google.com")
 	If Not @error Then
 		$check_result = _INetGetSource($check_updates_url & "?version")
+		if isBeta() Then $check_result_beta = _INetGetSource($check_updates_url & "?beta-version")
 		SendReport("IN-Check_for_updates ( Last version found : " & $check_result & " )")
-		If Not $check_result = 0 And VersionCompare($check_result, $software_version) = 1 Then
+		if isBeta() AND VersionCompare($check_result_beta, $software_version) = 1 Then
+			$return = MsgBox(68, Translate("There is a new Beta version available"), Translate("Your LiLi's version is not up to date.") & @CRLF & @CRLF & Translate("Last beta version is") & " : " & $check_result_beta & @CRLF & Translate("Your version is") & " : " & $software_version & @CRLF & @CRLF & Translate("Do want to download it ?"))
+			If $return = 6 Then ShellExecute("http://www.linuxliveusb.com/")
+		ElseIf Not $check_result = 0 And VersionCompare($check_result, $software_version) = 1 Then
 			$return = MsgBox(68, Translate("There is a new version available"), Translate("Your LiLi's version is not up to date.") & @CRLF & @CRLF & Translate("Last version is") & " : " & $check_result & @CRLF & Translate("Your version is") & " : " & $software_version & @CRLF & @CRLF & Translate("Do want to download it ?"))
 			If $return = 6 Then ShellExecute("http://www.linuxliveusb.com/")
 		EndIf
