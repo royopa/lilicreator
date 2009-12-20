@@ -1,5 +1,5 @@
 #NoTrayIcon
-#RequireAdmin
+;#RequireAdmin
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=tools\img\lili.ico
 #AutoIt3Wrapper_Compression=3
@@ -31,7 +31,7 @@ Global $lang_ini = @ScriptDir & "\tools\languages\"
 Global Const $settings_ini = @ScriptDir & "\tools\settings\settings.ini"
 Global Const $compatibility_ini = @ScriptDir & "\tools\settings\compatibility_list.ini"
 Global Const $blacklist_ini = @ScriptDir & "\tools\settings\black_list.ini"
-Global Const $variants_using_default_mode = "default,gparted,debian,clonezilla,damnsmall,puppy431,toutou412,pclinuxos20092KDE,pmagic45,pmagic46,slax612,slitaz20,tinycore27,grml200910,knoppix62,gnewsense23,sabayon51g"
+Global Const $variants_using_default_mode = "default,gparted,debian,clonezilla,damnsmall,puppy431,toutou412,pclinuxos20092KDE,pmagic45,pmagic46,slax612,slitaz20,tinycore27,grml200910,knoppix62,gnewsense23,sabayon51g,xpud092,systemrescue,gentoo101,ophcrackxp,ophcrackvista"
 Global Const $log_dir = @ScriptDir & "\logs\"
 
 Global Const $check_updates_url = "http://www.linuxliveusb.com/updates/"
@@ -131,6 +131,9 @@ EndIf
 
 
 SendReport("Starting LiLi USB Creator " & $software_version)
+
+; initialize list of compatible releases (load the compatibility_list.ini)
+Get_Compatibility_List()
 
 _GDIPlus_Startup()
 
@@ -379,7 +382,6 @@ $selected_drive = "->"
 $file_set = 0;
 $file_set_mode = "none"
 $annuler = 0
-$sysarg = " "
 $combo_updated = 0
 
 $STEP1_OK = 0
@@ -394,8 +396,7 @@ SendStats()
 SendReport(LogSystemConfig())
 Check_for_updates()
 
-; initialize list of compatible releases (load the compatibility_list.ini)
-Get_Compatibility_List()
+
 $prefetched_linux_list = Print_For_ComboBox()
 
 ; Hovering Buttons
@@ -1463,7 +1464,7 @@ Func Check_source_integrity($linux_live_file)
 		EndIf
 	EndIf
 
-	If IniRead($settings_ini, "General", "skip_md5", "no") == "no" Then
+	If IniRead($settings_ini, "General", "skip_md5", "no") = "no" Then
 		$MD5_ISO = MD5_ISO($linux_live_file)
 		$temp_index = _ArraySearch($compatible_md5, $MD5_ISO)
 	Else
@@ -1630,6 +1631,13 @@ Func Check_source_integrity($linux_live_file)
 				Step2_Check("good")
 				Disable_Persistent_Mode()
 				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
+			ElseIf StringInStr($shortname, "ophcrack") Then
+				; OphCrack
+				$temp_index = _ArraySearch($compatible_filename, "ophcrack-xp-livecd-2.3.1.iso")
+				$release_number = $temp_index
+				Step2_Check("good")
+				Disable_Persistent_Mode()
+				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
 			ElseIf StringInStr($shortname, "crunch") Then
 				; CrunchBang Based
 				$temp_index = _ArraySearch($compatible_filename, "crunchbang-9.04.01.i386.iso")
@@ -1640,6 +1648,20 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "sabayon") Then
 				; Sabayon Linux
 				$temp_index = _ArraySearch($compatible_filename, "Sabayon_Linux_5.1-r1_x86_G.iso")
+				$release_number = $temp_index
+				Step2_Check("good")
+				Disable_Persistent_Mode()
+				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
+			ElseIf StringInStr($shortname, "SystemRescueCd") Then
+				; System Rescue CD
+				$temp_index = _ArraySearch($compatible_filename, "SystemRescueCd-x86-1.3.3.iso")
+				$release_number = $temp_index
+				Step2_Check("good")
+				Disable_Persistent_Mode()
+				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
+			ElseIf StringInStr($shortname, "gentoo") Then
+				; System Rescue CD
+				$temp_index = _ArraySearch($compatible_filename, "livedvd-x86-amd64-32ul-10.1.iso")
 				$release_number = $temp_index
 				Step2_Check("good")
 				Disable_Persistent_Mode()
@@ -1655,10 +1677,10 @@ Func Check_source_integrity($linux_live_file)
 				$temp_index = _ArraySearch($compatible_filename, "regular_linux.iso")
 				$release_number = $temp_index
 				Step2_Check("warning")
-				SendReport("IN-Check_source_integrity (MD5 not found AND keyword found; Using DEFAULT mode")
+				SendReport("IN-Check_source_integrity (MD5 not found AND keyword not found -> using DEFAULT mode")
 				MsgBox(48, Translate("Please read"), Translate("This ISO is not compatible.") & @CRLF & Translate("However, LinuxLive USB Creator will try to use same install parameters as for") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
 			EndIf
-			SendReport("End-Check_source_integrity (end intelligent processing)")
+			SendReport("IN-Check_source_integrity (end intelligent processing)")
 		EndIf
 	EndIf
 	Check_If_Default_Should_Be_Used($release_number)
@@ -1670,9 +1692,13 @@ EndFunc   ;==>Check_source_integrity
 
 
 Func Check_If_Default_Should_Be_Used($release_in_list)
-	If StringInStr($variants_using_default_mode, ReleaseGetVariant($release_in_list)) Then
+	SendReport("Start-Check_If_Default_Should_Be_Used (release : " & $release_in_list & " )")
+	$codename= ReleaseGetCodename($release_in_list)
+	If StringInStr($variants_using_default_mode,$codename)>0 Then
 		Disable_Persistent_Mode()
+		SendReport("IN-Check_If_Default_Should_Be_Used ( Disable persistency for " & $codename& " )")
 	EndIf
+	SendReport("End-Check_If_Default_Should_Be_Used")
 EndFunc   ;==>Check_If_Default_Should_Be_Used
 
 ; Check the ISO against black list
@@ -2246,7 +2272,7 @@ Func DownloadRelease($release_in_list, $automatic_download)
 		$mirror = $releases[$release_in_list][$i]
 		If StringStripWS($mirror, 1) <> "" Then
 
-			$temp_latency = Ping(URLToHostname($mirror), 1000)
+			$temp_latency = Ping(URLToHostname($mirror))
 			$tested_mirrors = $tested_mirrors + 1
 			If @error = 0 Then
 				$temp_size = Round(InetGetSize($mirror) / 1048576)
@@ -2268,7 +2294,7 @@ Func DownloadRelease($release_in_list, $automatic_download)
 	If _ArrayMin($latency, 1, $R_MIRROR1, $R_MIRROR10) = 10000 Then
 		UpdateStatusStep2(Translate("No online mirror found") & " !" & @CRLF & Translate("Please check your internet connection or try with another linux"))
 		_ProgressSet($progress_bar, 100)
-
+		Sleep(3000)
 	Else
 
 		_ProgressSet($progress_bar, 100)
