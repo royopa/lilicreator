@@ -384,7 +384,7 @@ Func Rename_and_move_files($drive_letter, $release_in_list)
 	UpdateStatus(Translate("Renaming some files"))
 
 	RunWait3("cmd /c rename " & $drive_letter & "\isolinux syslinux", @ScriptDir, @SW_HIDE)
-	FileCopy( $drive_letter & "\syslinux\text.cfg", $drive_letter & "\syslinux\text.cfg-old")
+	FileCopy2( $drive_letter & "\syslinux\text.cfg", $drive_letter & "\syslinux\text-orig.cfg")
 
 		; Default Linux processing, no intelligence
 		RunWait3("cmd /c rename " & $drive_letter & "\boot\isolinux syslinux", @ScriptDir, @SW_HIDE)
@@ -392,7 +392,7 @@ Func Rename_and_move_files($drive_letter, $release_in_list)
 		RunWait3("cmd /c rename " & $drive_letter & "\isolinux syslinux", @ScriptDir, @SW_HIDE)
 		RunWait3("cmd /c rename " & $drive_letter & "\HBCD\isolinux syslinux", @ScriptDir, @SW_HIDE)
 
-		FileCopy2( $drive_letter & "\syslinux\isolinux.cfg", $drive_letter & "\syslinux\isolinux.cfg-old")
+		FileCopy2( $drive_letter & "\syslinux\isolinux.cfg", $drive_letter & "\syslinux\isolinux-orig.cfg")
 
 		if FileExists($drive_letter & "\boot\syslinux\isolinux.cfg") Then
 			$syslinux_path = $drive_letter & "\boot\syslinux\"
@@ -442,17 +442,18 @@ Func Create_boot_menu($drive_letter,$release_in_list)
 	SendReport("Start-Create_boot_menu")
 	$variant = ReleaseGetVariant($release_in_list)
 	$distribution = ReleaseGetDistribution($release_in_list)
-	if $distribution == "Ubuntu" Then
-		SendReport("IN-Create_boot_menu for Ubuntu")
-		Ubuntu_WriteTextCFG($drive_letter,$release_in_list)
-	Elseif $distribution == "Fedora" AND $variant ="CentOS" Then
-		SendReport("IN-Create_boot_menu for CentOS")
-		CentOS_WriteTextCFG($drive_letter)
-	Elseif $distribution == "Fedora" Then
-		SendReport("IN-Create_boot_menu for Fedora")
-		Fedora_WriteTextCFG($drive_letter)
-	Else
-		; Do nothing, mostly for GRUB Based distributions
+	$features=ReleaseGetSupportedFeatures($release_in_list)
+	if StringInStr($features,"default") = 0 Then
+		if $distribution = "ubuntu" Then
+			SendReport("IN-Create_boot_menu for Ubuntu")
+			Ubuntu_WriteTextCFG($drive_letter,$release_in_list)
+		Elseif $variant ="CentOS" Then
+			SendReport("IN-Create_boot_menu for CentOS")
+			CentOS_WriteTextCFG($drive_letter)
+		Elseif $distribution = "Fedora" Then
+			SendReport("IN-Create_boot_menu for Fedora")
+			Fedora_WriteTextCFG($drive_letter)
+		EndIf
 	EndIf
 	SendReport("End-Create_boot_menu")
 EndFunc
@@ -564,8 +565,13 @@ Func Create_persistence_file($drive_letter,$release_in_list,$persistence_size,$h
 	If IniRead($settings_ini, "General", "skip_persistence", "no") == "yes" Then Return 0
 	SendReport("Start-Create_persistence_file")
 
-	; No persistence for default Linux
-	If StringInStr($variants_using_default_mode,ReleaseGetVariant($release_in_list)) Then Return 0
+	; Checking if persistence is supported for this Linux
+	$features=ReleaseGetSupportedFeatures($release_in_list)
+	if StringInStr($features,"persistence")=0 Then
+		$codename=ReleaseGetCodename($release_in_list)
+		SendReport("End-Create_persistence_file : No persistence for release "&$codename)
+		Return 0
+	EndIf
 
 	If $persistence_size > 0 Then
 		UpdateStatus("Creating file for persistence")
