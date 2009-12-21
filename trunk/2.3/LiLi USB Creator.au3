@@ -1,5 +1,5 @@
 #NoTrayIcon
-;#RequireAdmin
+#RequireAdmin
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=tools\img\lili.ico
 #AutoIt3Wrapper_Compression=3
@@ -26,14 +26,12 @@
 
 
 ; Global constants
-Global Const $software_version = "2.3 Beta"
+Global Const $software_version = "2.3 RC1"
 Global $lang_ini = @ScriptDir & "\tools\languages\"
 Global Const $settings_ini = @ScriptDir & "\tools\settings\settings.ini"
 Global Const $compatibility_ini = @ScriptDir & "\tools\settings\compatibility_list.ini"
 Global Const $blacklist_ini = @ScriptDir & "\tools\settings\black_list.ini"
-Global Const $variants_using_default_mode = "default,gparted,debian,clonezilla,damnsmall,puppy431,toutou412,pclinuxos20092KDE,pmagic45,pmagic46,slax612,slitaz20,tinycore27,grml200910,knoppix62,gnewsense23,sabayon51g,xpud092,systemrescue,gentoo101,ophcrackxp,ophcrackvista"
 Global Const $log_dir = @ScriptDir & "\logs\"
-
 Global Const $check_updates_url = "http://www.linuxliveusb.com/updates/"
 
 Global $lang, $anonymous_id
@@ -43,12 +41,15 @@ Global $downloaded_virtualbox_filename
 ; Globals images and GDI+ elements
 Global $GUI, $CONTROL_GUI, $EXIT_BUTTON, $MIN_BUTTON, $DRAW_REFRESH, $DRAW_ISO, $DRAW_CD, $DRAW_DOWNLOAD, $DRAW_BACK, $DRAW_BACK_HOVER, $DRAW_LAUNCH, $HELP_STEP1, $HELP_STEP2, $HELP_STEP3, $HELP_STEP4, $HELP_STEP5, $label_iso, $label_cd, $label_download, $label_step2_status, $download_label2, $OR_label, $live_mode_only_label, $virtualbox
 Global $ZEROGraphic, $EXIT_NORM, $EXIT_OVER, $MIN_NORM, $MIN_OVER, $PNG_GUI, $CD_PNG, $CD_HOVER_PNG, $ISO_PNG, $ISO_HOVER_PNG, $DOWNLOAD_PNG, $DOWNLOAD_HOVER_PNG, $BACK_PNG, $BACK_HOVER_PNG, $LAUNCH_PNG, $LAUNCH_HOVER_PNG, $HELP, $BAD, $GOOD, $WARNING, $BACK_AREA
-Global $download_menu_active = 0, $cleaner, $cleaner2
+Global $step2_display_menu = 0, $cleaner, $cleaner2
 Global $combo_linux, $download_manual, $download_auto, $slider, $slider_visual
 Global $best_mirror, $iso_size, $filename, $progress_bar, $label_step2_status
 Global $MD5_ISO = "", $compatible_md5, $compatible_filename, $release_number = -1, $files_in_source, $prefetched_linux_list
 Global $foo
 Global $for_winactivate
+
+; $step2_display_menu = 0 when displaying default menu, 1 when displaying download menu, 2 when displaying checking.
+
 
 Opt("GUIOnEventMode", 1)
 
@@ -419,7 +420,8 @@ While 1
 		GUICtrlSetData($combo, GUICtrlRead($combo))
 		$combo_updated = 1
 	EndIf
-	Sleep(500)
+	Sleep(5000)
+	DrawAll()
 WEnd
 
 Func DrawAll()
@@ -427,7 +429,7 @@ Func DrawAll()
 	$EXIT_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $EXIT_NORM, 0, 0, 20, 20, 335 + $offsetx0, -20 + $offsety0, 20, 20)
 	$MIN_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $MIN_NORM, 0, 0, 20, 20, 305 + $offsetx0, -20 + $offsety0, 20, 20)
 	$DRAW_REFRESH = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $REFRESH_PNG, 0, 0, 20, 20, 300 + $offsetx0, 145 + $offsety0, 20, 20)
-	If $download_menu_active = 0 Then
+	If $step2_display_menu = 0 Then
 		$DRAW_CD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $CD_PNG, 0, 0, 75, 75, 146 + $offsetx0, 231 + $offsety0, 75, 75)
 		$DRAW_DOWNLOAD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $DOWNLOAD_PNG, 0, 0, 75, 75, 260 + $offsetx0, 230 + $offsety0, 75, 75)
 		$DRAW_ISO = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $ISO_PNG, 0, 0, 75, 75, 38 + $offsetx0, 231 + $offsety0, 75, 75)
@@ -444,7 +446,6 @@ Func DrawAll()
 	Redraw_Traffic_Lights()
 	_WinAPI_RedrawWindow($CONTROL_GUI, 0, 0, $RDW_VALIDATE) ; then force no-redraw of GUI
 	Return $GUI_RUNDEFMSG
-
 EndFunc   ;==>DrawAll
 
 Func Redraw_Traffic_Lights()
@@ -491,15 +492,15 @@ Func Control_Hover()
 					If $CursorCtrl[2] = 1 Then GUI_Minimize()
 					$MIN_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $MIN_NORM, 0, 0, 20, 20, 305 + $offsetx0, -20 + $offsety0, 20, 20)
 				Case $ISO_AREA
-					If $download_menu_active = 0 Then $DRAW_ISO = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $ISO_PNG, 0, 0, 75, 75, 38 + $offsetx0, 231 + $offsety0, 75, 75)
+					If $step2_display_menu = 0 Then $DRAW_ISO = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $ISO_PNG, 0, 0, 75, 75, 38 + $offsetx0, 231 + $offsety0, 75, 75)
 				Case $CD_AREA
-					If $download_menu_active = 0 Then $DRAW_CD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $CD_PNG, 0, 0, 75, 75, 146 + $offsetx0, 231 + $offsety0, 75, 75)
+					If $step2_display_menu = 0 Then $DRAW_CD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $CD_PNG, 0, 0, 75, 75, 146 + $offsetx0, 231 + $offsety0, 75, 75)
 				Case $DOWNLOAD_AREA
-					If $download_menu_active = 0 Then $DRAW_DOWNLOAD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $DOWNLOAD_PNG, 0, 0, 75, 75, 260 + $offsetx0, 230 + $offsety0, 75, 75)
+					If $step2_display_menu = 0 Then $DRAW_DOWNLOAD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $DOWNLOAD_PNG, 0, 0, 75, 75, 260 + $offsetx0, 230 + $offsety0, 75, 75)
 				Case $LAUNCH_AREA
 					$DRAW_LAUNCH = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $LAUNCH_PNG, 0, 0, 22, 43, 35 + $offsetx0, 600 + $offsety0, 22, 43)
 				Case $BACK_AREA
-					If $download_menu_active = 1 Then $DRAW_BACK = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $BACK_PNG, 0, 0, 32, 32, 5 + $offsetx0, 300 + $offsety0, 32, 32)
+					If $step2_display_menu = 1 Then $DRAW_BACK = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $BACK_PNG, 0, 0, 32, 32, 5 + $offsetx0, 300 + $offsety0, 32, 32)
 			EndSwitch
 
 			Switch $CursorCtrl[4]
@@ -510,15 +511,15 @@ Func Control_Hover()
 					If $CursorCtrl[2] = 1 Then GUI_Minimize()
 					$MIN_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $MIN_OVER, 0, 0, 20, 20, 305 + $offsetx0, -20 + $offsety0, 20, 20)
 				Case $ISO_AREA
-					If $download_menu_active = 0 Then $DRAW_ISO = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $ISO_HOVER_PNG, 0, 0, 75, 75, 38 + $offsetx0, 231 + $offsety0, 75, 75)
+					If $step2_display_menu = 0 Then $DRAW_ISO = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $ISO_HOVER_PNG, 0, 0, 75, 75, 38 + $offsetx0, 231 + $offsety0, 75, 75)
 				Case $CD_AREA
-					If $download_menu_active = 0 Then $DRAW_CD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $CD_HOVER_PNG, 0, 0, 75, 75, 146 + $offsetx0, 231 + $offsety0, 75, 75)
+					If $step2_display_menu = 0 Then $DRAW_CD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $CD_HOVER_PNG, 0, 0, 75, 75, 146 + $offsetx0, 231 + $offsety0, 75, 75)
 				Case $DOWNLOAD_AREA
-					If $download_menu_active = 0 Then $DRAW_DOWNLOAD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $DOWNLOAD_HOVER_PNG, 0, 0, 75, 75, 260 + $offsetx0, 230 + $offsety0, 75, 75)
+					If $step2_display_menu = 0 Then $DRAW_DOWNLOAD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $DOWNLOAD_HOVER_PNG, 0, 0, 75, 75, 260 + $offsetx0, 230 + $offsety0, 75, 75)
 				Case $LAUNCH_AREA
 					$DRAW_LAUNCH = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $LAUNCH_HOVER_PNG, 0, 0, 22, 43, 35 + $offsetx0, 600 + $offsety0, 22, 43)
 				Case $BACK_AREA
-					If $download_menu_active = 1 Then $DRAW_BACK_HOVER = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $BACK_HOVER_PNG, 0, 0, 32, 32, 5 + $offsetx0, 300 + $offsety0, 32, 32)
+					If $step2_display_menu = 1 Then $DRAW_BACK_HOVER = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $BACK_HOVER_PNG, 0, 0, 32, 32, 5 + $offsetx0, 300 + $offsety0, 32, 32)
 			EndSwitch
 			$previous_hovered_control = $CursorCtrl[4]
 		EndIf
@@ -688,9 +689,11 @@ Func InitializeFilesInCD($searchdir)
 
 	; Check if the search was successful
 	If $search = -1 Then
-		MsgBox(0, "Error", "No files/directories matched the search pattern")
-		Exit
+		SendReport("IN-InitializeFilesInCD : No files/directories matched the search pattern")
+		FileClose($search)
+		Return ""
 	EndIf
+
 	$attrib = ""
 	While 1
 		$file = FileFindNextFile($search)
@@ -702,9 +705,6 @@ Func InitializeFilesInCD($searchdir)
 	_ArrayDelete($files, 0)
 	$files_in_source = $files
 EndFunc   ;==>InitializeFilesInCD
-
-
-
 
 
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1180,23 +1180,35 @@ Func Get_Disk_UUID($drive_letter)
 EndFunc   ;==>Get_Disk_UUID
 
 
+
 Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 	SendReport("Start-Ubuntu_WriteTextCFG (Drive : " & $selected_drive & " -  Codename: " & ReleaseGetCodename($release_in_list) & " )")
-	Local $boot_text, $kbd_code, $ubuntu_variant
-	$boot_text = ""
-	$kbd_code = GetKbdCode()
 
-	;$codename = ReleaseGetCodename($release_number)
 	$ubuntu_variant = ReleaseGetVariant($release_in_list)
 	$distrib_version = ReleaseGetDistributionVersion($release_in_list)
+	$features = ReleaseGetSupportedFeatures($release_in_list)
+
+	; No custom boot menu when using default mode.
+	If StringInStr($features,"default") >0 Then Return ""
+
 
 	; Karmic Koala have a renamed initrd file
-	If $distrib_version = "9.10" Then
+	If $distrib_version="9.10" OR $distrib_version="10.04" Then
 		$initrd_file = "initrd.lz"
 	Else
 		$initrd_file = "initrd.gz"
 	EndIf
 
+	; For official Ubuntu variants, only text.cfg need to be modified
+	if $ubuntu_variant="ubuntu" OR StringInStr($ubuntu_variant, "xubuntu") OR StringInStr($ubuntu_variant, "netbook") OR StringInStr($ubuntu_variant, "kubuntu") OR $ubuntu_variant="superos" Then
+		$boot_text = Ubuntu_BootMenu($initrd_file,$ubuntu_variant)
+		UpdateLog("Creating text.cfg file for Official Ubuntu variants :" & @CRLF & $boot_text)
+		$file = FileOpen($selected_drive & "\syslinux\text.cfg", 2)
+		FileWrite($file, $boot_text)
+		FileClose($file)
+	EndIf
+
+	; For Mint, only syslinux.cfg need to be modified
 	If $ubuntu_variant = "mint" Then
 		$boot_text = "default vesamenu.c32" _
 				 & @LF & "timeout 100" _
@@ -1214,58 +1226,50 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 				 & @LF & "menu color cmdline 0 #ffffffff #00000000" _
 				 & @LF & "menu hidden" _
 				 & @LF & "menu hiddenrow 5"
-	ElseIf $ubuntu_variant = "custom" Or $ubuntu_variant = "crunchbang" Then
-		$boot_text &= "DISPLAY isolinux.txt" _
-				 & @LF & "TIMEOUT 300" _
-				 & @LF & "PROMPT 1" _
-				 & @LF & "default persist"
-	Else
-		$boot_text &= @LF & "default persist"
-	EndIf
-
-	$boot_text &= @LF & "label persist" & @LF & "menu label ^" & Translate("Persistent Mode") _
-			 & @LF & "  kernel /casper/vmlinuz" _
-			 & @LF & "  append  " & $kbd_code & "noprompt cdrom-detect/try-usb=true persistent file=/cdrom/preseed/" & $ubuntu_variant & ".seed boot=casper initrd=/casper/" & $initrd_file & " splash--" _
-			 & @LF & "label live" _
-			 & @LF & "  menu label ^" & Translate("Live Mode") _
-			 & @LF & "  kernel /casper/vmlinuz" _
-			 & @LF & "  append   " & $kbd_code & "noprompt cdrom-detect/try-usb=true file=/cdrom/preseed/" & $ubuntu_variant & ".seed boot=casper initrd=/casper/" & $initrd_file & " splash--" _
-			 & @LF & "label live-install" _
-			 & @LF & "  menu label ^" & Translate("Install") _
-			 & @LF & "  kernel /casper/vmlinuz" _
-			 & @LF & "  append   " & $kbd_code & "noprompt cdrom-detect/try-usb=true persistent file=/cdrom/preseed/" & $ubuntu_variant & ".seed boot=casper only-ubiquity initrd=/casper/" & $initrd_file & " splash --" _
-			 & @LF & "label check" _
-			 & @LF & "  menu label ^" & Translate("File Integrity Check") _
-			 & @LF & "  kernel /casper/vmlinuz" _
-			 & @LF & "  append   " & $kbd_code & "noprompt boot=casper integrity-check initrd=/casper/" & $initrd_file & " splash --" _
-			 & @LF & "label memtest" _
-			 & @LF & "  menu label ^" & Translate("Memory Test") _
-			 & @LF & "  kernel /install/mt86plus"
-	UpdateLog("Creating syslinux config file :" & @CRLF & $boot_text)
-	$file = FileOpen($selected_drive & "\syslinux\text.cfg", 2)
-	FileWrite($file, $boot_text)
-	FileClose($file)
-
-	If $ubuntu_variant = "kuki" Then
-		FileCopy(@ScriptDir & "\tools\kuki-isolinux.txt", $selected_drive & "\syslinux\isolinux.txt", 1)
-		FileCopy(@ScriptDir & "\tools\kuki-syslinux.cfg", $selected_drive & "\syslinux\syslinux.cfg", 1)
-	ElseIf $ubuntu_variant = "mint" Or $ubuntu_variant = "custom" Then
+		$boot_text &= Ubuntu_BootMenu($initrd_file,"mint")
+		UpdateLog("Creating syslinux.cfg file for Mint :" & @CRLF & $boot_text)
 		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
 		FileWrite($file, $boot_text)
 		FileClose($file)
-	ElseIf $ubuntu_variant = "crunchbang" Then
-		FileDelete2($selected_drive & "\syslinux\isolinux.txt")
-		FileCopy(@ScriptDir & "\tools\crunchbang-isolinux.txt", $selected_drive & "\syslinux\isolinux.txt", 1)
 	EndIf
 
-	If $ubuntu_variant <> "ubuntu" And $ubuntu_variant <> "kuki" Then
+	If $ubuntu_variant = "crunchbang" OR $ubuntu_variant = "kuki" Then
+		$boot_text=Ubuntu_BootMenu($initrd_file,"custom") & @LF & "DISPLAY isolinux.txt"& @LF &"TIMEOUT 300"& @LF &"PROMPT 1" & @LF & "default persist"
+		UpdateLog("Creating syslinux.cfg file for "&$ubuntu_variant&" :" & @CRLF & $boot_text)
 		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
 		FileWrite($file, $boot_text)
 		FileClose($file)
+		FileCopy($selected_drive & "\syslinux\isolinux.txt",$selected_drive & "\syslinux\isolinux-orig.txt")
+		FileCopy(@ScriptDir & "\tools\"&$ubuntu_variant&"-isolinux.txt", $selected_drive & "\syslinux\isolinux.txt", 1)
 	EndIf
 
 	SendReport("End-Ubuntu_WriteTextCFG")
 EndFunc   ;==>Ubuntu_WriteTextCFG
+
+Func Ubuntu_BootMenu($initrd_file,$seed_name)
+	Local $kbd_code
+	$kbd_code = GetKbdCode()
+	$boot_text = @LF& "label persist" & @LF & "menu label ^" & Translate("Persistent Mode") _
+		& @LF & "  kernel /casper/vmlinuz" _
+		& @LF & "  append  " & $kbd_code & "noprompt cdrom-detect/try-usb=true persistent file=/cdrom/preseed/" & $seed_name & ".seed boot=casper initrd=/casper/" & $initrd_file & " splash--" _
+		& @LF & "label live" _
+		& @LF & "  menu label ^" & Translate("Live Mode") _
+		& @LF & "  kernel /casper/vmlinuz" _
+		& @LF & "  append   " & $kbd_code & "noprompt cdrom-detect/try-usb=true file=/cdrom/preseed/" & $seed_name  & ".seed boot=casper initrd=/casper/" & $initrd_file & " splash--" _
+		& @LF & "label live-install" _
+		& @LF & "  menu label ^" & Translate("Install") _
+		& @LF & "  kernel /casper/vmlinuz" _
+		& @LF & "  append   " & $kbd_code & "noprompt cdrom-detect/try-usb=true persistent file=/cdrom/preseed/" & $seed_name  & ".seed boot=casper only-ubiquity initrd=/casper/" & $initrd_file & " splash --" _
+		& @LF & "label check" _
+		& @LF & "  menu label ^" & Translate("File Integrity Check") _
+		& @LF & "  kernel /casper/vmlinuz" _
+		& @LF & "  append   " & $kbd_code & "noprompt boot=casper integrity-check initrd=/casper/" & $initrd_file & " splash --" _
+		& @LF & "label memtest" _
+		& @LF & "  menu label ^" & Translate("Memory Test") _
+		& @LF & "  kernel /install/mt86plus"
+	Return $boot_text
+EndFunc
+
 
 Func Fedora_WriteTextCFG($drive_letter)
 	SendReport("Start-Fedora_WriteTextCFG ( Drive : " & $drive_letter & " )")
@@ -1359,7 +1363,7 @@ Func Mandriva_WriteTextCFG($drive_letter)
 	$boot_text &= @LF & "default vesamenu.c32" _
 			 & @LF & "timeout 100" _
 			 & @LF & "menu background splash.jpg" _
-			 & @LF & "menu title Welcome to Fedora !" _
+			 & @LF & "menu title Welcome to Mandriva !" _
 			 & @LF & "menu color border 0 #ffffffff #00000000" _
 			 & @LF & "menu color sel 7 #ffffffff #ff000000" _
 			 & @LF & "menu color title 0 #ffffffff #00000000" _
@@ -1398,13 +1402,24 @@ EndFunc   ;==>Mandriva_WriteTextCFG
 ; ///////////////////////////////// Checking ISO/File MD5 Hashes                  ///////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+Func GUI_Show_Check_status($status)
+	Global $label_step2_status,$label_step2_status2
+	$step2_display_menu=2
+	GUI_Hide_Step2_Default_Menu()
+	GUI_Show_Back_Button()
+	GUICtrlSetState($label_step2_status,$GUI_HIDE)
+	$label_step2_status2 = GUICtrlCreateLabel($status, 38 + $offsetx0, 235 + $offsety0, 300, 80)
+	GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
+	GUICtrlSetColor(-1, 0xFFFFFF)
+EndFunc
+
 Func Check_source_integrity($linux_live_file)
 	SendReport("Start-Check_source_integrity (LinuxFile : " & $linux_live_file & " )")
 
 	$shortname = path_to_name($linux_live_file)
 	SendReport("distrib-" & $shortname)
 
-	Global $MD5_ISO, $compatible_md5, $compatible_filename, $release_number = -1
+	Global $MD5_ISO, $compatible_md5, $compatible_filename,$codenames_list, $release_number = -1
 
 
 	; Pre-Checking
@@ -1415,17 +1430,17 @@ Func Check_source_integrity($linux_live_file)
 		Disable_Hide_Option()
 
 		Step2_Check("good")
-
 		$file_set_mode = "img"
 
-		If DriveSpaceTotal($selected_drive) > 700 Then
+		If DriveSpaceTotal($selected_drive) > Round(FileGetSize($linux_live_file)/(1024*1024)) Then
 			Step1_Check("good")
 		Else
 			Step1_Check("bad")
 		EndIf
 
+		GUI_Show_Check_status(Translate("Support for .IMG files is experimental") & @CRLF & Translate("Only Live mode is currently available in step 3, virtualization option has been disabled"))
 		SendReport("IN-Check_Source (img selected :" & $linux_live_file & ")")
-		MsgBox(64, "", Translate("Support for .IMG files is experimental") & @CRLF & Translate("Only Live mode is currently available in step 3, virtualization option has been disabled"))
+
 	Else
 		Enable_Persistent_Mode()
 		Enable_VirtualBox_Option()
@@ -1438,7 +1453,7 @@ Func Check_source_integrity($linux_live_file)
 	; No check if it's an img file or if the user do not want to
 	If IniRead($settings_ini, "General", "skip_recognition", "no") == "yes" Or get_extension($linux_live_file) = "img" Then
 		Step2_Check("good")
-		$temp_index = _ArraySearch($compatible_filename, "regular_linux.iso")
+		$temp_index = _ArraySearch($codenames_list, "default")
 		$release_number = $temp_index
 		Disable_Persistent_Mode()
 		SendReport("IN-Check_source_integrity (skipping recognition, using default mode)")
@@ -1453,8 +1468,8 @@ Func Check_source_integrity($linux_live_file)
 	$temp_index = _ArraySearch($compatible_filename, $shortname)
 	If $temp_index > 0 Then
 		If ReleaseGetMD5($temp_index) = "ANY" Then
-			MsgBox(4096, Translate("Verifying") & " OK", Translate("This version is compatible and its integrity was checked"))
-			Step2_Check("good")
+			;MsgBox(4096, Translate("Verifying") & " OK", Translate("This version is compatible and its integrity was checked"))
+			GUI_Show_Check_status(Translate("This version is compatible and its integrity was checked")&@CRLF&Translate("Using install parameters of : ")&@CRLF& @CRLF & @TAB &ReleaseGetDescription($temp_index))
 			$release_number = $temp_index
 			Check_If_Default_Should_Be_Used($release_number)
 			SendReport("IN-Check_source_integrity (MD5 set to any, using : " & ReleaseGetCodename($release_number) & " )")
@@ -1465,7 +1480,7 @@ Func Check_source_integrity($linux_live_file)
 	EndIf
 
 	If IniRead($settings_ini, "General", "skip_md5", "no") = "no" Then
-		$MD5_ISO = MD5_ISO($linux_live_file)
+		$MD5_ISO = Check_ISO($linux_live_file)
 		$temp_index = _ArraySearch($compatible_md5, $MD5_ISO)
 	Else
 		$MD5_ISO = "123"
@@ -1475,7 +1490,7 @@ Func Check_source_integrity($linux_live_file)
 	SendReport("IN-Check_source_integrity- Intelligent Processing")
 	If $temp_index > 0 Then
 		; Good version -> COMPATIBLE
-		MsgBox(4096, Translate("Verifying") & " OK", Translate("This version is compatible and its integrity was checked"))
+		GUI_Show_Check_status(Translate("Verifying") & " OK"&@CRLF& Translate("This version is compatible and its integrity was checked")&@CRLF&Translate("Using install parameters of : ")&@CRLF& @CRLF & @TAB &ReleaseGetDescription($temp_index))
 		Step2_Check("good")
 		$release_number = $temp_index
 		SendReport("IN-Check_source_integrity (Compatible version found : " & ReleaseGetCodename($release_number) & " )")
@@ -1483,220 +1498,137 @@ Func Check_source_integrity($linux_live_file)
 		$temp_index = _ArraySearch($compatible_filename, $shortname)
 		If $temp_index > 0 Then
 			; Filename is known but MD5 not OK -> COMPATIBLE BUT ERROR
-			MsgBox(48, Translate("Please read"), Translate("You have the right ISO file but it is corrupted or was altered.") & @CRLF & Translate("Please download it again."))
-			Step2_Check("warning")
 			$release_number = $temp_index
+			GUI_Show_Check_status(Translate("You have the right ISO file but it is corrupted or was altered.") &" "&Translate("Please download it again.")&@CRLF&Translate("However, LinuxLive USB Creator will try to use same install parameters as for") & @CRLF & @TAB & @TAB& ReleaseGetDescription($release_number))
+			Step2_Check("warning")
 			SendReport("IN-Check_source_integrity (MD5 not found but filename found : " & ReleaseGetFilename($release_number) & " )")
 		Else
 			; Filename is not known but trying to find what it is with its name => INTELLIGENT PROCESSING
 			SendReport("IN-Check_source_integrity (start intelligent processing)")
 
-			If ( StringInStr($shortname, "10.04") OR StringInStr($shortname, "9.10") ) And StringInStr($shortname, "netbook") Then
+			If ( StringInStr($shortname, "10.04") OR StringInStr($shortname, "lucid") OR StringInStr($shortname, "9.10") ) And StringInStr($shortname, "netbook") Then
 				; Ubuntu Karmic (>=9.10) based
-				$temp_index = _ArraySearch($compatible_filename, "ubuntu-9.10-netbook-remix-i386.iso")
-				$release_number = $temp_index
-				Step2_Check("warning")
-				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
-				;MsgBox(48, Translate("Please read"), Translate("This ISO is not compatible.") & @CRLF & Translate("However, LinuxLive USB Creator will try to use same install parameters as for") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
+				$release_number = _ArraySearch($codenames_list, "ubuntu-netbook-last")
 			ElseIf StringInStr($shortname, "grml") Then
 				; Grml
-				$temp_index = _ArraySearch($compatible_filename, "grml_2009.10.iso")
-				$release_number = $temp_index
-				Step2_Check("good")
-				Disable_Persistent_Mode()
-				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
+				$release_number = _ArraySearch($codenames_list, "grml-last")
 			ElseIf StringInStr($shortname, "knoppix") Then
 				; Knoppix
-				$temp_index = _ArraySearch($compatible_filename, "KNOPPIX_V6.2CD-2009-11-18-EN.iso")
-				$release_number = $temp_index
-				Step2_Check("good")
-				Disable_Persistent_Mode()
-				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
-			ElseIf (StringInStr($shortname, "9.10") Or StringInStr($shortname, "lucid") Or StringInStr($shortname, "karmic") Or StringInStr($shortname, "ubuntu")) Then
+				$release_number = _ArraySearch($codenames_list, "knoppix-last")
+			ElseIf StringInStr($shortname, "9.10") Or StringInStr($shortname, "lucid") Then
+				; Ubuntu Karmic 10.04 based
+				$release_number = _ArraySearch($codenames_list, "ubuntu-10.04")
+			ElseIf (StringInStr($shortname, "karmic") Or StringInStr($shortname, "buntu")) Then
 				; Ubuntu Karmic (>=9.10) based
-				$temp_index = _ArraySearch($compatible_filename, "ubuntu-9.10-desktop-i386.iso")
-				$release_number = $temp_index
-				Step2_Check("good")
-				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
-				;MsgBox(48, Translate("Please read"), Translate("This ISO is not compatible.") & @CRLF & Translate("However, LinuxLive USB Creator will try to use same install parameters as for") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
-			ElseIf StringInStr($shortname, "9.04") Or StringInStr($shortname, "Fluxbuntu") Then
+				$release_number = _ArraySearch($codenames_list, "ubuntu-last")
+			ElseIf StringInStr($shortname, "9.04") Then
 				; Ubuntu 9.04 based
-				$temp_index = _ArraySearch($compatible_filename, "ubuntu-9.04-desktop-i386.iso")
-				$release_number = $temp_index
-				Step2_Check("good")
-				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
-				;MsgBox(48, Translate("Please read"), Translate("This ISO is not compatible.") & @CRLF & Translate("However, LinuxLive USB Creator will try to use same install parameters as for") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
+				$release_number = _ArraySearch($codenames_list, "ubuntu-904")
 			ElseIf StringInStr($shortname, "kuki") Then
 				; Kuki based (Ubuntu)
-				$temp_index = _ArraySearch($compatible_filename, "kuki-2.8-20090829Final.iso")
-				$release_number = $temp_index
-				Step2_Check("good")
-				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
-				;MsgBox(48, Translate("Please read"), Translate("This ISO is not compatible.") & @CRLF & Translate("However, LinuxLive USB Creator will try to use same install parameters as for") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
-			ElseIf StringInStr($shortname, "fedora") Or StringInStr($shortname, "F10") Or StringInStr($shortname, "F11") Then
+				$release_number = _ArraySearch($codenames_list, "kuki-last")
+			ElseIf StringInStr($shortname, "fedora") Or StringInStr($shortname, "F10") Or StringInStr($shortname, "F11") OR StringInStr($shortname, "F12") Then
 				; Fedora Based
-				$temp_index = _ArraySearch($compatible_filename, "Fedora-11-i686-Live.iso")
-				$release_number = $temp_index
-				Step2_Check("good")
-				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
-				;MsgBox(48, Translate("Please read"), Translate("This ISO is not compatible.") & @CRLF & Translate("However, LinuxLive USB Creator will try to use same install parameters as for") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
+				$release_number = _ArraySearch($codenames_list, "fedora-last")
 			ElseIf StringInStr($shortname, "mint") Then
 				; Mint Based
-				$temp_index = _ArraySearch($compatible_filename, "LinuxMint-7.iso")
-				$release_number = $temp_index
-				Step2_Check("good")
-				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
-				;MsgBox(48, Translate("Please read"), Translate("This ISO is not compatible.") & @CRLF & Translate("However, LinuxLive USB Creator will try to use same install parameters as for") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
+				$release_number = _ArraySearch($codenames_list, "mint-last")
 			ElseIf StringInStr($shortname, "gnewsense") Then
 				; gNewSense Based
-				$temp_index = _ArraySearch($compatible_filename, "gnewsense-livecd-deltah-i386-2.3.iso")
-				$release_number = $temp_index
-				Step2_Check("good")
-				Disable_Persistent_Mode()
-				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
+				$release_number = _ArraySearch($codenames_list, "gnewsense-last")
 			ElseIf StringInStr($shortname, "clonezilla") Then
 				; Clonezilla
-				$temp_index = _ArraySearch($compatible_filename, "clonezilla-live-1.2.2-31.iso")
-				$release_number = $temp_index
-				Step2_Check("good")
-				Disable_Persistent_Mode()
-				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
+				$release_number = _ArraySearch($codenames_list, "clonezilla-last")
 			ElseIf StringInStr($shortname, "gparted") Then
 				; Gparted
-				$temp_index = _ArraySearch($compatible_filename, "gparted-live-0.4.6-1.iso")
-				$release_number = $temp_index
-				Step2_Check("good")
-				Disable_Persistent_Mode()
-				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
+				$release_number = _ArraySearch($codenames_list, "gparted-last")
 			ElseIf StringInStr($shortname, "debian") Then
 				; Debian
-				$temp_index = _ArraySearch($compatible_filename, "debian-live-502-i386-gnome-desktop.iso")
-				$release_number = $temp_index
-				Step2_Check("good")
-				Disable_Persistent_Mode()
-				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
+				$release_number = _ArraySearch($codenames_list, "debiangnome-last")
 			ElseIf StringInStr($shortname, "toutou") Then
 				; Toutou Linux
-				$temp_index = _ArraySearch($compatible_filename, "ToutouLinux_4.1.2.iso")
-				$release_number = $temp_index
-				Step2_Check("good")
-				Disable_Persistent_Mode()
-				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
+				$release_number = _ArraySearch($codenames_list, "toutou-last")
 			ElseIf StringInStr($shortname, "puppy") Or StringInStr($shortname, "pup-") Then
 				; Puppy Linux
-				$temp_index = _ArraySearch($compatible_filename, "pup-431.iso")
-				$release_number = $temp_index
-				Step2_Check("good")
-				Disable_Persistent_Mode()
-				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
+				$release_number = _ArraySearch($codenames_list, "puppy-last")
+				GUI_Show_Check_status(Translate("This ISO is not compatible."))
 			ElseIf StringInStr($shortname, "slax") Then
 				; Slax
-				$temp_index = _ArraySearch($compatible_filename, "slax-6.1.2.iso")
-				$release_number = $temp_index
-				Step2_Check("good")
-				Disable_Persistent_Mode()
-				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
+				$release_number = _ArraySearch($codenames_list, "slax-last")
 			ElseIf StringInStr($shortname, "centos") Then
 				; CentOS
-				$temp_index = _ArraySearch($compatible_filename, "CentOS-5.4-i386-LiveCD.iso")
-				$release_number = $temp_index
-				Step2_Check("good")
-				Disable_Persistent_Mode()
-				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
+				$release_number = _ArraySearch($codenames_list, "centos-last")
 			ElseIf StringInStr($shortname, "pmagic") Then
 				; Parted Magic
-				$temp_index = _ArraySearch($compatible_filename, "pmagic-usb-4.6.zip")
-				$release_number = $temp_index
-				Step2_Check("good")
-				Disable_Persistent_Mode()
-				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
+				$release_number = _ArraySearch($codenames_list, "pmagic-last")
 			ElseIf StringInStr($shortname, "pclinuxos") Then
 				; PCLinuxOS
-				$temp_index = _ArraySearch($compatible_filename, "pclinuxos-2009.2.iso")
-				$release_number = $temp_index
-				Step2_Check("good")
-				Disable_Persistent_Mode()
-				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
+				$release_number = _ArraySearch($codenames_list, "pclinuxoskde-last")
 			ElseIf StringInStr($shortname, "slitaz") Then
 				; Slitaz
-				$temp_index = _ArraySearch($compatible_filename, "slitaz-2.0.iso")
-				$release_number = $temp_index
-				Step2_Check("good")
-				Disable_Persistent_Mode()
-				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
+				$release_number = _ArraySearch($codenames_list, "slitaz-last")
 			ElseIf StringInStr($shortname, "tinycore") Then
 				; Tiny Core
-				$temp_index = _ArraySearch($compatible_filename, "tinycore_2.7.iso")
-				$release_number = $temp_index
-				Step2_Check("good")
-				Disable_Persistent_Mode()
-				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
+				$release_number = _ArraySearch($codenames_list, "tinycore-last")
 			ElseIf StringInStr($shortname, "ophcrack") Then
 				; OphCrack
-				$temp_index = _ArraySearch($compatible_filename, "ophcrack-xp-livecd-2.3.1.iso")
-				$release_number = $temp_index
-				Step2_Check("good")
-				Disable_Persistent_Mode()
-				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
+				$release_number = _ArraySearch($codenames_list, "ophcrackxp-last")
 			ElseIf StringInStr($shortname, "crunch") Then
 				; CrunchBang Based
-				$temp_index = _ArraySearch($compatible_filename, "crunchbang-9.04.01.i386.iso")
-				$release_number = $temp_index
-				Step2_Check("warning")
-				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
-				;MsgBox(48, Translate("Please read"), Translate("This ISO is not compatible.") & @CRLF & Translate("However, LinuxLive USB Creator will try to use same install parameters as for") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
+				$release_number = _ArraySearch($codenames_list, "crunchbangstd-last")
 			ElseIf StringInStr($shortname, "sabayon") Then
 				; Sabayon Linux
-				$temp_index = _ArraySearch($compatible_filename, "Sabayon_Linux_5.1-r1_x86_G.iso")
-				$release_number = $temp_index
-				Step2_Check("good")
-				Disable_Persistent_Mode()
-				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
+				$release_number = _ArraySearch($codenames_list, "sabayonG-last")
 			ElseIf StringInStr($shortname, "SystemRescueCd") Then
 				; System Rescue CD
-				$temp_index = _ArraySearch($compatible_filename, "SystemRescueCd-x86-1.3.3.iso")
-				$release_number = $temp_index
-				Step2_Check("good")
-				Disable_Persistent_Mode()
-				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
+				$release_number = _ArraySearch($codenames_list, "systemrescue-last")
 			ElseIf StringInStr($shortname, "gentoo") Then
-				; System Rescue CD
-				$temp_index = _ArraySearch($compatible_filename, "livedvd-x86-amd64-32ul-10.1.iso")
-				$release_number = $temp_index
-				Step2_Check("good")
-				Disable_Persistent_Mode()
-				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
+				; Gentoo
+				$release_number = _ArraySearch($codenames_list, "gentoo-last")
 			ElseIf StringInStr($shortname, "backtrack") OR StringInStr($shortname, "bt") Then
 				; BackTrack
-				$temp_index = _ArraySearch($compatible_filename, "bt4-pre-final.iso")
-				$release_number = $temp_index
-				Step2_Check("good")
-				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
+				$release_number = _ArraySearch($codenames_list, "backtrack-last")
 			Else
 				; Any Linux, except those known not to work in Live mode
-				$temp_index = _ArraySearch($compatible_filename, "regular_linux.iso")
-				$release_number = $temp_index
-				Step2_Check("warning")
-				SendReport("IN-Check_source_integrity (MD5 not found AND keyword not found -> using DEFAULT mode")
-				MsgBox(48, Translate("Please read"), Translate("This ISO is not compatible.") & @CRLF & Translate("However, LinuxLive USB Creator will try to use same install parameters as for") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
+				$release_number = _ArraySearch($codenames_list, "default")
 			EndIf
+
+			GUI_Show_Check_status(Translate("This Linux is not in the compatibility list")& "." & @CRLF &Translate("However, LinuxLive USB Creator will try to use same install parameters as for") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
+
+			if ReleaseGetCodename($release_number)<>"default" Then
+				SendReport("IN-Check_source_integrity (MD5 not found but keyword found , will use : " & ReleaseGetCodename($release_number) & " )")
+			Else
+				SendReport("IN-Check_source_integrity (MD5 not found AND keyword not found -> using DEFAULT mode")
+			EndIf
+
 			SendReport("IN-Check_source_integrity (end intelligent processing)")
 		EndIf
 	EndIf
 	Check_If_Default_Should_Be_Used($release_number)
-	; CentOS cannot use Persistent mode but also does not use default mode
-	If ReleaseGetCodename($release_number) = "centos54" Then Disable_Persistent_Mode()
-
 	SendReport("End-Check_source_integrity")
 EndFunc   ;==>Check_source_integrity
 
 
 Func Check_If_Default_Should_Be_Used($release_in_list)
 	SendReport("Start-Check_If_Default_Should_Be_Used (release : " & $release_in_list & " )")
-	$codename= ReleaseGetCodename($release_in_list)
+	#cs $codename= ReleaseGetCodename($release_in_list)
 	If StringInStr($variants_using_default_mode,$codename)>0 Then
 		Disable_Persistent_Mode()
 		SendReport("IN-Check_If_Default_Should_Be_Used ( Disable persistency for " & $codename& " )")
+	EndIf
+	#ce
+	$features=ReleaseGetSupportedFeatures($release_in_list)
+
+	if StringInStr($features,"default") Then
+		Disable_Persistent_Mode()
+		Step2_Check("good")
+		$codename=ReleaseGetCodename($release_in_list)
+		SendReport("IN-Check_If_Default_Should_Be_Used ( Disable persistency for " & $codename& " )")
+	Elseif StringInStr($features,"persistence") Then
+		Enable_Persistent_Mode()
+		Step2_Check("good")
+		$codename=ReleaseGetCodename($release_in_list)
+		SendReport("IN-Check_If_Default_Should_Be_Used ( Enable persistency for " & $codename& " )")
 	EndIf
 	SendReport("End-Check_If_Default_Should_Be_Used")
 EndFunc   ;==>Check_If_Default_Should_Be_Used
@@ -1726,8 +1658,47 @@ Func Check_if_version_non_grata($version_name)
 	SendReport("End-Check_if_version_non_grata (is not Non grata)")
 EndFunc   ;==>Check_if_version_non_grata
 
+Func Check_ISO($FileToHash)
+	SendReport("Start-Check_ISO ( File : " & $FileToHash & " )")
+	; Used to avoid redrawing the old elements of Step 2 (ISO, CD and download)
+	$step2_display_menu = 2
+	GUI_Hide_Step2_Default_Menu()
+
+	$progress_bar = _ProgressCreate(38 + $offsetx0, 238 + $offsety0, 300, 30)
+	_ProgressSetImages($progress_bar, @ScriptDir & "\tools\img\progress_green.jpg", @ScriptDir & "\tools\img\progress_background.jpg")
+	_ProgressSetFont($progress_bar, "", -1, -1, 0x000000, 0)
+	$label_step2_status = GUICtrlCreateLabel(Translate("Checking file")&" : "&path_to_name($FileToHash), 38 + $offsetx0, 231 + $offsety0 + 50, 300, 80)
+	GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
+	GUICtrlSetColor(-1, 0xFFFFFF)
+	Global $BufferSize = 0x20000
+	Global $FileHandle = FileOpen($FileToHash, 16)
+	If $FileToHash = "" Then
+		SendReport("End-MD5_ISO (no iso)")
+		Return "no iso"
+	EndIf
+
+	$MD5CTX = _MD5Init()
+	$iterations = Ceiling(FileGetSize($FileToHash) / $BufferSize)
+	For $i = 1 To $iterations
+		_MD5Input($MD5CTX, FileRead($FileHandle, $BufferSize))
+		$percent_md5 = Round(100 * $i / $iterations)
+		_ProgressSet($progress_bar,$percent_md5 )
+		_ProgressSetText($progress_bar, $percent_md5&"%" )
+	Next
+
+	$hash = _MD5Result($MD5CTX)
+	FileClose($FileHandle)
+	_ProgressSet($progress_bar,100 )
+	_ProgressSetText($progress_bar, "100%" )
+	_ProgressDelete($progress_bar)
+	GUI_Show_Back_Button()
+	$hexa_hash = StringTrimLeft($hash, 2)
+	SendReport("End-MD5_ISO ( Hash : " & $hexa_hash & " )")
+	Return $hexa_hash
+EndFunc
+
 Func MD5_ISO($FileToHash)
-	SendReport("Start-MD5_ISO ( File : " & $FileToHash & " )")
+
 	ProgressOn(Translate("Verifying"), Translate("Integrity + compatibility check"), "0 %", -1, -1, 16)
 	Global $BufferSize = 0x20000
 	If $FileToHash = "" Then
@@ -2023,8 +1994,7 @@ Func GUI_Restore()
 	GUISetState($GUI_SHOW, $GUI)
 	GUISetState($GUI_SHOW, $CONTROL_GUI)
 	GUIRegisterMsg($WM_PAINT, "DrawAll")
-	WinActivate($for_winactivate)
-	ControlFocus("LiLi USB Creator", "", $REFRESH_AREA)
+	ControlFocus("LinuxLive USB Creator", "", $REFRESH_AREA)
 EndFunc   ;==>GUI_Restore
 
 Func GUI_Choose_Drive()
@@ -2135,15 +2105,8 @@ EndFunc   ;==>GUI_Choose_CD
 Func GUI_Download()
 	SendReport("Start-GUI_Download")
 	; Used to avoid redrawing the old elements of Step 2 (ISO, CD and download)
-	$download_menu_active = 1
-
-	; hiding old elements
-	GUICtrlSetState($ISO_AREA, $GUI_HIDE)
-	GUICtrlSetState($CD_AREA, $GUI_HIDE)
-	GUICtrlSetState($DOWNLOAD_AREA, $GUI_HIDE)
-	GUICtrlSetState($label_cd, $GUI_HIDE)
-	GUICtrlSetState($label_download, $GUI_HIDE)
-	GUICtrlSetState($label_iso, $GUI_HIDE)
+	$step2_display_menu = 1
+	GUI_Hide_Step2_Default_Menu()
 
 	; Drawing new menu
 	$combo_linux = GUICtrlCreateCombo(">> " & Translate("Select your favourite Linux"), 38 + $offsetx0, 240 + $offsety0, 300, -1, BitOR($CBS_DROPDOWNLIST, $WS_VSCROLL))
@@ -2170,30 +2133,36 @@ Func GUI_Download()
 	$download_auto = GUICtrlCreateButton(Translate("Automatically"), 38 + $offsetx0 + 160, 235 + $offsety0 + 50, 110)
 	GUICtrlSetOnEvent(-1, "GUI_Download_Automatically")
 	GUICtrlSetState(-1, $GUI_DISABLE)
-
-	$BACK_AREA = GUICtrlCreateLabel("", 5 + $offsetx0, 300 + $offsety0, 32, 32)
-	$DRAW_BACK = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $BACK_PNG, 0, 0, 32, 32, 5 + $offsetx0, 300 + $offsety0, 32, 32)
-	GUICtrlSetCursor(-1, 0)
-	GUICtrlSetOnEvent(-1, "GUI_Back_Download")
-
+	GUI_Show_Back_Button()
 	SendReport("End-GUI_Download")
 EndFunc   ;==>GUI_Download
 
-Func GUI_Back_Download()
-	SendReport("Start-GUI_Back_Download")
-	If @InetGetActive = 1 Then InetGet("abort")
+Func GUI_Show_Back_Button()
+	GUICtrlDelete($cleaner2)
+	$BACK_AREA = GUICtrlCreateLabel("", 5 + $offsetx0, 300 + $offsety0, 32, 32)
+	$DRAW_BACK = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $BACK_PNG, 0, 0, 32, 32, 5 + $offsetx0, 300 + $offsety0, 32, 32)
+	GUICtrlSetCursor($BACK_AREA, 0)
+	GUICtrlSetOnEvent($BACK_AREA, "GUI_Back_Download")
+EndFunc
+
+Func GUI_Hide_Back_Button()
+	GUICtrlDelete($BACK_AREA)
+	$cleaner2 = GUICtrlCreateLabel("", 5 + $offsetx0, 300 + $offsety0, 32, 32)
+EndFunc
+
+Func GUI_Hide_Step2_Download_Menu()
 	GUICtrlSetState($combo_linux, $GUI_HIDE)
 	GUICtrlSetState($download_manual, $GUI_HIDE)
 	GUICtrlSetState($download_auto, $GUI_HIDE)
 	GUICtrlSetState($label_step2_status, $GUI_HIDE)
 	GUICtrlSetState($download_label2, $GUI_HIDE)
 	GUICtrlSetState($OR_label, $GUI_HIDE)
-
-
 	$cleaner = GUICtrlCreateLabel("", 38 + $offsetx0, 238 + $offsety0, 300, 30)
-	$cleaner2 = GUICtrlCreateLabel("", 5 + $offsetx0, 300 + $offsety0, 32, 32)
+	GUI_Hide_Back_Button()
 	GUICtrlSetState($cleaner, $GUI_SHOW)
-	; Showing old elements again
+EndFunc
+
+Func GUI_Show_Step2_Default_Menu()
 	GUICtrlSetState($ISO_AREA, $GUI_SHOW)
 	GUICtrlSetState($CD_AREA, $GUI_SHOW)
 	GUICtrlSetState($DOWNLOAD_AREA, $GUI_SHOW)
@@ -2202,11 +2171,33 @@ Func GUI_Back_Download()
 	GUICtrlSetState($label_iso, $GUI_SHOW)
 	GUICtrlSetState($cleaner, $GUI_HIDE)
 	GUICtrlSetState($cleaner2, $GUI_HIDE)
-	$download_menu_active = 0
+	$step2_display_menu = 0
 	$DRAW_CD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $CD_PNG, 0, 0, 75, 75, 146 + $offsetx0, 231 + $offsety0, 75, 75)
 	$DRAW_DOWNLOAD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $DOWNLOAD_PNG, 0, 0, 75, 75, 260 + $offsetx0, 230 + $offsety0, 75, 75)
 	$DRAW_ISO = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $ISO_PNG, 0, 0, 75, 75, 38 + $offsetx0, 231 + $offsety0, 75, 75)
 	GUICtrlSetState($cleaner2, $GUI_SHOW)
+EndFunc
+
+Func GUI_Hide_Step2_Default_Menu()
+	; hiding old elements
+	GUICtrlSetState($ISO_AREA, $GUI_HIDE)
+	GUICtrlSetState($CD_AREA, $GUI_HIDE)
+	GUICtrlSetState($DOWNLOAD_AREA, $GUI_HIDE)
+	GUICtrlSetState($label_cd, $GUI_HIDE)
+	GUICtrlSetState($label_download, $GUI_HIDE)
+	GUICtrlSetState($label_iso, $GUI_HIDE)
+EndFunc
+
+
+Func GUI_Back_Download()
+	SendReport("Start-GUI_Back_Download")
+	Global $label_step2_status,$label_step2_status2
+	If @InetGetActive = 1 Then InetGet("abort")
+	GUI_Hide_Step2_Download_Menu()
+	GUICtrlSetState($label_step2_status,$GUI_HIDE)
+	GUICtrlSetState($label_step2_status2,$GUI_HIDE)
+	; Showing old elements again
+	GUI_Show_Step2_Default_Menu()
 	SendReport("End-GUI_Back_Download")
 EndFunc   ;==>GUI_Back_Download
 
@@ -2244,24 +2235,20 @@ Func DownloadRelease($release_in_list, $automatic_download)
 	SendReport("Start-DownloadRelease (Release=" & $release_in_list & " - Auto_DL=" & $automatic_download & " )")
 	Local $latency[50], $i, $mirror, $available_mirrors = 0, $tested_mirrors = 0
 
-	GUICtrlSetState($combo_linux, $GUI_HIDE)
-	GUICtrlSetState($download_manual, $GUI_HIDE)
-	GUICtrlSetState($download_auto, $GUI_HIDE)
-	GUICtrlSetState($BACK_AREA, $GUI_HIDE)
-	GUICtrlSetState($download_label2, $GUI_HIDE)
-	GUICtrlSetState($OR_label, $GUI_HIDE)
+	GUI_Hide_Step2_Download_Menu()
+
+	$BACK_AREA = GUICtrlCreateLabel("", 5 + $offsetx0, 300 + $offsety0, 32, 32)
+	$DRAW_BACK = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $BACK_PNG, 0, 0, 32, 32, 5 + $offsetx0, 300 + $offsety0, 32, 32)
+	GUICtrlSetCursor(-1, 0)
+	GUICtrlSetOnEvent(-1, "GUI_Back_Download")
 
 	$progress_bar = _ProgressCreate(38 + $offsetx0, 238 + $offsety0, 300, 30)
 	_ProgressSetImages($progress_bar, @ScriptDir & "\tools\img\progress_green.jpg", @ScriptDir & "\tools\img\progress_background.jpg")
 	_ProgressSetFont($progress_bar, "", -1, -1, 0x000000, 0)
-
-	$DRAW_BACK = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $BACK_PNG, 0, 0, 32, 32, 5 + $offsetx0, 300 + $offsety0, 32, 32)
-
 	$label_step2_status = GUICtrlCreateLabel(Translate("Looking for the fastest mirror"), 38 + $offsetx0, 231 + $offsety0 + 50, 300, 80)
 	GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 	GUICtrlSetColor(-1, 0xFFFFFF)
 	UpdateStatusStep2("Looking for the fastest mirror")
-
 
 	For $i = $R_MIRROR1 To $R_MIRROR10
 		$mirror = $releases[$release_in_list][$i]

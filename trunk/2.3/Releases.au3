@@ -8,8 +8,8 @@
 
 ; Global variables for releases attributes
 Global Const $R_CODE = 0,$R_NAME=1,$R_DISTRIBUTION=2, $R_DISTRIBUTION_VERSION=3,$R_FILENAME=4,$R_FILE_MD5=5,$R_RELEASE_DATE=6,$R_WEB=7,$R_DOWNLOAD_PAGE=8,$R_DOWNLOAD_SIZE=9,$R_INSTALL_SIZE=10,$R_DESCRIPTION=11
-Global Const $R_MIRROR1=12,$R_MIRROR2=13,$R_MIRROR3=14,$R_MIRROR4=15,$R_MIRROR5=16,$R_MIRROR6=17,$R_MIRROR7=18,$R_MIRROR8=19,$R_MIRROR9=20,$R_MIRROR10=21,$R_VARIANT=22,$R_VARIANT_VERSION=23,$R_VISIBLE=24
-Global $releases[5][30],$compatible_md5[5],$compatible_filename[5]
+Global Const $R_MIRROR1=12,$R_MIRROR2=13,$R_MIRROR3=14,$R_MIRROR4=15,$R_MIRROR5=16,$R_MIRROR6=17,$R_MIRROR7=18,$R_MIRROR8=19,$R_MIRROR9=20,$R_MIRROR10=21,$R_VARIANT=22,$R_VARIANT_VERSION=23,$R_VISIBLE=24,$R_FEATURES=25
+Global $releases[5][30],$compatible_md5[5],$compatible_filename[5],$codenames_list[5]
 
 
 Func Get_Compatibility_List()
@@ -19,15 +19,17 @@ Func Get_Compatibility_List()
 		GUI_Exit()
 	EndIf
 
-	Global $releases[$sections[0]+1][30],$compatible_md5[$sections[0]+1],$compatible_filename[$sections[0]+1]
+	Global $releases[$sections[0]+1][30],$compatible_md5[$sections[0]+1],$compatible_filename[$sections[0]+1],$codenames_list[$sections[0]+1]
 
 	For $i=1 to $sections[0]
 		$releases[$i][$R_CODE]=$sections[$i]
+		$codenames_list[$i]=$sections[$i]
 		$releases[$i][$R_NAME]=IniRead($compatibility_ini, $sections[$i], "Name","NotFound")
 		$releases[$i][$R_DISTRIBUTION]=IniRead($compatibility_ini, $sections[$i], "Distribution","NotFound")
 		$releases[$i][$R_DISTRIBUTION_VERSION]=IniRead($compatibility_ini, $sections[$i], "Distribution_Version","NotFound")
 		$releases[$i][$R_VARIANT]=IniRead($compatibility_ini, $sections[$i], "Variant","NotFound")
 		$releases[$i][$R_VARIANT_VERSION]=IniRead($compatibility_ini, $sections[$i], "Variant_Version","NotFound")
+		$releases[$i][$R_FEATURES]=IniRead($compatibility_ini, $sections[$i], "Supported_Features","default")
 		$releases[$i][$R_FILENAME]=IniRead($compatibility_ini, $sections[$i], "Filename","NotFound")
 		$compatible_filename[$i]=IniRead($compatibility_ini, $sections[$i], "Filename","NotFound")
 		$releases[$i][$R_FILE_MD5]=IniRead($compatibility_ini, $sections[$i], "File_MD5","NotFound")
@@ -61,6 +63,7 @@ Func DisplayRelease($release_in_list)
 		& "Distribution Version : " & ReleaseGetDistributionVersion($release_in_list) & @CRLF  _
 		& "Variant : " & ReleaseGetVariant($release_in_list) & @CRLF  _
 		& "Variant Version : " & ReleaseGetVariantVersion($release_in_list) & @CRLF  _
+		& "Supported Features : " & ReleaseGetSupportedFeatures($release_in_list) & @CRLF  _
 		& "Filename : " & $releases[$release_in_list][$R_FILENAME] & @CRLF  _
 		& "MD5 : " & $releases[$release_in_list][$R_FILE_MD5] & @CRLF  _
 		& "Release Date : " & $releases[$release_in_list][$R_RELEASE_DATE] & @CRLF  _
@@ -112,7 +115,7 @@ Func DisplayAllReleases()
 EndFunc
 
 Func ReleaseGetCodename($release_in_list)
-	if $release_in_list <=0 Then Return "NotFound"
+	if $release_in_list <=0 Then Return "default"
 	Return $releases[$release_in_list][$R_CODE]
 EndFunc
 
@@ -154,6 +157,11 @@ EndFunc
 Func ReleaseGetDescription($release_in_list)
 	if $release_in_list <=0 Then Return "NotFound"
 	Return $releases[$release_in_list][$R_DESCRIPTION]
+EndFunc
+
+Func ReleaseGetSupportedFeatures($release_in_list)
+	if $release_in_list <=0 Then Return "NotFound"
+	Return $releases[$release_in_list][$R_FEATURES]
 EndFunc
 
 Func URLToHostname($url)

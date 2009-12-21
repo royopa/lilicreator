@@ -1,4 +1,4 @@
-Kuki Linux 2.8
+Kuki Linux
 
 
 For the default persistent system, press ENTER or enter 'persistent'.
