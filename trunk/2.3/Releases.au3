@@ -164,6 +164,18 @@ Func ReleaseGetSupportedFeatures($release_in_list)
 	Return $releases[$release_in_list][$R_FEATURES]
 EndFunc
 
+Func ReleaseGetVBoxRAM($release_in_list)
+	$features=ReleaseGetSupportedFeatures($release_in_list)
+	$feature_list = StringSplit($features,",")
+	For $feature IN $feature_list
+		if StringInStr($feature,"vboxram-") Then
+			$vboxram=StringSplit($feature,"-")
+			if $vboxram[0]=2 Then Return $vboxram[2]
+		EndIf
+	Next
+	Return "256"
+EndFunc
+
 Func URLToHostname($url)
 	if StringInStr($url,"/") >= 3 Then
 		$temp = StringSplit($url,"/")
