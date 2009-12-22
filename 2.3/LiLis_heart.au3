@@ -762,22 +762,34 @@ EndFunc
 	Description : Set the Virtual Machine with the right amount of RAM (=minimum requirement)  for a specific version of Linux
 	Input :
 		$drive_letter = Letter of the drive (pre-formated like "E:" )
-		$linux_version = Pre-formated version of linux (like ubuntu_8.10)
+		$release_in_list = number of the release in the compatibility list (-1 if not present)
 	Output :
 		0 = sucess
 		1 = error see @error
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Func Setup_RAM_for_VM()
-		SendReport("Start-Setup_RAM_for_VM")
-		SendReport("End-Setup_RAM_for_VM")
+Func Setup_RAM_for_VM($drive_letter,$release_in_list)
+	SendReport("Start-Setup_RAM_for_VM")
+	$linuxlive_settings_file = $drive_letter&"\Portable-VirtualBox\data\.VirtualBox\Machines\LinuxLive\LinuxLive.xml"
+    $file = FileOpen ($linuxlive_settings_file, 128)
+
+	$line    = FileRead ($file)
+	FileClose ($file)
+
+	$old_value = _StringBetween ($line, 'Memory RAMSize="', '"')
+
+	If $old_value[0] > 0 Then
+		$new_line=StringReplace ($line, 'Memory RAMSize="' & $old_value[0] & '"', 'Memory RAMSize="' & ReleaseGetVBoxRAM($release_in_list) & '"')
+
+		$file = FileOpen ($linuxlive_settings_file, 2)
+		FileWrite ($file, $new_line)
+		FileClose ($file)
+	EndIf
+	SendReport("End-Setup_RAM_for_VM")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 #cs

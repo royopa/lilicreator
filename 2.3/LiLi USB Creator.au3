@@ -99,6 +99,7 @@ EndIf
 #include <StaticConstants.au3>
 #include <EditConstants.au3>
 #include <Array.au3>
+#include <String.au3>
 #include <File.au3>
 #include <INet.au3>
 #include <IE.au3>
@@ -2611,8 +2612,8 @@ Func GUI_Launch_Creation()
 			; Next step : uncompressing vbox on the key
 			Uncompress_virtualbox_on_key($selected_drive)
 
-			;UpdateStatus("Applying VirtualBox settings")
-			;SetupVirtualBox($selected_drive & "\Portable-VirtualBox", $selected_drive)
+			UpdateStatus("Applying VirtualBox settings")
+			Setup_RAM_for_VM($selected_drive,$release_number)
 
 			;Run($selected_drive & "\Portable-VirtualBox\Launch_usb.exe", @ScriptDir, @SW_HIDE)
 
