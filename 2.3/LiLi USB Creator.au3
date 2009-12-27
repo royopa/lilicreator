@@ -34,7 +34,7 @@ Global Const $blacklist_ini = @ScriptDir & "\tools\settings\black_list.ini"
 Global Const $log_dir = @ScriptDir & "\logs\"
 Global Const $check_updates_url = "http://www.linuxliveusb.com/updates/"
 
-Global $lang, $anonymous_id
+Global $lang, $anonymous_id,$logfile
 Global $downloaded_virtualbox_filename
 
 ; Global variables used for the onEvent Functions
@@ -44,11 +44,32 @@ Global $ZEROGraphic, $EXIT_NORM, $EXIT_OVER, $MIN_NORM, $MIN_OVER, $PNG_GUI, $CD
 Global $step2_display_menu = 0, $cleaner, $cleaner2
 Global $combo_linux, $download_manual, $download_auto, $slider, $slider_visual
 Global $best_mirror, $iso_size, $filename, $progress_bar, $label_step2_status
-Global $MD5_ISO = "", $compatible_md5, $compatible_filename, $release_number = -1, $files_in_source, $prefetched_linux_list
+Global $MD5_ISO = "", $compatible_md5, $compatible_filename, $release_number = -1, $files_in_source, $prefetched_linux_list,$recommended_ram = 256
 Global $foo
 Global $for_winactivate
 
 ; $step2_display_menu = 0 when displaying default menu, 1 when displaying download menu, 2 when displaying checking.
+
+; Setting up all global vars and local vars
+Global $combo
+Global $selected_drive, $virtualbox_check, $virtualbox_size
+Global $STEP1_OK, $STEP2_OK, $STEP3_OK
+Global $DRAW_CHECK_STEP1, $DRAW_CHECK_STEP2, $DRAW_CHECK_STEP3
+Global $MD5_ISO, $version_in_file
+Global $variante
+
+$selected_drive = "->"
+$file_set = 0;
+$file_set_mode = "none"
+$annuler = 0
+$combo_updated = 0
+
+$STEP1_OK = 0
+$STEP2_OK = 0
+$STEP3_OK = 0
+
+$MD5_ISO = "none"
+$version_in_file = "none"
 
 
 Opt("GUIOnEventMode", 1)
@@ -83,6 +104,7 @@ Else
 	MsgBox(48, "ERROR", "Please put the 'tools' directory back")
 	Exit
 EndIf
+
 
 
 #include <GuiConstants.au3>
@@ -131,6 +153,8 @@ If IniRead($settings_ini, "General", "proxy_url", "none") <> "none" And IniRead(
 	EndIf
 EndIf
 
+; Initializing log file for verbose logging
+If IniRead($settings_ini, "General", "verbose_logging", "no") = "yes" Then InitLog()
 
 SendReport("Starting LiLi USB Creator " & $software_version)
 
@@ -366,32 +390,13 @@ GUICtrlSetColor(-1, 0xFFFFFF)
 
 
 ; Filling the combo box with drive list
-Global $combo
+
 $combo = GUICtrlCreateCombo("-> " & Translate("Choose a USB Key"), 90 + $offsetx0, 145 + $offsety0, 200, -1, 3)
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
 GUICtrlSetOnEvent(-1, "GUI_Choose_Drive")
 Refresh_DriveList()
 
-; Setting up all global vars and local vars
-Global $selected_drive, $logfile, $virtualbox_check, $virtualbox_size
-Global $STEP1_OK, $STEP2_OK, $STEP3_OK
-Global $DRAW_CHECK_STEP1, $DRAW_CHECK_STEP2, $DRAW_CHECK_STEP3
-Global $MD5_ISO, $version_in_file
-Global $variante
-
-$selected_drive = "->"
-$file_set = 0;
-$file_set_mode = "none"
-$annuler = 0
-$combo_updated = 0
-
-$STEP1_OK = 0
-$STEP2_OK = 0
-$STEP3_OK = 0
-
-$MD5_ISO = "none"
-$version_in_file = "none"
 
 ; Sending anonymous statistics
 SendStats()
@@ -719,8 +724,8 @@ Func Run7zip($cmd, $taille)
 
 	UpdateLog($cmd)
 	If ProcessExists("7z.exe") > 0 Then ProcessClose("7z.exe")
-	$foo = Run($cmd, @ScriptDir, @SW_HIDE, $STDIN_CHILD + $STDOUT_CHILD)
-	$line = @CRLF
+	$foo = Run($cmd, @ScriptDir, @SW_HIDE, $STDOUT_CHILD + $STDERR_CHILD)
+	$line = ""
 
 	While ProcessExists($foo) > 0
 		$percentage = Round((($initial - DriveSpaceFree($selected_drive)) * 100 / $taille), 0)
@@ -730,6 +735,9 @@ Func Run7zip($cmd, $taille)
 		;If @error Then ExitLoop
 		Sleep(500)
 		$line &= StdoutRead($foo)
+		If @error Then ExitLoop
+		$line &= StderrRead($foo)
+		If @error Then ExitLoop
 	WEnd
 	UpdateLog($line)
 	SendReport("End-Run7zip")
@@ -741,8 +749,8 @@ Func Run7zip2($cmd, $taille)
 	SendReport("Start-Run7zip2 ( Command :" & $cmd & " - Size:" & $taille & " )")
 	UpdateLog($cmd)
 	If ProcessExists("7z.exe") > 0 Then ProcessClose("7z.exe")
-	$foo = Run($cmd, @ScriptDir, @SW_HIDE, $STDIN_CHILD + $STDOUT_CHILD)
-	$line = @CRLF
+	$foo = Run($cmd, @ScriptDir, @SW_HIDE, $STDOUT_CHILD + $STDERR_CHILD)
+	$line = ""
 	While ProcessExists($foo) > 0
 		$percentage = Round((($initial - DriveSpaceFree($selected_drive)) * 100 / $taille), 0)
 		If $percentage > 0 And $percentage < 101 Then
@@ -752,6 +760,9 @@ Func Run7zip2($cmd, $taille)
 		;UpdateStatus2($line)
 		Sleep(500)
 		$line &= StdoutRead($foo)
+		If @error Then ExitLoop
+		$line &= StderrRead($foo)
+		If @error Then ExitLoop
 	WEnd
 	UpdateLog($line)
 	SendReport("End-Run7zip2")
@@ -763,13 +774,14 @@ Func Create_Empty_File($file_to_create, $size)
 	$cmd = @ScriptDir & '\tools\dd.exe if=/dev/zero of=' & $file_to_create & ' count=' & $size & ' bs=1024k'
 	UpdateLog($cmd)
 	If ProcessExists("dd.exe") > 0 Then ProcessClose("dd.exe")
-	$foo = Run($cmd, @ScriptDir, @SW_HIDE, $STDIN_CHILD + $STDOUT_CHILD + $STDERR_CHILD)
-	$line = @CRLF
+	$foo = Run($cmd, @ScriptDir, @SW_HIDE, $STDOUT_CHILD + $STDERR_CHILD)
+	$line = ""
 	While 1
 
 		UpdateStatusNoLog(Translate("Creating file for persistence") & " ( " & Round(FileGetSize($file_to_create) / 1048576, 0) & "/" & Round($size, 0) & " Mo )")
+		$line &= StdoutRead($foo)
+		If @error Then ExitLoop
 		$line &= StderrRead($foo)
-		;UpdateStatus2($line)
 		If @error Then ExitLoop
 		Sleep(500)
 	WEnd
@@ -779,15 +791,22 @@ EndFunc   ;==>Create_Empty_File
 
 
 Func EXT2_Format_File($persistence_file)
-	Local $line
+	Local $line,$line_temp
 	If ProcessExists("mke2fs.exe") > 0 Then ProcessClose("mke2fs.exe")
 	$cmd = @ScriptDir & '\tools\mke2fs.exe -b 1024 ' & $persistence_file
 	SendReport("Start-EXT2_Format_File ( " & $cmd & " )")
 	UpdateLog($cmd)
 	$foo = Run($cmd, @ScriptDir, @SW_HIDE, $STDERR_CHILD + $STDOUT_CHILD + $STDIN_CHILD)
-	$line = @CRLF
+	$line_temp = ""
+	$line=""
 	While 1
-		$line &= StdoutRead($foo)
+		$line_temp = StdoutRead($foo)
+		If @error Then ExitLoop
+		$line_temp &= StderrRead($foo)
+		If @error Then ExitLoop
+		$parse_percent = StringRegExp($line_temp, '[0-9]{1,3}%', 1)
+		if Ubound($parse_percent)>0 Then UpdateStatusNoLog(Translate("Test :") & " "& $parse_percent)
+		$line &=$line_temp
 		StdinWrite($foo, "{ENTER}")
 		If @error Then ExitLoop
 		Sleep(500)
@@ -801,10 +820,12 @@ Func RunWait3($soft, $arg1, $arg2)
 	Local $line
 	UpdateLog($soft)
 	$foo = Run($soft, @ScriptDir, @SW_HIDE, $STDOUT_CHILD + $STDERR_CHILD)
-	$line = @CRLF
+	$line = ""
 	While True
-		If @error Then ExitLoop
 		$line &= StdoutRead($foo)
+		If @error Then ExitLoop
+		$line &= StderrRead($foo)
+		If @error Then ExitLoop
 	WEnd
 	UpdateLog("                   " & $line)
 	SendReport("End-RunWait3")
@@ -816,9 +837,12 @@ Func Run2($soft, $arg1, $arg2)
 	Local $line
 	UpdateLog($soft)
 	$foo = Run($soft, @ScriptDir, @SW_HIDE, $STDOUT_CHILD + $STDERR_CHILD)
-	$line = @CRLF
+	$line = ""
 	While True
-		$line = StdoutRead($foo)
+		$line &= StdoutRead($foo)
+		If @error Then ExitLoop
+		$line &= StderrRead($foo)
+		If @error Then ExitLoop
 		StdinWrite($foo, @CR & @LF & @CRLF)
 		If @error Then ExitLoop
 		Sleep(300)
@@ -1068,6 +1092,7 @@ Func UpdateStatusNoLog($status)
 EndFunc   ;==>UpdateStatusNoLog
 
 Func SendReport($report)
+	If IniRead($settings_ini, "General", "verbose_logging", "no") = "yes" Then UpdateLog($report)
 	_SendData($report, "lili-Reporter")
 EndFunc   ;==>SendReport
 
@@ -1470,7 +1495,7 @@ Func Check_source_integrity($linux_live_file)
 	If $temp_index > 0 Then
 		If ReleaseGetMD5($temp_index) = "ANY" Then
 			;MsgBox(4096, Translate("Verifying") & " OK", Translate("This version is compatible and its integrity was checked"))
-			GUI_Show_Check_status(Translate("This version is compatible and its integrity was checked")&@CRLF&Translate("Using install parameters of : ")&@CRLF& @CRLF & @TAB &ReleaseGetDescription($temp_index))
+			GUI_Show_Check_status(Translate("This version is compatible and its integrity was checked")&@CRLF&Translate("Using install parameters of")&" : "&@CRLF& @CRLF & @TAB &ReleaseGetDescription($temp_index))
 			$release_number = $temp_index
 			Check_If_Default_Should_Be_Used($release_number)
 			SendReport("IN-Check_source_integrity (MD5 set to any, using : " & ReleaseGetCodename($release_number) & " )")
@@ -1491,7 +1516,7 @@ Func Check_source_integrity($linux_live_file)
 	SendReport("IN-Check_source_integrity- Intelligent Processing")
 	If $temp_index > 0 Then
 		; Good version -> COMPATIBLE
-		GUI_Show_Check_status(Translate("Verifying") & " OK"&@CRLF& Translate("This version is compatible and its integrity was checked")&@CRLF&Translate("Using install parameters of : ")&@CRLF& @CRLF & @TAB &ReleaseGetDescription($temp_index))
+		GUI_Show_Check_status(Translate("Verifying") & " OK"&@CRLF& Translate("This version is compatible and its integrity was checked")&@CRLF&Translate("Using install parameters of")&" : "&@CRLF& @CRLF & @TAB &ReleaseGetDescription($temp_index))
 		Step2_Check("good")
 		$release_number = $temp_index
 		SendReport("IN-Check_source_integrity (Compatible version found : " & ReleaseGetCodename($release_number) & " )")
@@ -2553,8 +2578,8 @@ Func GUI_Launch_Creation()
 		UpdateStatus("Please validate step 1 to 3")
 	EndIf
 
-	; Initializing log file
-	InitLog()
+	; Initializing log file, already initialized when using verbose_logging
+	If IniRead($settings_ini, "General", "verbose_logging", "no") = "no" Then InitLog()
 
 	; Format option has been selected
 	If (GUICtrlRead($formater) == $GUI_CHECKED) And $annuler <> 2 Then
@@ -2624,7 +2649,7 @@ Func GUI_Launch_Creation()
 		; Creation is now done
 		UpdateStatus("Your LinuxLive key is now up and ready !")
 
-		If $virtualbox_check >= 1 Then Final_check()
+		If GUICtrlRead($virtualbox) == $GUI_CHECKED And $virtualbox_check >= 1 Then Final_check()
 
 		Sleep(1000)
 
