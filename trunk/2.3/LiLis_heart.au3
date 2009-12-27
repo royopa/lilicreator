@@ -32,7 +32,7 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Clean_old_installs($drive_letter,$release_in_list)
-	If IniRead($settings_ini, "General", "skip_cleaning", "no") == "yes" Then Return 0
+	If IniRead($settings_ini, "General", "skip_cleaning", "no") = "yes" Then Return 0
 	SendReport("Start-Clean_old_installs ( Drive : "& $drive_letter &" - Release : "& $release_in_list &" )")
 	UpdateStatus("Cleaning previous installations ( 2min )")
 	DeleteFilesInDir($files_in_source)
@@ -171,7 +171,7 @@ Func Download_virtualBox()
 				SendReport("Start-Download_virtualBox-2")
 				;cs
 				; Checking if last version has aleardy been downloaded
-				If FileExists(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename) And $virtualbox_size > 0 And $virtualbox_size == FileGetSize(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename) Then
+				If FileExists(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename) And $virtualbox_size > 0 And $virtualbox_size = FileGetSize(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename) Then
 					; Already have last version, no download needed
 					UpdateStatus("VirtualBox already downloaded")
 					Sleep(1000)
@@ -262,7 +262,7 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Func Uncompress_ISO_on_key($drive_letter,$iso_file,$release_in_list)
-	If IniRead($settings_ini, "General", "skip_copy", "no") == "yes" Then Return 0
+	If IniRead($settings_ini, "General", "skip_copy", "no") = "yes" Then Return 0
 	SendReport("Start-Uncompress_ISO_on_key ( Drive : "& $drive_letter &" - File : "& $iso_file &" - Release : "& $release_in_list &" )")
 
 	If ProcessExists("7z.exe") > 0 Then ProcessClose("7z.exe")
@@ -300,7 +300,7 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Func Create_Stick_From_CD($drive_letter,$path_to_cd)
-	If IniRead($settings_ini, "General", "skip_copy", "no") == "yes" Then Return 0
+	If IniRead($settings_ini, "General", "skip_copy", "no") = "yes" Then Return 0
 	SendReport("Start-Create_Stick_From_CD ( Drive : "& $drive_letter &" - CD Folder : "& $path_to_cd &" )")
 	FileCopyShell($path_to_cd & "\*.*", $drive_letter & "\")
 	SendReport("End-Create_Stick_From_CD")
@@ -379,7 +379,7 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Func Rename_and_move_files($drive_letter, $release_in_list)
-	If IniRead($settings_ini, "General", "skip_moving_renaming", "no") == "yes" Then Return 0
+	If IniRead($settings_ini, "General", "skip_moving_renaming", "no") = "yes" Then Return 0
 	SendReport("Start-Rename_and_move_files")
 	UpdateStatus(Translate("Renaming some files"))
 
@@ -438,7 +438,7 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Create_boot_menu($drive_letter,$release_in_list)
-	If IniRead($drive_letter, "General", "skip_boot_text", "no") == "yes" Then Return 0
+	If IniRead($drive_letter, "General", "skip_boot_text", "no") = "yes" Then Return 0
 	SendReport("Start-Create_boot_menu")
 	$variant = ReleaseGetVariant($release_in_list)
 	$distribution = ReleaseGetDistribution($release_in_list)
@@ -475,7 +475,7 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Hide_live_files($drive_letter)
-	If IniRead($settings_ini, "General", "skip_hiding", "no") == "yes" Then return 0
+	If IniRead($settings_ini, "General", "skip_hiding", "no") = "yes" Then return 0
 	SendReport("Start-Hide_live_files")
 
 	UpdateStatus("Hiding files")
@@ -562,7 +562,7 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Create_persistence_file($drive_letter,$release_in_list,$persistence_size,$hide_it)
-	If IniRead($settings_ini, "General", "skip_persistence", "no") == "yes" Then Return 0
+	If IniRead($settings_ini, "General", "skip_persistence", "no") = "yes" Then Return 0
 	SendReport("Start-Create_persistence_file")
 
 	; Checking if persistence is supported for this Linux
@@ -588,7 +588,7 @@ Func Create_persistence_file($drive_letter,$release_in_list,$persistence_size,$h
 		Endif
 
 		Create_Empty_File($persistence_file, $persistence_size)
-		If ( $hide_it == $GUI_CHECKED) Then HideFile($persistence_file)
+		If ( $hide_it = $GUI_CHECKED) Then HideFile($persistence_file)
 		$time_to_format=3
 		if ($persistence_size >= 1000) Then $time_to_format=6
 		if ($persistence_size >= 2000) Then $time_to_format=10
@@ -620,7 +620,7 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Func Install_boot_sectors($drive_letter,$release_in_list,$hide_it)
-	If IniRead($settings_ini, "General", "skip_bootsector", "no") == "yes" Then Return 0
+	If IniRead($settings_ini, "General", "skip_bootsector", "no") = "yes" Then Return 0
 	SendReport("Start-Install_boot_sectors")
 	UpdateStatus("Installing boot sectors")
 	$variant = ReleaseGetVariant($release_in_list)
@@ -629,7 +629,7 @@ Func Install_boot_sectors($drive_letter,$release_in_list,$hide_it)
 		$physical_disk_number=GiveMePhysicalDisk($drive_letter)
 		; Security : does not install MBR sectors if on C: OR first physical disk OR if there is an error
 		if $physical_disk_number <> "ERROR" AND StringIsInt($physical_disk_number) AND $physical_disk_number >0 AND $physical_disk_number <> GiveMePhysicalDisk("C:") Then
-			RunWait3('"' & @ScriptDir & '\tools\grubinst.exe" (hd'& $physical_disk_number&')', @ScriptDir, @SW_HIDE)
+			RunWait3('"' & @ScriptDir & '\tools\grubinst.exe" -v (hd'& $physical_disk_number&')', @ScriptDir, @SW_HIDE)
 			FileCopy2(@ScriptDir & '\tools\grldr',$drive_letter & "\grldr")
 		Else
 			UpdateStatus("Error while trying to find physical disk number")
@@ -714,7 +714,7 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Create_autorun($drive_letter,$release_in_list)
-	If IniRead($settings_ini, "General", "skip_autorun", "no") == "yes" Then Return 0
+	If IniRead($settings_ini, "General", "skip_autorun", "no") = "yes" Then Return 0
 
 	SendReport("Start-Create_autorun")
 	If FileExists($drive_letter & "\autorun.inf") Then FileMove($drive_letter & "\autorun.inf",$drive_letter & "\autorun.bak",1)
@@ -730,7 +730,7 @@ Func Create_autorun($drive_letter,$release_in_list)
 	IniWrite($drive_letter & "\autorun.inf", "autorun", "label", "LinuxLive Key")
 
 	; If virtualbox is installed
-	if FileExists($drive_letter & "\VirtualBox\Virtualize_This_Key.exe") OR FileExists($drive_letter & "VirtualBox\VirtualBox.exe") OR GUICtrlRead($virtualbox) == $GUI_CHECKED Then
+	if FileExists($drive_letter & "\VirtualBox\Virtualize_This_Key.exe") OR FileExists($drive_letter & "VirtualBox\VirtualBox.exe") OR GUICtrlRead($virtualbox) = $GUI_CHECKED Then
 		IniWrite($drive_letter & "\autorun.inf", "autorun", "shell\linuxlive", "----> LinuxLive!")
 		IniWrite($drive_letter & "\autorun.inf", "autorun", "shell\linuxlive\command", "VirtualBox\Virtualize_This_Key.exe")
 		IniWrite($drive_letter &"\autorun.inf", "autorun", "shell\linuxlive2", "----> VirtualBox Interface")
@@ -771,18 +771,27 @@ EndFunc
 
 Func Setup_RAM_for_VM($drive_letter,$release_in_list)
 	SendReport("Start-Setup_RAM_for_VM")
-	$linuxlive_settings_file = $drive_letter&"\Portable-VirtualBox\data\.VirtualBox\Machines\LinuxLive\LinuxLive.xml"
+	$linuxlive_settings_file = $drive_letter&"\VirtualBox\Portable-VirtualBox\data\.VirtualBox\Machines\LinuxLive\LinuxLive.xml"
     $file = FileOpen ($linuxlive_settings_file, 128)
-
+	if $file = -1 Then
+		UpdateLog("Error while opening for reading (mode 128)" &$drive_letter&"\VirtualBox\Portable-VirtualBox\data\.VirtualBox\Machines\LinuxLive\LinuxLive.xml" &@CRLF & "Cannot automatically set RAM")
+		Return 0
+	EndIf
 	$line    = FileRead ($file)
 	FileClose ($file)
 
 	$old_value = _StringBetween ($line, 'Memory RAMSize="', '"')
 
 	If $old_value[0] > 0 Then
-		$new_line=StringReplace ($line, 'Memory RAMSize="' & $old_value[0] & '"', 'Memory RAMSize="' & ReleaseGetVBoxRAM($release_in_list) & '"')
-
+		$recommended_ram = ReleaseGetVBoxRAM($release_in_list)
+		UpdateStatus(Translate("Setting the memory to the recommended value")&" ( "& $recommended_ram&Translate("MB") & " )")
+		SendReport("IN-Setup_RAM_for_VM (Recommended settings found :"&$recommended_ram&" )")
+		$new_line=StringReplace ($line, 'Memory RAMSize="' & $old_value[0] & '"', 'Memory RAMSize="' & $recommended_ram & '"')
 		$file = FileOpen ($linuxlive_settings_file, 2)
+		if $file = -1 Then
+			UpdateLog("Error while opening for writing (mode 2)" &$drive_letter&"\VirtualBox\Portable-VirtualBox\data\.VirtualBox\Machines\LinuxLive\LinuxLive.xml" &@CRLF & "Cannot automatically set RAM")
+			Return 0
+		EndIf
 		FileWrite ($file, $new_line)
 		FileClose ($file)
 	EndIf
@@ -803,19 +812,15 @@ EndFunc
 
 Func Final_check()
 	SendReport("Start-Final_check")
+	Global $recommended_ram
 	Local $avert_mem = ""
-	Local $avert_admin = ""
 	$mem = MemGetStats()
 
-
-	; If not admin and virtaulbox option has been selected => WARNING
-	;If Not IsAdmin() Then $avert_admin = Translate("You do not have enough rights to launch VirtualBox.") & @CRLF & Translate("Please log in as an administrator or run VirtualBox with admin rights.")
-
 	; If not enough RAM => WARNING
-	If Round($mem[2] / 1024) < 256 Then $avert_mem = Translate("Free memory below 256mb threshold.") & @CRLF & Translate("This is not enough to launch LinuxLive in Windows.")
+	If Round($mem[2] / 1024) < $recommended_ram Then $avert_mem = Translate("Free memory is below the recommended value for your Linux to run in Windows") & "( "&$recommended_ram & Translate("MB")&" )" & @CRLF & Translate("This is not enough to launch LinuxLive in Windows.")
 
-	If $avert_admin <> "" Or $avert_mem <> "" Then MsgBox(64, Translate("Please read"), $avert_admin & @CRLF & $avert_mem)
-	SendReport("End-Final_check")
+	If $avert_mem <> "" Then MsgBox(64, Translate("Please read"), $avert_mem)
+	SendReport("End-Final_check : "&@CRLF&$avert_mem)
 EndFunc
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
