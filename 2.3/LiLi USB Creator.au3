@@ -39,7 +39,7 @@ Global $downloaded_virtualbox_filename
 
 ; Global variables used for the onEvent Functions
 ; Globals images and GDI+ elements
-Global $GUI, $CONTROL_GUI, $EXIT_BUTTON, $MIN_BUTTON, $DRAW_REFRESH, $DRAW_ISO, $DRAW_CD, $DRAW_DOWNLOAD, $DRAW_BACK, $DRAW_BACK_HOVER, $DRAW_LAUNCH, $HELP_STEP1, $HELP_STEP2, $HELP_STEP3, $HELP_STEP4, $HELP_STEP5, $label_iso, $label_cd, $label_download, $label_step2_status, $download_label2, $OR_label, $live_mode_only_label, $virtualbox
+Global $GUI, $CONTROL_GUI, $EXIT_BUTTON, $MIN_BUTTON, $DRAW_REFRESH, $DRAW_ISO, $DRAW_CD, $DRAW_DOWNLOAD, $DRAW_BACK, $DRAW_BACK_HOVER, $DRAW_LAUNCH, $HELP_STEP1, $HELP_STEP2, $HELP_STEP3, $HELP_STEP4, $HELP_STEP5, $label_iso, $label_cd, $label_download, $label_step2_status, $download_label2, $OR_label, $live_mode_only_label,$builtin_persistence_label, $virtualbox
 Global $ZEROGraphic, $EXIT_NORM, $EXIT_OVER, $MIN_NORM, $MIN_OVER, $PNG_GUI, $CD_PNG, $CD_HOVER_PNG, $ISO_PNG, $ISO_HOVER_PNG, $DOWNLOAD_PNG, $DOWNLOAD_HOVER_PNG, $BACK_PNG, $BACK_HOVER_PNG, $LAUNCH_PNG, $LAUNCH_HOVER_PNG, $HELP, $BAD, $GOOD, $WARNING, $BACK_AREA
 Global $step2_display_menu = 0, $cleaner, $cleaner2
 Global $combo_linux, $download_manual, $download_auto, $slider, $slider_visual
@@ -330,10 +330,18 @@ GUICtrlSetColor(-1, 0xFFFFFF)
 $slider_visual_mode = GUICtrlCreateLabel(Translate("(Live mode only)"), 160 + $offsetx3 + $offsetx0, 258 + $offsety3 + $offsety0, 100, 20)
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
+
+$builtin_persistence_label = GUICtrlCreateLabel(Translate("Built-in Persistency"), 50 + $offsetx3 + $offsetx0, 233 + $offsety3 + $offsety0, 300, 100)
+GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
+GUICtrlSetColor(-1, 0xFFFFFF)
+GUICtrlSetFont($builtin_persistence_label, 16)
+GUICtrlSetState($builtin_persistence_label,$GUI_HIDE)
+
 $live_mode_only_label = GUICtrlCreateLabel(Translate("Live Mode"), 77 + $offsetx3 + $offsetx0, 233 + $offsety3 + $offsety0, 300, 100)
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
 GUICtrlSetFont($live_mode_only_label, 16)
+
 Disable_Persistent_Mode()
 
 ; Text and controls for step 4
@@ -1206,6 +1214,30 @@ Func Get_Disk_UUID($drive_letter)
 EndFunc   ;==>Get_Disk_UUID
 
 
+Func TinyCore_WriteTextCFG($selected_drive)
+	SendReport("Start-TinyCore_WriteTextCFG ( Drive : " & $selected_drive & " )")
+	Local $boot_text = "", $uuid
+	$uuid = Get_Disk_UUID($selected_drive)
+$boot_text="display boot.msg" _
+	& @LF & "default tinycore" _
+	& @LF & "label tinycore" _
+	& @LF & "	kernel /boot/bzImage" _
+	& @LF & "	append initrd=/boot/tinycore.gz max_loop=200 waitusb=5 tce=UUID="&$uuid&" restore=UUID="&$uuid&" home=UUID="&$uuid&" opt=UUID="&$uuid _
+	& @LF & "label live" _
+	& @LF & "	kernel /boot/bzImage" _
+	& @LF & "	append initrd=/boot/tinycore.gz quiet max_loop=255" _
+	& @LF & "implicit 0" _
+	& @LF & "prompt 1" _
+	& @LF & "timeout 300" _
+	& @LF & "F1 boot.msg" _
+	& @LF & "F2 f2" _
+	& @LF & "F3 f3"
+	$file = FileOpen($selected_drive & "\boot\syslinux\syslinux.cfg", 2)
+	FileWrite($file, $boot_text)
+	FileClose($file)
+	SendReport("End-TinyCore_WriteTextCFG")
+EndFunc
+
 
 Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 	SendReport("Start-Ubuntu_WriteTextCFG (Drive : " & $selected_drive & " -  Codename: " & ReleaseGetCodename($release_in_list) & " )")
@@ -1644,17 +1676,21 @@ Func Check_If_Default_Should_Be_Used($release_in_list)
 	EndIf
 	#ce
 	$features=ReleaseGetSupportedFeatures($release_in_list)
+	$codename=ReleaseGetCodename($release_in_list)
 
 	if StringInStr($features,"default") Then
 		Disable_Persistent_Mode()
 		Step2_Check("good")
-		$codename=ReleaseGetCodename($release_in_list)
 		SendReport("IN-Check_If_Default_Should_Be_Used ( Disable persistency for " & $codename& " )")
 	Elseif StringInStr($features,"persistence") Then
-		Enable_Persistent_Mode()
+		if StringInStr($features,"builtin") Then
+			BuiltIn_Persistent_Mode()
+			SendReport("IN-Check_If_Default_Should_Be_Used ( builtin persistency for " & $codename& " )")
+		Else
+			Enable_Persistent_Mode()
+			SendReport("IN-Check_If_Default_Should_Be_Used ( Enable persistency for " & $codename& " )")
+		EndIf
 		Step2_Check("good")
-		$codename=ReleaseGetCodename($release_in_list)
-		SendReport("IN-Check_If_Default_Should_Be_Used ( Enable persistency for " & $codename& " )")
 	EndIf
 	SendReport("End-Check_If_Default_Should_Be_Used")
 EndFunc   ;==>Check_If_Default_Should_Be_Used
@@ -1906,6 +1942,18 @@ Func Enable_Persistent_Mode()
 	GUICtrlSetState($slider_visual_mode, $GUI_SHOW)
 	GUICtrlSetState($live_mode_only_label, $GUI_HIDE)
 EndFunc   ;==>Enable_Persistent_Mode
+
+Func BuiltIn_Persistent_Mode()
+	GUICtrlSetState($slider, $GUI_HIDE)
+	GUICtrlSetState($slider_visual, $GUI_HIDE)
+	GUICtrlSetState($label_max, $GUI_HIDE)
+	GUICtrlSetState($label_min, $GUI_HIDE)
+	GUICtrlSetState($slider_visual_Mo, $GUI_HIDE)
+	GUICtrlSetState($slider_visual_mode, $GUI_HIDE)
+	GUICtrlSetState($live_mode_only_label, $GUI_HIDE)
+	GUICtrlSetState($builtin_persistence_label,$GUI_SHOW)
+	Step3_Check("good")
+EndFunc   ;==>DBuiltIn_Persistent_Mode
 
 Func Disable_VirtualBox_Option()
 	GUICtrlSetState($virtualbox, $GUI_UNCHECKED)
