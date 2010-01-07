@@ -453,6 +453,9 @@ Func Create_boot_menu($drive_letter,$release_in_list)
 		Elseif $distribution = "Fedora" Then
 			SendReport("IN-Create_boot_menu for Fedora")
 			Fedora_WriteTextCFG($drive_letter)
+		Elseif $variant = "TinyCore" Then
+			SendReport("IN-Create_boot_menu for TinyCore")
+			TinyCore_WriteTextCFG($drive_letter)
 		EndIf
 	EndIf
 	SendReport("End-Create_boot_menu")
