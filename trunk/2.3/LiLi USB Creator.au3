@@ -1065,6 +1065,7 @@ Func LogSystemConfig()
 	$line &= @CRLF & "Keyboard : " & @KBLayout
 	$line &= @CRLF & "Resolution : " & @DesktopWidth & "x" & @DesktopHeight
 	$line &= @CRLF & "Chosen Key : " & $selected_drive
+	$line &= @CRLF & "Filesystem : " & DriveGetFileSystem($selected_drive)
 	If $selected_drive Then $space = Round(DriveSpaceFree($selected_drive))
 	$line &= @CRLF & "Free space on key : " & $space & "MB"
 	If $file_set_mode == "iso" Then
@@ -1249,6 +1250,16 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 	; No custom boot menu when using default mode.
 	If StringInStr($features,"default") >0 Then Return ""
 
+	#cs
+	------------ Old BackTrack compatibility mode
+	If $ubuntu_variant = "backtrack" Then
+		DirCreate($selected_drive &"\syslinux\")
+		FileCopy(@ScriptDir & "\tools\vesamenu.c32", $selected_drive & "\syslinux\vesamenu.c32", 1)
+		FileCopy(@ScriptDir & "\tools\bt4-splash.jpg", $selected_drive & "\syslinux\splash.jpg", 1)
+		FileCopy(@ScriptDir & "\tools\bt4-isolinux.txt", $selected_drive & "\syslinux\syslinux.cfg", 1)
+		Return ""
+	EndIf
+	#ce
 
 	; Karmic Koala have a renamed initrd file
 	If $distrib_version="9.10" OR $distrib_version="10.04" Then
@@ -1327,7 +1338,6 @@ Func Ubuntu_BootMenu($initrd_file,$seed_name)
 		& @LF & "  kernel /install/mt86plus"
 	Return $boot_text
 EndFunc
-
 
 Func Fedora_WriteTextCFG($drive_letter)
 	SendReport("Start-Fedora_WriteTextCFG ( Drive : " & $drive_letter & " )")
