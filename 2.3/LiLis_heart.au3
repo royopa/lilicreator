@@ -607,6 +607,24 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+#cs
+	Description : return True if a syslinux config file is found
+	Input :
+		$drive_letter = Letter of the drive (pre-formated like "E:" )
+	Output :
+		0 = syslinux not found (GRUB compatibility mode)
+		1 = syslinux config found (use syslinux)
+#ce
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Func isSyslinuxCfgPresent($drive_letter)
+	SendReport("Start-isSyslinuxCfgPresent")
+	$config_found = (FileExists($drive_letter&"\boot\syslinux\syslinux.cfg") OR FileExists($drive_letter&"\syslinux\syslinux.cfg") OR FileExists($drive_letter&"\syslinux.cfg"))
+	SendReport("End-isSyslinuxCfgPresent : Found = "&$config_found)
+	Return $config_found
+EndFunc
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -626,20 +644,35 @@ Func Install_boot_sectors($drive_letter,$release_in_list,$hide_it)
 	If IniRead($settings_ini, "General", "skip_bootsector", "no") = "yes" Then Return 0
 	SendReport("Start-Install_boot_sectors")
 	UpdateStatus("Installing boot sectors")
-	$variant = ReleaseGetVariant($release_in_list)
-	if $variant="BackTrack" Then
+	$features=ReleaseGetSupportedFeatures($release_in_list)
+	if StringInStr($features,"grub") > 0 OR NOT isSyslinuxCfgPresent($drive_letter) Then
 		UpdateLog("Variant is using GRUB loader")
+		#cs
+		 ----------------- Old GRUB Mode, abandoned because the other way is easier and works better
+		Security : does not install MBR sectors if on C: OR first physical disk OR if there is an error
 		$physical_disk_number=GiveMePhysicalDisk($drive_letter)
-		; Security : does not install MBR sectors if on C: OR first physical disk OR if there is an error
+
 		if $physical_disk_number <> "ERROR" AND StringIsInt($physical_disk_number) AND $physical_disk_number >0 AND $physical_disk_number <> GiveMePhysicalDisk("C:") Then
-			RunWait3('"' & @ScriptDir & '\tools\grubinst.exe" -v (hd'& $physical_disk_number&')', @ScriptDir, @SW_HIDE)
+			RunWait3('"' & @ScriptDir & '\tools\grubinst.exe" -v --skip-mbr-test (hd'& $physical_disk_number&')', @ScriptDir, @SW_HIDE)
 			FileCopy2(@ScriptDir & '\tools\grldr',$drive_letter & "\grldr")
 		Else
 			UpdateStatus("Error while trying to find physical disk number")
 		EndIf
-	Else
-		RunWait3('"' & @ScriptDir & '\tools\syslinux.exe" -maf -d ' & $drive_letter & '\syslinux ' & $drive_letter, @ScriptDir, @SW_HIDE)
+		#ce
+
+		; Syslinux will chainload GRUB loader
+		DirCreate($drive_letter &"\syslinux")
+		FileCopy2(@ScriptDir & '\tools\grub.exe',$drive_letter & "\syslinux\grub.exe")
+		FileCopy2(@ScriptDir & '\tools\grub-syslinux.cfg',$drive_letter & "\syslinux\syslinux.cfg")
+
+		if NOT (FileExists($drive_letter&"\menu.lst") OR FileExists($drive_letter&"\boot\menu.lst") OR FileExists($drive_letter&"\boot\grub\menu.lst")) Then
+			SendReport("--------------> ERROR : syslinux.cfg and menu.lst not found !")
+		EndIf
 	EndIf
+
+	; Installing the syslinux boot sectors
+	RunWait3('"' & @ScriptDir & '\tools\syslinux.exe" -maf -d ' & $drive_letter & '\syslinux ' & $drive_letter, @ScriptDir, @SW_HIDE)
+
 	If ( $hide_it <> $GUI_CHECKED) Then ShowFile($drive_letter & '\ldlinux.sys')
 	SendReport("End-Install_boot_sectors")
 EndFunc
