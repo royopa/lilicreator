@@ -26,7 +26,7 @@
 
 
 ; Global constants
-Global Const $software_version = "2.3 RC1"
+Global Const $software_version = "2.3"
 Global $lang_ini = @ScriptDir & "\tools\languages\"
 Global Const $settings_ini = @ScriptDir & "\tools\settings\settings.ini"
 Global Const $compatibility_ini = @ScriptDir & "\tools\settings\compatibility_list.ini"
@@ -1537,7 +1537,7 @@ Func Check_source_integrity($linux_live_file)
 	If $temp_index > 0 Then
 		If ReleaseGetMD5($temp_index) = "ANY" Then
 			;MsgBox(4096, Translate("Verifying") & " OK", Translate("This version is compatible and its integrity was checked"))
-			GUI_Show_Check_status(Translate("This version is compatible and its integrity was checked")&@CRLF&Translate("Using install parameters of")&" : "&@CRLF& @CRLF & @TAB &ReleaseGetDescription($temp_index))
+			GUI_Show_Check_status(Translate("This version is compatible and its integrity was checked")&@CRLF&Translate("Recognized Linux")&" : "&@CRLF& @CRLF & @TAB &ReleaseGetDescription($temp_index))
 			$release_number = $temp_index
 			Check_If_Default_Should_Be_Used($release_number)
 			SendReport("IN-Check_source_integrity (MD5 set to any, using : " & ReleaseGetCodename($release_number) & " )")
@@ -1558,7 +1558,7 @@ Func Check_source_integrity($linux_live_file)
 	SendReport("IN-Check_source_integrity- Intelligent Processing")
 	If $temp_index > 0 Then
 		; Good version -> COMPATIBLE
-		GUI_Show_Check_status(Translate("Verifying") & " OK"&@CRLF& Translate("This version is compatible and its integrity was checked")&@CRLF&Translate("Using install parameters of")&" : "&@CRLF& @CRLF & @TAB &ReleaseGetDescription($temp_index))
+		GUI_Show_Check_status(Translate("Verifying") & " OK"&@CRLF& Translate("This version is compatible and its integrity was checked")&@CRLF&Translate("Recognized Linux")&" : "&@CRLF& @CRLF & @TAB &ReleaseGetDescription($temp_index))
 		Step2_Check("good")
 		$release_number = $temp_index
 		SendReport("IN-Check_source_integrity (Compatible version found : " & ReleaseGetCodename($release_number) & " )")
