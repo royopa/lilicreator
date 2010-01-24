@@ -1,0 +1,21 @@
+splash.rle
+
+
+
+  ____                       _     ____                    
+ / ___|_ __ _   _ _ __   ___| |__ | __ )  __ _ _ __   __ _ 
+| |   | '__| | | | '_ \ / __| '_ \|  _ \ / _` | '_ \ / _` |
+| |___| |  | |_| | | | | (__| | | | |_) | (_| | | | | (_| |
+ \____|_|   \__,_|_| |_|\___|_| |_|____/ \__,_|_| |_|\__, |
+                                                     |___/
+
+For the default persistent live system, press ENTER or enter 'persist'.
+
+For the live system, press ENTER or enter 'live'.
+
+To verify the CD for errors, enter 'check'.
+
+To run memtest86+, enter 'memtest'
+
+
+
