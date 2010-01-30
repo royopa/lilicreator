@@ -238,6 +238,10 @@ Func ConstructHTMLReport()
 	Return $temp
 EndFunc
 
+Func SendReportToMain($report)
+	_SendData($report, "lili-main")
+EndFunc   ;==>SendReport
+
 Func _ReceiveReport($report)
 	If StringLeft($report, 12) = @CRLF & "----------" Then
 		$last_config = $report
@@ -249,6 +253,8 @@ Func _ReceiveReport($report)
 	ElseIf StringLeft($report, 8) = "distrib-" Then
 		$distrib= StringTrimLeft($report, 8)
 		InetGet("http://www.linuxliveusb.com/stats/?distrib="&$distrib&"&id="&$anonymous_id,"",1,1)
+	ElseIf StringLeft($report, 17) = "check_for_updates" Then
+		Check_for_updates()
 	Else
 		ConsoleWrite($report & @CRLF)
 		$last_report = $report

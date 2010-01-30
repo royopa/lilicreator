@@ -6,7 +6,7 @@
 #AutoIt3Wrapper_UseUpx=n
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.3.88.28
+#AutoIt3Wrapper_Res_Fileversion=2.4.88.29
 #AutoIt3Wrapper_Res_FileVersion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_SaveSource=y
@@ -19,14 +19,14 @@
 ; Author's Website : www.slym.fr
 ; e-Mail           : contact@linuxliveusb.com
 ; License          : GPL v3.0
-; Version          : 2.3
+; Version          : 2.4
 ; Download         : http://www.linuxliveusb.com
 ; Support          : http://www.linuxliveusb.com/bugs/
 ; Compiled with    : AutoIT v3.3.0.0
 
 
 ; Global constants
-Global Const $software_version = "2.3"
+Global Const $software_version = "2.4"
 Global $lang_ini = @ScriptDir & "\tools\languages\"
 Global Const $settings_ini = @ScriptDir & "\tools\settings\settings.ini"
 Global Const $compatibility_ini = @ScriptDir & "\tools\settings\compatibility_list.ini"
@@ -129,6 +129,7 @@ EndIf
 
 ; LiLi's components
 #include <About.au3>
+#include <Updates.au3>
 #include <Automatic_Bug_Report.au3>
 #include <Ressources.au3>
 #include <Graphics.au3>
@@ -155,6 +156,9 @@ EndIf
 
 ; Initializing log file for verbose logging
 If IniRead($settings_ini, "General", "verbose_logging", "no") = "yes" Then InitLog()
+
+_SetAsReceiver("lili-main")
+_SetReceiverFunction("_test")
 
 SendReport("Starting LiLi USB Creator " & $software_version)
 
@@ -409,14 +413,14 @@ Refresh_DriveList()
 ; Sending anonymous statistics
 SendStats()
 SendReport(LogSystemConfig())
-Check_for_updates()
 
+; Starting to check for updates in the secondary LiLi's process
+SendReport("check_for_updates")
 
 $prefetched_linux_list = Print_For_ComboBox()
 
 ; Hovering Buttons
 AdlibEnable("Control_Hover", 150)
-
 
 GUIRegisterMsg($WM_PAINT, "DrawAll")
 WinActivate($for_winactivate)
@@ -514,7 +518,7 @@ Func Control_Hover()
 				Case $LAUNCH_AREA
 					$DRAW_LAUNCH = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $LAUNCH_PNG, 0, 0, 22, 43, 35 + $offsetx0, 600 + $offsety0, 22, 43)
 				Case $BACK_AREA
-					If $step2_display_menu = 1 Then $DRAW_BACK = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $BACK_PNG, 0, 0, 32, 32, 5 + $offsetx0, 300 + $offsety0, 32, 32)
+					If $step2_display_menu >= 1 Then $DRAW_BACK = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $BACK_PNG, 0, 0, 32, 32, 5 + $offsetx0, 300 + $offsety0, 32, 32)
 			EndSwitch
 
 			Switch $CursorCtrl[4]
@@ -533,7 +537,7 @@ Func Control_Hover()
 				Case $LAUNCH_AREA
 					$DRAW_LAUNCH = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $LAUNCH_HOVER_PNG, 0, 0, 22, 43, 35 + $offsetx0, 600 + $offsety0, 22, 43)
 				Case $BACK_AREA
-					If $step2_display_menu = 1 Then $DRAW_BACK_HOVER = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $BACK_HOVER_PNG, 0, 0, 32, 32, 5 + $offsetx0, 300 + $offsety0, 32, 32)
+					If $step2_display_menu >= 1 Then $DRAW_BACK_HOVER = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $BACK_HOVER_PNG, 0, 0, 32, 32, 5 + $offsetx0, 300 + $offsety0, 32, 32)
 			EndSwitch
 			$previous_hovered_control = $CursorCtrl[4]
 		EndIf
@@ -1271,7 +1275,7 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 	; For official Ubuntu variants, only text.cfg need to be modified
 	if $ubuntu_variant="ubuntu" OR StringInStr($ubuntu_variant, "xubuntu") OR StringInStr($ubuntu_variant, "netbook") OR StringInStr($ubuntu_variant, "kubuntu") OR $ubuntu_variant="superos" Then
 		$boot_text = Ubuntu_BootMenu($initrd_file,$ubuntu_variant)
-		UpdateLog("Creating text.cfg file for Official Ubuntu variants :" & @CRLF & $boot_text)
+		UpdateLog("Creating text.cfg file for Ubuntu variants :" & @CRLF & $boot_text)
 		$file = FileOpen($selected_drive & "\syslinux\text.cfg", 2)
 		FileWrite($file, $boot_text)
 		FileClose($file)
@@ -1474,6 +1478,7 @@ Func GUI_Show_Check_status($status)
 	Global $label_step2_status,$label_step2_status2
 	$step2_display_menu=2
 	GUI_Hide_Step2_Default_Menu()
+	GUI_Hide_Step2_Download_Menu()
 	GUI_Show_Back_Button()
 	GUICtrlSetState($label_step2_status,$GUI_HIDE)
 	$label_step2_status2 = GUICtrlCreateLabel($status, 38 + $offsetx0, 235 + $offsety0, 300, 80)
@@ -1595,6 +1600,9 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "kuki") Then
 				; Kuki based (Ubuntu)
 				$release_number = _ArraySearch($codenames_list, "kuki-last")
+			ElseIf StringInStr($shortname, "jolicloud") Then
+				; Jolicloud (Ubuntu)
+				$release_number = _ArraySearch($codenames_list, "jolicloud-last")
 			ElseIf StringInStr($shortname, "fedora") Or StringInStr($shortname, "F10") Or StringInStr($shortname, "F11") OR StringInStr($shortname, "F12") Then
 				; Fedora Based
 				$release_number = _ArraySearch($codenames_list, "fedora-last")
@@ -1733,8 +1741,11 @@ EndFunc   ;==>Check_if_version_non_grata
 Func Check_ISO($FileToHash)
 	SendReport("Start-Check_ISO ( File : " & $FileToHash & " )")
 	; Used to avoid redrawing the old elements of Step 2 (ISO, CD and download)
+
+	if $step2_display_menu=0 Then GUI_Hide_Step2_Default_Menu()
+
 	$step2_display_menu = 2
-	GUI_Hide_Step2_Default_Menu()
+
 
 	$progress_bar = _ProgressCreate(38 + $offsetx0, 238 + $offsety0, 300, 30)
 	_ProgressSetImages($progress_bar, @ScriptDir & "\tools\img\progress_green.jpg", @ScriptDir & "\tools\img\progress_background.jpg")
@@ -2192,32 +2203,43 @@ Func GUI_Download()
 	$step2_display_menu = 1
 	GUI_Hide_Step2_Default_Menu()
 
-	; Drawing new menu
-	$combo_linux = GUICtrlCreateCombo(">> " & Translate("Select your favourite Linux"), 38 + $offsetx0, 240 + $offsety0, 300, -1, BitOR($CBS_DROPDOWNLIST, $WS_VSCROLL))
+	;$cleaner = GUICtrlCreateLabel("", 38 + $offsetx0, 238 + $offsety0, 300, 30)
+	;GUICtrlSetState($cleaner, $GUI_SHOW)
+	;GUICtrlSetState($cleaner,$GUI_HIDE)
 
-	GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
-	GUICtrlSetColor(-1, 0xFFFFFF)
-	GUICtrlSetOnEvent(-1, "GUI_Select_Linux")
+	if NOT $combo_linux Then
+		$combo_linux = GUICtrlCreateCombo(">> " & Translate("Select your favourite Linux"), 38 + $offsetx0, 240 + $offsety0, 300, -1, BitOR($CBS_DROPDOWNLIST, $WS_VSCROLL))
 
-	GUICtrlSetData($combo_linux, $prefetched_linux_list)
+		GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
+		GUICtrlSetColor(-1, 0xFFFFFF)
+		GUICtrlSetOnEvent(-1, "GUI_Select_Linux")
+		GUICtrlSetState($combo_linux, $GUI_SHOW)
 
-	$download_label2 = GUICtrlCreateLabel(Translate("Download"), 38 + $offsetx0 + 110, 210 + $offsety0 + 55, 150)
-	GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
-	GUICtrlSetColor(-1, 0xFFFFFF)
-	GUICtrlSetFont(-1, 10)
+		GUICtrlSetData($combo_linux, $prefetched_linux_list)
 
-	$download_manual = GUICtrlCreateButton(Translate("Manually"), 38 + $offsetx0 + 20, 235 + $offsety0 + 50, 110)
-	GUICtrlSetOnEvent(-1, "GUI_Download_Manually")
-	GUICtrlSetState(-1, $GUI_DISABLE)
+		$download_label2 = GUICtrlCreateLabel(Translate("Download"), 38 + $offsetx0 + 110, 210 + $offsety0 + 55, 150)
+		GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
+		GUICtrlSetColor(-1, 0xFFFFFF)
+		GUICtrlSetFont(-1, 10)
 
-	$OR_label = GUICtrlCreateLabel(Translate("OR"), 38 + $offsetx0 + 135, 235 + $offsety0 + 55, 20)
-	GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
-	GUICtrlSetColor(-1, 0xFFFFFF)
-	GUICtrlSetFont(-1, 10)
-	$download_auto = GUICtrlCreateButton(Translate("Automatically"), 38 + $offsetx0 + 160, 235 + $offsety0 + 50, 110)
-	GUICtrlSetOnEvent(-1, "GUI_Download_Automatically")
-	GUICtrlSetState(-1, $GUI_DISABLE)
+		$download_manual = GUICtrlCreateButton(Translate("Manually"), 38 + $offsetx0 + 20, 235 + $offsety0 + 50, 110)
+		GUICtrlSetOnEvent(-1, "GUI_Download_Manually")
+		GUICtrlSetState(-1, $GUI_DISABLE)
+
+		$OR_label = GUICtrlCreateLabel(Translate("OR"), 38 + $offsetx0 + 135, 235 + $offsety0 + 55, 20)
+		GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
+		GUICtrlSetColor(-1, 0xFFFFFF)
+		GUICtrlSetFont(-1, 10)
+		$download_auto = GUICtrlCreateButton(Translate("Automatically"), 38 + $offsetx0 + 160, 235 + $offsety0 + 50, 110)
+		GUICtrlSetOnEvent(-1, "GUI_Download_Automatically")
+		GUICtrlSetState(-1, $GUI_DISABLE)
+	Else
+		GUI_Show_Step2_Download_Menu()
+		GUICtrlSetState($combo_linux, $GUI_SHOW)
+	Endif
+
 	GUI_Show_Back_Button()
+
 	SendReport("End-GUI_Download")
 EndFunc   ;==>GUI_Download
 
@@ -2230,11 +2252,22 @@ Func GUI_Show_Back_Button()
 EndFunc
 
 Func GUI_Hide_Back_Button()
-	GUICtrlDelete($BACK_AREA)
+	;GUICtrlDelete($BACK_AREA)
+	GUICtrlSetState($BACK_AREA, $GUI_HIDE)
 	$cleaner2 = GUICtrlCreateLabel("", 5 + $offsetx0, 300 + $offsety0, 32, 32)
 EndFunc
 
+Func GUI_Show_Step2_Download_Menu()
+	GUICtrlSetState($download_manual, $GUI_SHOW)
+	GUICtrlSetState($download_auto, $GUI_SHOW)
+	GUICtrlSetState($label_step2_status, $GUI_HIDE)
+	GUICtrlSetState($download_label2, $GUI_SHOW)
+	GUICtrlSetState($OR_label, $GUI_SHOW)
+	GUICtrlSetState($combo_linux, $GUI_SHOW)
+EndFunc
+
 Func GUI_Hide_Step2_Download_Menu()
+	_ProgressDelete($progress_bar)
 	GUICtrlSetState($combo_linux, $GUI_HIDE)
 	GUICtrlSetState($download_manual, $GUI_HIDE)
 	GUICtrlSetState($download_auto, $GUI_HIDE)
@@ -2242,7 +2275,7 @@ Func GUI_Hide_Step2_Download_Menu()
 	GUICtrlSetState($download_label2, $GUI_HIDE)
 	GUICtrlSetState($OR_label, $GUI_HIDE)
 	$cleaner = GUICtrlCreateLabel("", 38 + $offsetx0, 238 + $offsety0, 300, 30)
-	GUI_Hide_Back_Button()
+
 	GUICtrlSetState($cleaner, $GUI_SHOW)
 EndFunc
 
@@ -2278,6 +2311,7 @@ Func GUI_Back_Download()
 	Global $label_step2_status,$label_step2_status2
 	If @InetGetActive = 1 Then InetGet("abort")
 	GUI_Hide_Step2_Download_Menu()
+	GUI_Hide_Back_Button()
 	GUICtrlSetState($label_step2_status,$GUI_HIDE)
 	GUICtrlSetState($label_step2_status2,$GUI_HIDE)
 	; Showing old elements again
@@ -2321,10 +2355,11 @@ Func DownloadRelease($release_in_list, $automatic_download)
 
 	GUI_Hide_Step2_Download_Menu()
 
-	$BACK_AREA = GUICtrlCreateLabel("", 5 + $offsetx0, 300 + $offsety0, 32, 32)
-	$DRAW_BACK = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $BACK_PNG, 0, 0, 32, 32, 5 + $offsetx0, 300 + $offsety0, 32, 32)
-	GUICtrlSetCursor(-1, 0)
-	GUICtrlSetOnEvent(-1, "GUI_Back_Download")
+	GUI_Show_Back_Button()
+	;$BACK_AREA = GUICtrlCreateLabel("", 5 + $offsetx0, 300 + $offsety0, 32, 32)
+	;$DRAW_BACK = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $BACK_PNG, 0, 0, 32, 32, 5 + $offsetx0, 300 + $offsety0, 32, 32)
+	;GUICtrlSetCursor($BACK_AREA, 0)
+	;GUICtrlSetOnEvent($BACK_AREA, "GUI_Back_Download")
 
 	$progress_bar = _ProgressCreate(38 + $offsetx0, 238 + $offsety0, 300, 30)
 	_ProgressSetImages($progress_bar, @ScriptDir & "\tools\img\progress_green.jpg", @ScriptDir & "\tools\img\progress_background.jpg")
@@ -2385,13 +2420,13 @@ Func DownloadRelease($release_in_list, $automatic_download)
 				Download_State()
 			Else
 				UpdateStatusStep2(Translate("Error while trying to download") & @CRLF & Translate("Please check your internet connection or try with another linux"))
+				Sleep(3000)
+				_ProgressDelete($progress_bar)
+				GUI_Back_Download()
 			EndIf
 		EndIf
 	EndIf
-	Sleep(3000)
-	_ProgressDelete($progress_bar)
 
-	GUI_Back_Download()
 	SendReport("End-DownloadRelease")
 EndFunc   ;==>DownloadRelease
 
@@ -2514,6 +2549,8 @@ Func Download_State()
 
 	UpdateStatusStep2(Translate("Download complete") & @CRLF & Translate("Check will begin shortly"))
 	Sleep(3000)
+	_ProgressDelete($progress_bar)
+	GUI_Hide_Step2_Download_Menu()
 	$file_set = @ScriptDir & "\" & $filename
 	Check_source_integrity($file_set)
 	SendReport("End-Download_State")
@@ -2914,84 +2951,3 @@ EndFunc   ;==>_Language
 Func Translate($txt)
 	Return IniRead($lang_ini, $lang, $txt, $txt)
 EndFunc   ;==>Translate
-
-; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-; ///////////////////////////////// Updates management                            ///////////////////////////////////////////////////////////////////////////////
-; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-Func Check_for_updates()
-	SendReport("Start-Check_for_updates")
-	$ping = Ping("www.google.com")
-	If Not @error Then
-		$check_result = _INetGetSource($check_updates_url & "?version")
-		if isBeta() Then $check_result_beta = _INetGetSource($check_updates_url & "?beta-version")
-		SendReport("IN-Check_for_updates ( Last version found : " & $check_result & " )")
-		if isBeta() AND VersionCompare($check_result_beta, $software_version) = 1 Then
-			$return = MsgBox(68, Translate("There is a new Beta version available"), Translate("Your LiLi's version is not up to date.") & @CRLF & @CRLF & Translate("Last beta version is") & " : " & $check_result_beta & @CRLF & Translate("Your version is") & " : " & $software_version & @CRLF & @CRLF & Translate("Do want to download it ?"))
-			If $return = 6 Then ShellExecute("http://www.linuxliveusb.com/")
-		ElseIf Not $check_result = 0 And VersionCompare($check_result, $software_version) = 1 Then
-			$return = MsgBox(68, Translate("There is a new version available"), Translate("Your LiLi's version is not up to date.") & @CRLF & @CRLF & Translate("Last version is") & " : " & $check_result & @CRLF & Translate("Your version is") & " : " & $software_version & @CRLF & @CRLF & Translate("Do want to download it ?"))
-			If $return = 6 Then ShellExecute("http://www.linuxliveusb.com/")
-		EndIf
-	EndIf
-	SendReport("End-Check_for_updates")
-EndFunc   ;==>Check_for_updates
-
-; Compare 2 versions
-;	0 =  Versions are equals
-;	1 =  Version 1 is higher
-;   2 =  Version 2 is higher
-Func VersionCompare($version1, $version2)
-	If VersionCode($version1) = VersionCode($version2) Then
-		Return 0
-	ElseIf VersionCode($version1) > VersionCode($version2) Then
-		Return 1
-	Else
-		Return 2
-	EndIf
-EndFunc   ;==>VersionCompare
-
-; Transform a label to a number
-Func SortVersionLabel($version_label)
-	Switch StringLower($version_label)
-		Case "alpha"
-			Return 0
-		Case "beta"
-			Return 1
-		Case "beta1"
-			Return 2
-		Case "beta2"
-			Return 3
-		Case "beta3"
-			Return 4
-		Case "rc1"
-			Return 5
-		Case "rc2"
-			Return 6
-		Case "rc3"
-			Return 7
-		Case Else
-			Return 8
-	EndSwitch
-EndFunc   ;==>SortVersionLabel
-
-; Transform a version name to a version code to be compared up to 3 digits like "2.3.1 Beta"
-Func VersionCode($version)
-	$parse_version = StringSplit($version, " ")
-	$version_number = StringReplace($parse_version[1], ".", "")
-	If StringLen($version_number) = 2 Then $version_number &= "0"
-	If $parse_version[0] >= 2 Then
-		$version_number &= SortVersionLabel($parse_version[2])
-	Else
-		$version_number &= "8"
-	EndIf
-	Return $version_number
-EndFunc   ;==>VersionCode
-
-Func isBeta()
-	If StringInStr($software_version, "RC") Or StringInStr($software_version, "Beta") Or StringInStr($software_version, "Alpha") Then
-		Return 1
-	Else
-		Return 0
-	EndIf
-EndFunc   ;==>isBeta
