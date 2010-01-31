@@ -1,5 +1,5 @@
 #NoTrayIcon
-#RequireAdmin
+
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=tools\img\lili.ico
 #AutoIt3Wrapper_Compression=3
@@ -26,7 +26,7 @@
 
 
 ; Global constants
-Global Const $software_version = "2.4"
+Global Const $software_version = "2.4 Beta"
 Global $lang_ini = @ScriptDir & "\tools\languages\"
 Global Const $settings_ini = @ScriptDir & "\tools\settings\settings.ini"
 Global Const $compatibility_ini = @ScriptDir & "\tools\settings\compatibility_list.ini"
@@ -39,11 +39,11 @@ Global $downloaded_virtualbox_filename
 
 ; Global variables used for the onEvent Functions
 ; Globals images and GDI+ elements
-Global $GUI, $CONTROL_GUI, $EXIT_BUTTON, $MIN_BUTTON, $DRAW_REFRESH, $DRAW_ISO, $DRAW_CD, $DRAW_DOWNLOAD, $DRAW_BACK, $DRAW_BACK_HOVER, $DRAW_LAUNCH, $HELP_STEP1, $HELP_STEP2, $HELP_STEP3, $HELP_STEP4, $HELP_STEP5, $label_iso, $label_cd, $label_download, $label_step2_status, $download_label2, $OR_label, $live_mode_only_label,$builtin_persistence_label, $virtualbox
+Global $GUI, $CONTROL_GUI, $EXIT_BUTTON, $MIN_BUTTON, $DRAW_REFRESH, $DRAW_ISO, $DRAW_CD, $DRAW_DOWNLOAD, $DRAW_BACK, $DRAW_BACK_HOVER, $DRAW_LAUNCH, $HELP_STEP1, $HELP_STEP2, $HELP_STEP3, $HELP_STEP4, $HELP_STEP5, $label_iso, $label_cd, $label_download, $label_step2_status, $download_label2, $OR_label, $live_mode_label, $virtualbox
 Global $ZEROGraphic, $EXIT_NORM, $EXIT_OVER, $MIN_NORM, $MIN_OVER, $PNG_GUI, $CD_PNG, $CD_HOVER_PNG, $ISO_PNG, $ISO_HOVER_PNG, $DOWNLOAD_PNG, $DOWNLOAD_HOVER_PNG, $BACK_PNG, $BACK_HOVER_PNG, $LAUNCH_PNG, $LAUNCH_HOVER_PNG, $HELP, $BAD, $GOOD, $WARNING, $BACK_AREA
 Global $step2_display_menu = 0, $cleaner, $cleaner2
 Global $combo_linux, $download_manual, $download_auto, $slider, $slider_visual
-Global $best_mirror, $iso_size, $filename, $progress_bar, $label_step2_status
+Global $best_mirror, $iso_size, $filename, $progress_bar, $label_step2_status,$label_step2_status2
 Global $MD5_ISO = "", $compatible_md5, $compatible_filename, $release_number = -1, $files_in_source, $prefetched_linux_list,$recommended_ram = 256
 Global $foo
 Global $for_winactivate
@@ -76,9 +76,19 @@ Opt("GUIOnEventMode", 1)
 
 ; Checking if Tools folder exists (contains tools and settings)
 If DirGetSize(@ScriptDir & "\tools\", 2) <> -1 Then
+
 	If Not FileExists($lang_ini) Then
 		MsgBox(48, "ERROR", "Language file not found !!!")
 		Exit
+	EndIf
+
+	If Not FileExists($compatibility_ini) Then
+		; If something went bad with auto-updating the compatibility list => trying to put back the old one
+		FileMove(@ScriptDir & "\tools\settings\old_compatibility_list.ini",$compatibility_ini)
+		If Not FileExists($compatibility_ini) Then
+			MsgBox(48, "ERROR", "Compatibility list not found !!!")
+			Exit
+		EndIf
 	EndIf
 
 	If Not FileExists($settings_ini) Then
@@ -158,7 +168,7 @@ EndIf
 If IniRead($settings_ini, "General", "verbose_logging", "no") = "yes" Then InitLog()
 
 _SetAsReceiver("lili-main")
-_SetReceiverFunction("_test")
+_SetReceiverFunction("ReceiveFromSecondary")
 
 SendReport("Starting LiLi USB Creator " & $software_version)
 
@@ -335,16 +345,11 @@ $slider_visual_mode = GUICtrlCreateLabel(Translate("(Live mode only)"), 160 + $o
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
 
-$builtin_persistence_label = GUICtrlCreateLabel(Translate("Built-in Persistency"), 50 + $offsetx3 + $offsetx0, 233 + $offsety3 + $offsety0, 300, 100)
+$live_mode_label = GUICtrlCreateLabel(Translate("Live Mode"), 55 + $offsetx0, 233 + $offsety3 + $offsety0, 280, 50)
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
-GUICtrlSetFont($builtin_persistence_label, 16)
-GUICtrlSetState($builtin_persistence_label,$GUI_HIDE)
-
-$live_mode_only_label = GUICtrlCreateLabel(Translate("Live Mode"), 77 + $offsetx3 + $offsetx0, 233 + $offsety3 + $offsety0, 300, 100)
-GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
-GUICtrlSetColor(-1, 0xFFFFFF)
-GUICtrlSetFont($live_mode_only_label, 16)
+GUICtrlSetStyle(-1,$SS_CENTER )
+GUICtrlSetFont($live_mode_label, 16)
 
 Disable_Persistent_Mode()
 
@@ -1059,6 +1064,7 @@ Func LogSystemConfig()
 	$mem = MemGetStats()
 	$line = @CRLF & "--------------------------------  System Config  --------------------------------"
 	$line &= @CRLF & "LiLi USB Creator : " & $software_version
+	$line &= @CRLF & "Compatibility List Version : " & $current_compatibility_list_version
 	$line &= @CRLF & "OS Type : " & @OSType
 	$line &= @CRLF & "OS Version : " & @OSVersion
 	$line &= @CRLF & "OS Build : " & @OSBuild
@@ -1475,19 +1481,28 @@ EndFunc   ;==>Mandriva_WriteTextCFG
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Func GUI_Show_Check_status($status)
-	Global $label_step2_status,$label_step2_status2
-	$step2_display_menu=2
-	GUI_Hide_Step2_Default_Menu()
-	GUI_Hide_Step2_Download_Menu()
-	GUI_Show_Back_Button()
+	;$step2_display_menu=2
+
+	;GUI_Hide_Step2_Default_Menu()
+	;GUI_Hide_Step2_Download_Menu()
 	GUICtrlSetState($label_step2_status,$GUI_HIDE)
-	$label_step2_status2 = GUICtrlCreateLabel($status, 38 + $offsetx0, 235 + $offsety0, 300, 80)
-	GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
-	GUICtrlSetColor(-1, 0xFFFFFF)
+	GUICtrlSetData($label_step2_status2,$status)
+
 EndFunc
 
 Func Check_source_integrity($linux_live_file)
 	SendReport("Start-Check_source_integrity (LinuxFile : " & $linux_live_file & " )")
+
+	; Used to avoid redrawing the old elements of Step 2 (ISO, CD and download)
+	if $step2_display_menu=0 Then GUI_Hide_Step2_Default_Menu()
+	if $step2_display_menu=1 Then GUI_Hide_Step2_Download_Menu()
+	$step2_display_menu = 2
+	GUI_Show_Back_Button()
+
+	GUICtrlSetState($label_step2_status,$GUI_HIDE)
+	$label_step2_status2 = GUICtrlCreateLabel("", 38 + $offsetx0, 235 + $offsety0, 300, 80)
+	GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
+	GUICtrlSetColor(-1, 0xFFFFFF)
 
 	$shortname = path_to_name($linux_live_file)
 	SendReport("distrib-" & $shortname)
@@ -1743,9 +1758,7 @@ Func Check_ISO($FileToHash)
 	; Used to avoid redrawing the old elements of Step 2 (ISO, CD and download)
 
 	if $step2_display_menu=0 Then GUI_Hide_Step2_Default_Menu()
-
-	$step2_display_menu = 2
-
+	if $step2_display_menu=1 Then GUI_Hide_Step2_Download_Menu()
 
 	$progress_bar = _ProgressCreate(38 + $offsetx0, 238 + $offsety0, 300, 30)
 	_ProgressSetImages($progress_bar, @ScriptDir & "\tools\img\progress_green.jpg", @ScriptDir & "\tools\img\progress_background.jpg")
@@ -1950,18 +1963,19 @@ Func Disable_Persistent_Mode()
 	GUICtrlSetState($label_min, $GUI_HIDE)
 	GUICtrlSetState($slider_visual_Mo, $GUI_HIDE)
 	GUICtrlSetState($slider_visual_mode, $GUI_HIDE)
-	GUICtrlSetState($live_mode_only_label, $GUI_SHOW)
+	GUICtrlSetData($live_mode_label,Translate("Live Mode"))
+	GUICtrlSetState($live_mode_label,$GUI_SHOW)
 	Step3_Check("good")
 EndFunc   ;==>Disable_Persistent_Mode
 
 Func Enable_Persistent_Mode()
+	GUICtrlSetState($live_mode_label, $GUI_HIDE)
 	GUICtrlSetState($slider, $GUI_SHOW)
 	GUICtrlSetState($slider_visual, $GUI_SHOW)
 	GUICtrlSetState($label_max, $GUI_SHOW)
 	GUICtrlSetState($label_min, $GUI_SHOW)
 	GUICtrlSetState($slider_visual_Mo, $GUI_SHOW)
 	GUICtrlSetState($slider_visual_mode, $GUI_SHOW)
-	GUICtrlSetState($live_mode_only_label, $GUI_HIDE)
 EndFunc   ;==>Enable_Persistent_Mode
 
 Func BuiltIn_Persistent_Mode()
@@ -1971,8 +1985,8 @@ Func BuiltIn_Persistent_Mode()
 	GUICtrlSetState($label_min, $GUI_HIDE)
 	GUICtrlSetState($slider_visual_Mo, $GUI_HIDE)
 	GUICtrlSetState($slider_visual_mode, $GUI_HIDE)
-	GUICtrlSetState($live_mode_only_label, $GUI_HIDE)
-	GUICtrlSetState($builtin_persistence_label,$GUI_SHOW)
+	GUICtrlSetData($live_mode_label,Translate("Built-in Persistency"))
+	GUICtrlSetState($live_mode_label,$GUI_SHOW)
 	Step3_Check("good")
 EndFunc   ;==>DBuiltIn_Persistent_Mode
 
@@ -2267,7 +2281,7 @@ Func GUI_Show_Step2_Download_Menu()
 EndFunc
 
 Func GUI_Hide_Step2_Download_Menu()
-	_ProgressDelete($progress_bar)
+	;_ProgressDelete($progress_bar)
 	GUICtrlSetState($combo_linux, $GUI_HIDE)
 	GUICtrlSetState($download_manual, $GUI_HIDE)
 	GUICtrlSetState($download_auto, $GUI_HIDE)
@@ -2951,3 +2965,14 @@ EndFunc   ;==>_Language
 Func Translate($txt)
 	Return IniRead($lang_ini, $lang, $txt, $txt)
 EndFunc   ;==>Translate
+
+; Received a message from the secondary lili's process
+Func ReceiveFromSecondary($message)
+
+	; Compatibility list has been updated => force reloading
+	If $message ="compatibility_updated" Then
+		; initialize list of compatible releases (load the compatibility_list.ini)
+		Get_Compatibility_List()
+		$prefetched_linux_list = Print_For_ComboBox()
+	EndIf
+EndFunc

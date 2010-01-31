@@ -10,9 +10,10 @@
 Global Const $R_CODE = 0,$R_NAME=1,$R_DISTRIBUTION=2, $R_DISTRIBUTION_VERSION=3,$R_FILENAME=4,$R_FILE_MD5=5,$R_RELEASE_DATE=6,$R_WEB=7,$R_DOWNLOAD_PAGE=8,$R_DOWNLOAD_SIZE=9,$R_INSTALL_SIZE=10,$R_DESCRIPTION=11
 Global Const $R_MIRROR1=12,$R_MIRROR2=13,$R_MIRROR3=14,$R_MIRROR4=15,$R_MIRROR5=16,$R_MIRROR6=17,$R_MIRROR7=18,$R_MIRROR8=19,$R_MIRROR9=20,$R_MIRROR10=21,$R_VARIANT=22,$R_VARIANT_VERSION=23,$R_VISIBLE=24,$R_FEATURES=25
 Global $releases[5][30],$compatible_md5[5],$compatible_filename[5],$codenames_list[5]
-
+Global $current_compatibility_list_version
 
 Func Get_Compatibility_List()
+	$current_compatibility_list_version=IniRead($compatibility_ini, "Compatibility_List", "Version","none")
 	$sections = IniReadSectionNames($compatibility_ini)
 	If (Not IsArray($sections)) Or (Not FileExists($compatibility_ini)) Then
 		MsgBox(32,"Error","Compatibility file "&$compatibility_ini&" was not found.")
