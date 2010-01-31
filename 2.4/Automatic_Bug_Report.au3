@@ -36,6 +36,8 @@ Global $oMyError
 Global $iPID
 $lang = _Language()
 
+; Better if executed before running the main process
+Check_for_compatibility_list_updates()
 
 Opt("OnExitFunc", "CallBack_Exit")
 

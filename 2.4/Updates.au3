@@ -14,9 +14,9 @@
 ; ///////////////////////////////// Updates management                            ///////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+; Check for LiLi's updates
 Func Check_for_updates()
-	;SendReport("Start-Check_for_updates")
-	$ping = Ping("www.google.com",250)
+	$ping = Ping("www.google.com")
 	If $ping Then
 		;SendReport("IN-Check_for_updates : start checking")
 		$check_result = _INetGetSource($check_updates_url & "?version")
@@ -32,8 +32,32 @@ Func Check_for_updates()
 	else
 		;SendReport("no checking : "&$ping)
 	EndIf
-	;SendReport("End-Check_for_updates")
 EndFunc   ;==>Check_for_updates
+
+; Check for compatibility list updates
+Func Check_for_compatibility_list_updates()
+		; Current version
+		$current_compatibility_list_version=IniRead($compatibility_ini, "Compatibility_List", "Version","none")
+
+		; Check the available version
+		$available_version = _InetGetSource($check_updates_url & "?last_compatibility_list_of="&$software_version)
+
+		; Compare with the current version
+		if VersionCodeForCompatList($current_compatibility_list_version) < VersionCodeForCompatList($available_version) Then
+			; There is a new version => Downloading it to new_compatibility_list.ini
+			InetGet($check_updates_url&"compatibility_lists/"&$available_version, @ScriptDir &"\tools\settings\new_compatibility_list.ini")
+
+			; if the file downloaded is the same size it means the download should be good => replace the old version by the new one
+			if InetGetSize($check_updates_url&"compatibility_lists/"&$available_version) = FileGetSize(@ScriptDir &"\tools\settings\new_compatibility_list.ini") AND FileGetSize(@ScriptDir &"\tools\settings\new_compatibility_list.ini") > 0 Then
+				FileMove($compatibility_ini,@ScriptDir &"\tools\settings\old_compatibility_list.ini",1)
+				FileMove(@ScriptDir &"\tools\settings\new_compatibility_list.ini",$compatibility_ini,1)
+
+				; Send a message to the main process to force reloading the file
+				SendReportToMain("compatibility_updated")
+			EndIf
+		EndIf
+EndFunc
+
 
 ; Compare 2 versions
 ;	0 =  Versions are equals
@@ -93,3 +117,9 @@ Func isBeta()
 		Return 0
 	EndIf
 EndFunc   ;==>isBeta
+
+; Return the last number of compatibility list version
+Func VersionCodeForCompatList($version)
+	$parse_version = StringSplit($version, ".")
+	Return $parse_version[Ubound($parse_version)-1]
+EndFunc   ;==>VersionCode
