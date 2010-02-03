@@ -31,7 +31,7 @@ Func _About($Title, $MainLabel, $CopyRLabel, $VerLabel, $NameURL1, $URL1, $NameU
         $LinkTop += 30
     Next
 
-    GUICtrlCreateLabel(Translate("Version")&": " & @LF & $VerLabel, 10, 130, 150, 35, 1)
+    GUICtrlCreateLabel(Translate("Version")&" : " & @LF & $VerLabel, 10, 130, 150, 35, 1)
     GUICtrlSetFont(-1, 10, 600, 0, "Tahoma")
 
     GUICtrlCreateLabel($CopyRLabel, 0, 220, 320, -1, 1)

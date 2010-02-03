@@ -1,18 +1,19 @@
 #NoTrayIcon
-
+#RequireAdmin
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
-#AutoIt3Wrapper_Icon=tools\img\lili.ico
+#AutoIt3Wrapper_icon=tools\img\lili.ico
 #AutoIt3Wrapper_Compression=3
 #AutoIt3Wrapper_UseUpx=n
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.4.88.29
-#AutoIt3Wrapper_Res_FileVersion_AutoIncrement=Y
+#AutoIt3Wrapper_Res_Fileversion=2.4.88.30
+#AutoIt3Wrapper_Res_Fileversion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_SaveSource=y
 #AutoIt3Wrapper_Res_Field=AutoIt Version|%AutoItVer%
 #AutoIt3Wrapper_Res_Field=Site|http://www.linuxliveusb.com
-#AutoIt3Wrapper_Au3Check_Parameters=-w 4
+#AutoIt3Wrapper_Add_Constants=n
+#AutoIt3Wrapper_AU3Check_Parameters=-w 4
 #AutoIt3Wrapper_Run_After=upx.exe --best --compress-resources=0 "%out%"
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 ; Author           : Thibaut Lauzière (Slÿm)
@@ -26,7 +27,7 @@
 
 
 ; Global constants
-Global Const $software_version = "2.4 Beta"
+Global Const $software_version = "2.4"
 Global $lang_ini = @ScriptDir & "\tools\languages\"
 Global Const $settings_ini = @ScriptDir & "\tools\settings\settings.ini"
 Global Const $compatibility_ini = @ScriptDir & "\tools\settings\compatibility_list.ini"
@@ -44,7 +45,7 @@ Global $ZEROGraphic, $EXIT_NORM, $EXIT_OVER, $MIN_NORM, $MIN_OVER, $PNG_GUI, $CD
 Global $step2_display_menu = 0, $cleaner, $cleaner2
 Global $combo_linux, $download_manual, $download_auto, $slider, $slider_visual
 Global $best_mirror, $iso_size, $filename, $progress_bar, $label_step2_status,$label_step2_status2
-Global $MD5_ISO = "", $compatible_md5, $compatible_filename, $release_number = -1, $files_in_source, $prefetched_linux_list,$recommended_ram = 256
+Global $MD5_ISO = "", $compatible_md5, $compatible_filename, $release_number = -1, $files_in_source, $prefetched_linux_list
 Global $foo
 Global $for_winactivate
 
@@ -1485,7 +1486,17 @@ Func GUI_Show_Check_status($status)
 
 	;GUI_Hide_Step2_Default_Menu()
 	;GUI_Hide_Step2_Download_Menu()
+	$cleaner = GUICtrlCreateLabel("", 38 + $offsetx0, 238 + $offsety0, 300, 90)
+	GUICtrlSetState($cleaner, $GUI_SHOW)
+	GUICtrlSetState($cleaner,$GUI_HIDE)
+
 	GUICtrlSetState($label_step2_status,$GUI_HIDE)
+
+	$label_step2_status2 = GUICtrlCreateLabel("", 38 + $offsetx0, 235 + $offsety0, 300, 80)
+	GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
+	GUICtrlSetColor(-1, 0xFFFFFF)
+	GUICtrlSetState($label_step2_status2,$GUI_SHOW)
+
 	GUICtrlSetData($label_step2_status2,$status)
 
 EndFunc
@@ -1500,9 +1511,9 @@ Func Check_source_integrity($linux_live_file)
 	GUI_Show_Back_Button()
 
 	GUICtrlSetState($label_step2_status,$GUI_HIDE)
-	$label_step2_status2 = GUICtrlCreateLabel("", 38 + $offsetx0, 235 + $offsety0, 300, 80)
-	GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
-	GUICtrlSetColor(-1, 0xFFFFFF)
+	$cleaner = GUICtrlCreateLabel("", 38 + $offsetx0, 238 + $offsety0, 300, 90)
+	GUICtrlSetState($cleaner, $GUI_SHOW)
+	GUICtrlSetState($cleaner,$GUI_HIDE)
 
 	$shortname = path_to_name($linux_live_file)
 	SendReport("distrib-" & $shortname)
@@ -2204,9 +2215,17 @@ Func GUI_Choose_CD()
 		$file_set = $folder_file;
 		$file_set_mode = "folder"
 		;Check_folder_integrity($folder_file)
+
+		; Used to avoid redrawing the old elements of Step 2 (ISO, CD and download)
+		$step2_display_menu = 1
+		GUI_Hide_Step2_Default_Menu()
+
+		GUI_Show_Back_Button()
+
 		$temp_index = _ArraySearch($compatible_filename, "regular_linux.iso")
 		$release_number = $temp_index
-		Step2_Check("warning")
+		GUI_Show_Check_status(Translate("This Linux is not in the compatibility list")& "." & @CRLF &Translate("However, LinuxLive USB Creator will try to use same install parameters as for") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
+		Step2_Check("good")
 	EndIf
 	SendReport("End-GUI_Choose_CD")
 EndFunc   ;==>GUI_Choose_CD
@@ -2323,6 +2342,7 @@ EndFunc
 Func GUI_Back_Download()
 	SendReport("Start-GUI_Back_Download")
 	Global $label_step2_status,$label_step2_status2
+	_ProgressDelete($progress_bar)
 	If @InetGetActive = 1 Then InetGet("abort")
 	GUI_Hide_Step2_Download_Menu()
 	GUI_Hide_Back_Button()
