@@ -20,14 +20,14 @@
 ; Author's Website : www.slym.fr
 ; e-Mail           : contact@linuxliveusb.com
 ; License          : GPL v3.0
-; Version          : 2.4
+; Version          : 2.5
 ; Download         : http://www.linuxliveusb.com
 ; Support          : http://www.linuxliveusb.com/bugs/
 ; Compiled with    : AutoIT v3.3.0.0
 
 
 ; Global constants
-Global Const $software_version = "2.4"
+Global Const $software_version = "2.5"
 Global $lang_ini = @ScriptDir & "\tools\languages\"
 Global Const $settings_ini = @ScriptDir & "\tools\settings\settings.ini"
 Global Const $compatibility_ini = @ScriptDir & "\tools\settings\compatibility_list.ini"
@@ -1653,7 +1653,6 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "puppy") Or StringInStr($shortname, "pup-") Then
 				; Puppy Linux
 				$release_number = _ArraySearch($codenames_list, "puppy-last")
-				GUI_Show_Check_status(Translate("This ISO is not compatible."))
 			ElseIf StringInStr($shortname, "slax") Then
 				; Slax
 				$release_number = _ArraySearch($codenames_list, "slax-last")
@@ -1690,6 +1689,15 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "backtrack") OR StringInStr($shortname, "bt") Then
 				; BackTrack
 				$release_number = _ArraySearch($codenames_list, "backtrack-last")
+			ElseIf StringInStr($shortname, "xange") Then
+				; Xange variants
+				$release_number = _ArraySearch($codenames_list, "xange-last")
+			ElseIf StringInStr($shortname, "SimplyMEPIS") Then
+				; SimplyMEPIS variants
+				$release_number = _ArraySearch($codenames_list, "simplymepis-last")
+			ElseIf StringInStr($shortname, "antix") Then
+				; Antix MEPIS variants
+				$release_number = _ArraySearch($codenames_list, "antix-last")
 			Else
 				; Any Linux, except those known not to work in Live mode
 				$release_number = _ArraySearch($codenames_list, "default")
