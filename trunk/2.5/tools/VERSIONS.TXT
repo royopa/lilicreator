@@ -1,0 +1,4 @@
+Syslinux 3.82
+Mke2fs 0.04
+7zip 4.45b
+dd 0.5
