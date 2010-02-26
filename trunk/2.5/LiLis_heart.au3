@@ -289,7 +289,7 @@ EndFunc
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 #cs
-	Description : Creates a bootable USB stick from an IMG file
+	Description : Creates a bootable USB stick from a CD
 	Input :
 		$drive_letter = Letter of the drive (pre-formated like "E:" )
 		$path_to_cd = path to the CD or folder containing the Linux Live CD files
@@ -321,16 +321,24 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Create_Stick_From_IMG($drive_letter,$img_file)
 	SendReport("Start-Create_Stick_From_IMG ( Drive : "& $drive_letter &" - File : "& $img_file & " )")
-	Local $cmd, $foo, $line, $img_size
+	Local $cmd, $foo, $line,$lines="",$errors="", $img_size,$physical_disk_number
+
+	$physical_disk_number=GiveMePhysicalDisk($drive_letter)
+
+	if NOT ($physical_disk_number <> "ERROR" AND $physical_disk_number >0 AND $physical_disk_number <> GiveMePhysicalDisk("C:")) Then
+		MsgBox(16,"Error","There was an error while trying to write IMG file to USB."&@CRLF&@CRLF&"Please contact debug-img@linuxliveusb.com."&@CRLF&@CRLF&"Thank You")
+		Return 0
+	EndIf
+
 	$img_size= Ceiling(FileGetSize($img_file)/1048576)
 	$cmd = @ScriptDir & '\tools\dd.exe if="'&$img_file&'" of=\\.\'& $drive_letter&' bs=1M --progress'
 	UpdateLog($cmd)
 	If ProcessExists("dd.exe") > 0 Then ProcessClose("dd.exe")
 	$foo = Run($cmd, @ScriptDir, @SW_HIDE, $STDIN_CHILD + $STDOUT_CHILD + $STDERR_CHILD)
-		While 1
+	While 1
 		$line &= StdoutRead($foo)
 		If @error Then ExitLoop
-
+		$lines&=$line
 		; Regular Expression to parse progression
 		$str = StringRight($line,20)
 		$is = StringRegExp($line, '\r([0-9]{1,4}\,[0-9]{1,3}\,[0-9]{1,3})\r', 0)
@@ -344,6 +352,12 @@ Func Create_Stick_From_IMG($drive_letter,$img_file)
 		EndIf
 		Sleep(500)
 	Wend
+	UpdateLog($lines)
+	While 1
+		$errors &= StderrRead($foo)
+		If @error Then ExitLoop
+	WEnd
+	;if StringInStr($errors,"error") then MsgBox(0,"ERROR","An error occurred")
 	SendReport("End-Create_Stick_From_IMG")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
