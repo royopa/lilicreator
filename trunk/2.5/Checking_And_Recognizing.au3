@@ -148,6 +148,9 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "fedora") Or StringInStr($shortname, "F10") Or StringInStr($shortname, "F11") OR StringInStr($shortname, "F12") Then
 				; Fedora Based
 				$release_number = _ArraySearch($codenames_list, "fedora-last")
+			ElseIf StringInStr($shortname, "soas") Then
+				; Sugar on a stick
+				$release_number = _ArraySearch($codenames_list, "sugar-last")
 			ElseIf StringInStr($shortname, "mint") Then
 				; Mint Based
 				$release_number = _ArraySearch($codenames_list, "mint-last")

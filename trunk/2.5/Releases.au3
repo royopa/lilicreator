@@ -91,7 +91,7 @@ Func Print_For_ComboBox()
 	Local $temp=""
 	$sections = IniReadSectionNames($compatibility_ini)
 	For $release_in_list=1 to $sections[0]
-		if $releases[$release_in_list][$R_VISIBLE]="yes" Then $temp &=  $releases[$release_in_list][$R_DESCRIPTION]&"|"
+		if $releases[$release_in_list][$R_VISIBLE]="yes" Then $temp &=  ReleaseGetDescription($release_in_list)&"|"
 			;& "// Size : " & $releases[$release_in_list][$R_DOWNLOAD_SIZE] _
 			;& " (" & $releases[$release_in_list][$R_RELEASE_DATE] & ") |"
 	Next
@@ -157,7 +157,14 @@ EndFunc
 
 Func ReleaseGetDescription($release_in_list)
 	if $release_in_list <=0 Then Return "NotFound"
-	Return Translate($releases[$release_in_list][$R_DESCRIPTION])
+	if StringInStr(ReleaseGetCodename($release_in_list),"separator")>0 Then
+		; This is a separator description
+		Return ">>>>>>>>>>>>>>> "&Translate($releases[$release_in_list][$R_DESCRIPTION])&" <<<<<<<<<<<<<<<"
+	Else
+		; This is Linux description
+		Return Translate($releases[$release_in_list][$R_DESCRIPTION])
+	Endif
+
 EndFunc
 
 Func ReleaseGetSupportedFeatures($release_in_list)

@@ -183,7 +183,7 @@ Global $_Progress_ahCallBack[3] = [-1, -1, 0], $_Progress_Bars[1][15] = [[-1]], 
 ;===============================================================================
 ;
 Func _ProgressCreate($x, $y, $w = 204, $h = 24, $Col = 0xFFFF00, $GradCol = 0x00FF00, $BG = 0xAAAA00, $GradBG = 0xFF0000)
-	__CheckForGDIPlus()
+	;__CheckForGDIPlus()
 	$ID = UBound($_Progress_Bars)
 	ReDim $_Progress_Bars[$ID + 1][15]
 	$_Progress_Bars[$ID][0] = GUICtrlCreateLabel("", $x, $y, $w, $h)
@@ -221,7 +221,6 @@ Func _ProgressCreate($x, $y, $w = 204, $h = 24, $Col = 0xFFFF00, $GradCol = 0x00
 	$_Progress_Bars[$ID][9] = 1
 	$_Progress_Bars[$ID][10] = "Arial|10|1|0xFF000000|0"
 	_ProgressRefresh($ID, 0)
-	_Progress_CallBack_Init()
 	Return SetError(0, 0, $ID)
 EndFunc   ;==>_ProgressCreate
 
@@ -239,7 +238,6 @@ EndFunc   ;==>_ProgressCreate
 Func _ProgressDelete(ByRef $ID)
 	If Not IsArray($_Progress_Bars) Or UBound($_Progress_Bars, 2) <> 15 Or $ID > (UBound($_Progress_Bars)-1) Then Return SetError(1, 0, 0)
 	If $_Progress_Bars[$ID][0] = -1 Then Return SetError(-1,0,0)
-	_Progress_CallBack_Free()
 	Local $temp[9],$i
 	FoR $i = 0 To 8
 		$temp[$i] = $_Progress_Bars[$ID][$i]
@@ -269,8 +267,6 @@ Func _ProgressDelete(ByRef $ID)
 	Local $error = @error
 	_GDIPlus_ImageDispose($temp[7])
 	$_Progress_Bars[$ID][8] = -1
-
-
 	;_GDIPlus_Shutdown()
 	Return SetError($error, 0, $error=0)
 EndFunc   ;==>_ProgressDelete
@@ -474,6 +470,7 @@ Func _ProgressSet(ByRef $ID, $prc)
 	$_Progress_Bars[$ID][8] = $prc
 	Return 1
 EndFunc   ;==>_ProgressSet
+
 Func _ProgressGet(ByRef $ID)
 	If Not IsArray($_Progress_Bars) Or UBound($_Progress_Bars, 2) <> 15 Or $ID > (UBound($_Progress_Bars)-1) Then Return SetError(1, 0, 0)
 	Return _WinAPI_LoWord($_Progress_Bars[$ID][8])
@@ -558,7 +555,10 @@ Func _ProgressRefresh(ByRef $ID, $prc = Default)
 	EndIf
 ;~ 	_GDIPlus_GraphicsDrawString($_Progress_Bars[$ID][5],$prc & " %",Ceiling(($bar_width/2)-15),Ceiling(($bar_height/2)-5))
 	_GDIPlus_GraphicsDrawImage($_Progress_Bars[$ID][3], $_Progress_Bars[$ID][4], 0, 0)
-
+	GUISetState($GUI_SHOW, $GUI)
+	GUISetState($GUI_SHOW, $CONTROL_GUI)
+	GUIRegisterMsg($WM_PAINT, "DrawAll")
+	ControlFocus("LinuxLive USB Creator", "", $REFRESH_AREA)
 EndFunc   ;==>_ProgressRefresh
 
 ; Author(s):       Prog@ndy
@@ -722,82 +722,12 @@ EndFunc   ;==>_CreateGradientImg
 
 ;-------------------------------------------------------------------
 #Region Internal
-; Internal Function, do not use !
-Func _Paint_Bars_Procedure($hWnd, $nMsg, $wParam, $lParam)
+
+Func _Paint_Bars_Procedure2()
 	For $i = 1 To UBound($_Progress_Bars) - 1
-		If Not ($_Progress_Bars[$i][0] = -1) Then _ProgressRefresh($i);
+		If Not ($_Progress_Bars[$i][0] = -1) Then _ProgressRefresh($i)
 	Next
 EndFunc   ;==>_Paint_Bars_Procedure
-
-; Internal Function, do not use !
-; Author(s):       Prog@ndy
-Func _Progress_CallBack_Init($ForceReInit = False)
-	Local $sFuncName = "_Paint_Bars_Procedure", $iTime = 50, $sParam = "hwnd;int;int;dword"
-	$_Progress_ahCallBack[2] += 1
-	If $_Progress_ahCallBack[2] > 1 And Not $ForceReInit Then Return True
-	If $ForceReInit Then
-		Local $temp = $_Progress_ahCallBack[2]
-		_Progress_CallBack_Free(1)
-		$_Progress_ahCallBack[2] = $temp
-	EndIf
-	Local $hCallBack = DllCallbackRegister("_Paint_Bars_Procedure", "int", $sParam)
-
-	Local $aTimer = DllCall("user32.dll", "uint", "SetTimer", _
-			"hwnd", 0, "uint", 0, "int", $iTime, "ptr", DllCallbackGetPtr($hCallBack))
-
-	$_Progress_ahCallBack[0] = $hCallBack
-	$_Progress_ahCallBack[1] = $aTimer[0]
-
-	Return True
-EndFunc   ;==>_Progress_CallBack_Init
-
-; Internal Function, do not use !
-; Author(s):       Prog@ndy
-Func _Progress_CallBack_Free($Force = False)
-	Control_Hover()
-	$_Progress_ahCallBack[2] -= 1
-	If $_Progress_ahCallBack[2] < 0 Then
-		$_Progress_ahCallBack[2] = 0
-		Return
-	EndIf
-	; Need to be debugged for LiLi USB Creator sor return directly
-	; Throw an error when closing LiLi after trying to download automatically an iso
-	return
-	If (Not $Force) And ($_Progress_ahCallBack[2] > 0) Then Return
-	ConsoleWrite("!DEBUG Variables ------------------" & @CRLF)
-	ConsoleWrite("! $Force" & $Force & @CRLF)
-	ConsoleWrite("! $_Progress_ahCallBack[2]" & $_Progress_ahCallBack[2] & @CRLF)
-	ConsoleWrite("! $_Progress_ahCallBack[0]" & $_Progress_ahCallBack[1] & @CRLF)
-	ConsoleWrite("! $_Progress_ahCallBack[1]" & $_Progress_ahCallBack[1] & @CRLF)
-	ConsoleWrite("!----------------------------------" & @CRLF)
-	If $_Progress_ahCallBack[1] <> -1 Then DllCall("user32.dll", "int", "KillTimer", "hwnd", 0*ConsoleWrite("KILL" & @CRLF) , "uint", $_Progress_ahCallBack[1])
-	ConsoleWrite("!DEBUG after Kill TImer" & @CRLF)
-	ConsoleWrite("!DEBUG Variables ------------------" & @CRLF)
-	ConsoleWrite("! $Force" & $Force & @CRLF)
-	ConsoleWrite("! $_Progress_ahCallBack[2]" & $_Progress_ahCallBack[2] & @CRLF)
-	ConsoleWrite("! $_Progress_ahCallBack[0]" & $_Progress_ahCallBack[1] & @CRLF)
-	ConsoleWrite("! $_Progress_ahCallBack[1]" & $_Progress_ahCallBack[1] & @CRLF)
-	ConsoleWrite("!----------------------------------" & @CRLF)
-	If $_Progress_ahCallBack[0] <> -1 Then DllCallbackFree($_Progress_ahCallBack[0])
-	ConsoleWrite("!DEBUG after Free callback" & @CRLF)
-	ConsoleWrite("!DEBUG Variables ------------------" & @CRLF)
-	ConsoleWrite("! $Force" & $Force & @CRLF)
-	ConsoleWrite("! $_Progress_ahCallBack[2]" & $_Progress_ahCallBack[2] & @CRLF)
-	ConsoleWrite("! $_Progress_ahCallBack[0]" & $_Progress_ahCallBack[1] & @CRLF)
-	ConsoleWrite("! $_Progress_ahCallBack[1]" & $_Progress_ahCallBack[1] & @CRLF)
-	ConsoleWrite("!----------------------------------" & @CRLF)
-	$_Progress_ahCallBack[0] = -1
-	$_Progress_ahCallBack[1] = -1
-	$_Progress_ahCallBack[2] = 0
-	ConsoleWrite("!DEBUG after Var REset" & @CRLF)
-	ConsoleWrite("!DEBUG Variables ------------------" & @CRLF)
-	ConsoleWrite("! $Force" & $Force & @CRLF)
-	ConsoleWrite("! $_Progress_ahCallBack[2]" & $_Progress_ahCallBack[2] & @CRLF)
-	ConsoleWrite("! $_Progress_ahCallBack[0]" & $_Progress_ahCallBack[1] & @CRLF)
-	ConsoleWrite("! $_Progress_ahCallBack[1]" & $_Progress_ahCallBack[1] & @CRLF)
-	ConsoleWrite("!----------------------------------" & @CRLF)
-
-EndFunc   ;==>_Progress_CallBack_Free
 
 
 ;~ Func _DebugPrint($s_text)

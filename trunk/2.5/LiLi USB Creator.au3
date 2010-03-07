@@ -618,6 +618,7 @@ Func Control_Hover()
 			EndSwitch
 			$previous_hovered_control = $CursorCtrl[4]
 		EndIf
+		_Paint_Bars_Procedure2()
 	EndIf
 EndFunc   ;==>Control_Hover
 

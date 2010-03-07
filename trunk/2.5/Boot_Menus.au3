@@ -194,7 +194,7 @@ Func Fedora_WriteTextCFG($drive_letter)
 	$boot_text &= @LF & "default vesamenu.c32" _
 			 & @LF & "timeout 100" _
 			 & @LF & "menu background splash.jpg" _
-			 & @LF & "menu title Welcome to Fedora !" _
+			 & @LF & "menu title Welcome to your LinuxLive Key !" _
 			 & @LF & "menu color border 0 #ffffffff #00000000" _
 			 & @LF & "menu color sel 7 #ffffffff #ff000000" _
 			 & @LF & "menu color title 0 #ffffffff #00000000" _
