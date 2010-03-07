@@ -32,7 +32,7 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Clean_old_installs($drive_letter,$release_in_list)
-	If IniRead($settings_ini, "General", "skip_cleaning", "no") = "yes" Then Return 0
+	If IniRead($settings_ini, "Advanced", "skip_cleaning", "no") = "yes" Then Return 0
 	SendReport("Start-Clean_old_installs ( Drive : "& $drive_letter &" - Release : "& $release_in_list &" )")
 	UpdateStatus("Cleaning previous installations ( 2min )")
 	DeleteFilesInDir($files_in_source)
@@ -42,7 +42,7 @@ Func Clean_old_installs($drive_letter,$release_in_list)
 
 
 
-	if IniRead($settings_ini, "General", "skip_full_cleaning", "no") <> "yes" Then
+	if IniRead($settings_ini, "Advanced", "skip_full_cleaning", "no") <> "yes" Then
 
 		; Common Linux Live files
 		DirRemove2($drive_letter & "\isolinux\", 1)
@@ -131,8 +131,8 @@ Func Download_virtualBox()
 				$no_internet = 0
 				$virtualbox_size = -1
 
-				$VirtualBoxUrl1 = IniRead($settings_ini, "General", "portable_virtualbox_mirror1", "none")
-				$VirtualBoxUrl2 = IniRead($settings_ini, "General", "portable_virtualbox_mirror2", "none")
+				$VirtualBoxUrl1 = IniRead($settings_ini, "VirtualBox", "portable_virtualbox_mirror1", "none")
+				$VirtualBoxUrl2 = IniRead($settings_ini, "VirtualBox", "portable_virtualbox_mirror2", "none")
 
 
 				; Testing download mirrors
@@ -262,7 +262,7 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Func Uncompress_ISO_on_key($drive_letter,$iso_file,$release_in_list)
-	If IniRead($settings_ini, "General", "skip_copy", "no") = "yes" Then Return 0
+	If IniRead($settings_ini, "Advanced", "skip_copy", "no") = "yes" Then Return 0
 	SendReport("Start-Uncompress_ISO_on_key ( Drive : "& $drive_letter &" - File : "& $iso_file &" - Release : "& $release_in_list &" )")
 
 	If ProcessExists("7z.exe") > 0 Then ProcessClose("7z.exe")
@@ -300,7 +300,7 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Func Create_Stick_From_CD($drive_letter,$path_to_cd)
-	If IniRead($settings_ini, "General", "skip_copy", "no") = "yes" Then Return 0
+	If IniRead($settings_ini, "Advanced", "skip_copy", "no") = "yes" Then Return 0
 	SendReport("Start-Create_Stick_From_CD ( Drive : "& $drive_letter &" - CD Folder : "& $path_to_cd &" )")
 	FileCopyShell($path_to_cd & "\*.*", $drive_letter & "\")
 	SendReport("End-Create_Stick_From_CD")
@@ -393,7 +393,7 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Func Rename_and_move_files($drive_letter, $release_in_list)
-	If IniRead($settings_ini, "General", "skip_moving_renaming", "no") = "yes" Then Return 0
+	If IniRead($settings_ini, "Advanced", "skip_moving_renaming", "no") = "yes" Then Return 0
 	SendReport("Start-Rename_and_move_files")
 	UpdateStatus(Translate("Renaming some files"))
 
@@ -452,7 +452,7 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Create_boot_menu($drive_letter,$release_in_list)
-	If IniRead($drive_letter, "General", "skip_boot_text", "no") = "yes" Then Return 0
+	If IniRead($drive_letter, "Advanced", "skip_boot_text", "no") = "yes" Then Return 0
 	SendReport("Start-Create_boot_menu")
 	$variant = ReleaseGetVariant($release_in_list)
 	$distribution = ReleaseGetDistribution($release_in_list)
@@ -492,7 +492,7 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Hide_live_files($drive_letter)
-	If IniRead($settings_ini, "General", "skip_hiding", "no") = "yes" Then return 0
+	If IniRead($settings_ini, "Advanced", "skip_hiding", "no") = "yes" Then return 0
 	SendReport("Start-Hide_live_files")
 
 	UpdateStatus("Hiding files")
@@ -579,7 +579,7 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Create_persistence_file($drive_letter,$release_in_list,$persistence_size,$hide_it)
-	If IniRead($settings_ini, "General", "skip_persistence", "no") = "yes" Then Return 0
+	If IniRead($settings_ini, "Advanced", "skip_persistence", "no") = "yes" Then Return 0
 	SendReport("Start-Create_persistence_file")
 
 	; Checking if persistence is supported for this Linux
@@ -655,7 +655,7 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Func Install_boot_sectors($drive_letter,$release_in_list,$hide_it)
-	If IniRead($settings_ini, "General", "skip_bootsector", "no") = "yes" Then Return 0
+	If IniRead($settings_ini, "Advanced", "skip_bootsector", "no") = "yes" Then Return 0
 	SendReport("Start-Install_boot_sectors")
 	UpdateStatus("Installing boot sectors")
 	$features=ReleaseGetSupportedFeatures($release_in_list)
@@ -764,7 +764,7 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Create_autorun($drive_letter,$release_in_list)
-	If IniRead($settings_ini, "General", "skip_autorun", "no") = "yes" Then Return 0
+	If IniRead($settings_ini, "Advanced", "skip_autorun", "no") = "yes" Then Return 0
 
 	SendReport("Start-Create_autorun")
 	If FileExists($drive_letter & "\autorun.inf") Then FileMove($drive_letter & "\autorun.inf",$drive_letter & "\autorun.bak",1)

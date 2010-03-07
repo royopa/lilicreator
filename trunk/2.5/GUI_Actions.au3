@@ -728,10 +728,21 @@ Func GUI_Format_Key()
 EndFunc   ;==>GUI_Format_Key
 
 Func GUI_Launch_Creation()
+
+	; to avoid to create the key twice in a row
+	if $already_create_a_key >0 Then
+		$return = MsgBox(33,Translate("Please read"),Translate("You have already created a key")&"."&@CRLF&Translate("Are you sure that you want to recreate one")&" ?")
+		if $return == 2 Then Return ""
+	EndIf
+
 	SendReport("Start-GUI_Launch_Creation")
 	; Disable the controls and re-enable after creation
 
 	$selected_drive = StringLeft(GUICtrlRead($combo), 2)
+
+	; force cleaning old status (little bug fix)
+	UpdateStatus("")
+	Sleep(200)
 
 	UpdateStatus("Start creation of LinuxLive USB")
 
@@ -790,8 +801,6 @@ Func GUI_Launch_Creation()
 			Create_autorun($selected_drive, $release_number)
 		EndIf
 
-
-
 		If (GUICtrlRead($hide_files) == $GUI_CHECKED) Then Hide_live_files($selected_drive)
 
 		If GUICtrlRead($virtualbox) == $GUI_CHECKED And $virtualbox_check >= 1 Then
@@ -814,7 +823,7 @@ Func GUI_Launch_Creation()
 
 		; Creation is now done
 		UpdateStatus("Your LinuxLive key is now up and ready !")
-
+		$already_create_a_key+=1
 		If GUICtrlRead($virtualbox) == $GUI_CHECKED And $virtualbox_check >= 1 Then Final_check()
 
 		Sleep(1000)

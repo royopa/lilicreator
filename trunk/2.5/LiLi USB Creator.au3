@@ -108,6 +108,7 @@ Global $selected_drive,$virtualbox_check,$virtualbox_size,$downloaded_virtualbox
 Global $STEP1_OK, $STEP2_OK, $STEP3_OK
 Global $MD5_ISO, $version_in_file
 Global $variante
+Global $already_create_a_key=0
 
 $selected_drive = "->"
 $file_set = 0;
@@ -219,13 +220,13 @@ EndIf
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ; Apply proxy settings
-If IniRead($settings_ini, "General", "proxy_url", "none") <> "none" And IniRead($settings_ini, "General", "proxy_url", "none") <> "" Then
-	$proxy_url = IniRead($settings_ini, "General", "proxy_url", "none")
-	If IniRead($settings_ini, "General", "proxy_port", "none") <> "none" And IniRead($settings_ini, "General", "proxy_port", "none") <> "" Then $proxy_url &= ":" & IniRead($settings_ini, "General", "proxy_port", "none")
-	If IniRead($settings_ini, "General", "proxy_username", "none") <> "none" And IniRead($settings_ini, "General", "proxy_username", "none") <> "" Then
-		$proxy_username = IniRead($settings_ini, "General", "proxy_username", "none")
-		If IniRead($settings_ini, "General", "proxy_password", "none") <> "none" And IniRead($settings_ini, "General", "proxy_password", "none") <> "" Then
-			$proxy_password = IniRead($settings_ini, "General", "proxy_password", "none")
+If IniRead($settings_ini, "Proxy", "proxy_url", "none") <> "none" And IniRead($settings_ini, "Proxy", "proxy_url", "none") <> "" Then
+	$proxy_url = IniRead($settings_ini, "Proxy", "proxy_url", "none")
+	If IniRead($settings_ini, "Proxy", "proxy_port", "none") <> "none" And IniRead($settings_ini, "Proxy", "proxy_port", "none") <> "" Then $proxy_url &= ":" & IniRead($settings_ini, "Proxy", "proxy_port", "none")
+	If IniRead($settings_ini, "Proxy", "proxy_username", "none") <> "none" And IniRead($settings_ini, "Proxy", "proxy_username", "none") <> "" Then
+		$proxy_username = IniRead($settings_ini, "Proxy", "proxy_username", "none")
+		If IniRead($settings_ini, "Proxy", "proxy_password", "none") <> "none" And IniRead($settings_ini, "Proxy", "proxy_password", "none") <> "" Then
+			$proxy_password = IniRead($settings_ini, "Proxy", "proxy_password", "none")
 			HttpSetProxy(2, $proxy_url, $proxy_username, $proxy_password)
 		Else
 			HttpSetProxy(2, $proxy_url, $proxy_username)
