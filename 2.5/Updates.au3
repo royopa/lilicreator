@@ -16,16 +16,22 @@
 
 ; Check for LiLi's updates
 Func Check_for_updates()
+	If IniRead($settings_ini, "Updates", "check_for_updates", "yes") = "no" Then Return 0
 	$ping = Ping("www.google.com")
 	If $ping Then
-		;SendReport("IN-Check_for_updates : start checking")
+
+		; check for stable version update
 		$check_result = _INetGetSource($check_updates_url & "?version")
-		if isBeta() Then $check_result_beta = _INetGetSource($check_updates_url & "?beta-version")
-		;SendReport("IN-Check_for_updates ( Last version found : " & $check_result & " )")
-		if isBeta() AND VersionCompare($check_result_beta, $software_version) = 1 Then
+
+		; if Beta version check for beta version update too
+		if (isBeta() OR IniRead($settings_ini, "Updates", "check_for_beta_versions", "no") = "yes") Then $check_result_beta = _INetGetSource($check_updates_url & "?beta-version")
+
+		if (isBeta() OR IniRead($settings_ini, "Updates", "check_for_beta_versions", "no") = "yes") AND VersionCompare($check_result_beta, $software_version) = 1 Then
+			; New beta version available
 			$return = MsgBox(68, Translate("There is a new Beta version available"), Translate("Your LiLi's version is not up to date.") & @CRLF & @CRLF & Translate("Last beta version is") & " : " & $check_result_beta & @CRLF & Translate("Your version is") & " : " & $software_version & @CRLF & @CRLF & Translate("Do want to download it ?"))
 			If $return = 6 Then ShellExecute("http://www.linuxliveusb.com/")
 		ElseIf Not $check_result = 0 And VersionCompare($check_result, $software_version) = 1 Then
+			; New stable version available
 			$return = MsgBox(68, Translate("There is a new version available"), Translate("Your LiLi's version is not up to date.") & @CRLF & @CRLF & Translate("Last version is") & " : " & $check_result & @CRLF & Translate("Your version is") & " : " & $software_version & @CRLF & @CRLF & Translate("Do want to download it ?"))
 			If $return = 6 Then ShellExecute("http://www.linuxliveusb.com/")
 		EndIf
@@ -51,9 +57,11 @@ Func Check_for_compatibility_list_updates()
 			if InetGetSize($check_updates_url&"compatibility_lists/"&$available_version) = FileGetSize(@ScriptDir &"\tools\settings\new_compatibility_list.ini") AND FileGetSize(@ScriptDir &"\tools\settings\new_compatibility_list.ini") > 0 Then
 				FileMove($compatibility_ini,@ScriptDir &"\tools\settings\old_compatibility_list.ini",1)
 				FileMove(@ScriptDir &"\tools\settings\new_compatibility_list.ini",$compatibility_ini,1)
-
 				; Send a message to the main process to force reloading the file
 				SendReportToMain("compatibility_updated")
+				$new_linux = _InetGetSource($check_updates_url & "?new-linux-since="&$current_compatibility_list_version)
+				MsgBox(64, "LinuxLive USB Creator", Translate("The compatibility list has been updated")&"."&@CRLF&@CRLF&Translate("These linuxes are now supported")&" :"&@CRLF&@CRLF&$new_linux);
+
 			EndIf
 		EndIf
 EndFunc

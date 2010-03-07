@@ -146,7 +146,7 @@ Func _OnAutoItError()
 	TraySetIcon(@ScriptDir&"\tools\img\lili.ico")
 
     ;   choose action to be taken
-	If IniRead($settings_ini, "General", "skip_autoreport", "no")=="no" Then
+	If IniRead($settings_ini, "Advanced", "skip_autoreport", "no")=="no" Then
 		If SendBug() <> "OK" Then
 			GUICtrlSetData($sending_status,Translate("Report status")& " : " & Translate("Error (not sent)"))
 		Else

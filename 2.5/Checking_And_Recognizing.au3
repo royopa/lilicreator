@@ -51,7 +51,7 @@ Func Check_source_integrity($linux_live_file)
 
 
 	; No check if it's an img file or if the user do not want to
-	If IniRead($settings_ini, "General", "skip_recognition", "no") == "yes" Or get_extension($linux_live_file) = "img" Then
+	If IniRead($settings_ini, "Advanced", "skip_recognition", "no") == "yes" Or get_extension($linux_live_file) = "img" Then
 		Step2_Check("good")
 		$temp_index = _ArraySearch($codenames_list, "default")
 		$release_number = $temp_index
@@ -79,7 +79,7 @@ Func Check_source_integrity($linux_live_file)
 		EndIf
 	EndIf
 
-	If IniRead($settings_ini, "General", "skip_md5", "no") = "no" Then
+	If IniRead($settings_ini, "Advanced", "skip_md5", "no") = "no" Then
 		$MD5_ISO = Check_ISO($linux_live_file)
 		$temp_index = _ArraySearch($compatible_md5, $MD5_ISO)
 	Else
@@ -109,6 +109,9 @@ Func Check_source_integrity($linux_live_file)
 			If ( StringInStr($shortname, "10.04") OR StringInStr($shortname, "lucid") OR StringInStr($shortname, "9.10") ) And StringInStr($shortname, "netbook") Then
 				; Ubuntu Karmic (>=9.10) based
 				$release_number = _ArraySearch($codenames_list, "ubuntu-netbook-last")
+			ElseIf StringInStr($shortname, "moblin-remix") Then
+				; Ubuntu moblin remix
+				$release_number = _ArraySearch($codenames_list, "moblin-remix-last")
 			ElseIf StringInStr($shortname, "grml") Then
 				; Grml
 				$release_number = _ArraySearch($codenames_list, "grml-last")
@@ -130,6 +133,18 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "jolicloud") Then
 				; Jolicloud (Ubuntu)
 				$release_number = _ArraySearch($codenames_list, "jolicloud-last")
+			ElseIf StringInStr($shortname, "element") Then
+				; Element (Ubuntu)
+				$release_number = _ArraySearch($codenames_list, "element-last")
+			ElseIf StringInStr($shortname, "android") Then
+				; Android x86
+				$release_number = _ArraySearch($codenames_list, "android-last")
+			ElseIf StringInStr($shortname, "trisquel") Then
+				; Trisquel (Ubuntu)
+				$release_number = _ArraySearch($codenames_list, "trisquel-last")
+			ElseIf StringInStr($shortname, "plop") Then
+				; PLoP Linux
+				$release_number = _ArraySearch($codenames_list, "plop-last")
 			ElseIf StringInStr($shortname, "fedora") Or StringInStr($shortname, "F10") Or StringInStr($shortname, "F11") OR StringInStr($shortname, "F12") Then
 				; Fedora Based
 				$release_number = _ArraySearch($codenames_list, "fedora-last")
@@ -344,7 +359,7 @@ EndFunc   ;==>MD5_ISO
 	Func Check_folder_integrity($folder)
 	SendReport("Start-Check_folder_integrity ( Folder : " & $folder & " )")
 	Global $version_in_file, $MD5_FOLDER
-	If IniRead($settings_ini, "General", "skip_checking", "no") == "yes" Then
+	If IniRead($settings_ini, "Advanced", "skip_checking", "no") == "yes" Then
 	Step2_Check("good")
 	SendReport("End-Check_folder_integrity (skip)")
 	Return ""

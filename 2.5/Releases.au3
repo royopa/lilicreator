@@ -157,7 +157,7 @@ EndFunc
 
 Func ReleaseGetDescription($release_in_list)
 	if $release_in_list <=0 Then Return "NotFound"
-	Return $releases[$release_in_list][$R_DESCRIPTION]
+	Return Translate($releases[$release_in_list][$R_DESCRIPTION])
 EndFunc
 
 Func ReleaseGetSupportedFeatures($release_in_list)

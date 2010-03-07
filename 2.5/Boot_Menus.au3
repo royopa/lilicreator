@@ -207,10 +207,14 @@ Func Fedora_WriteTextCFG($drive_letter)
 			 & @LF & "menu color cmdline 0 #ffffffff #00000000" _
 			 & @LF & "menu hidden" _
 			 & @LF & "menu hiddenrow 5" _
+			 & @LF & "label linux1" _
+			 & @LF & "  menu label " & Translate("Live Mode") _
+			 & @LF & "  kernel vmlinuz0" _
+			 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat ro liveimg quiet selinux=0 rhgb  rd_NO_LUKS rd_NO_MD noiswmd" _
 			 & @LF & "label linux0" _
 			 & @LF & "  menu label " & Translate("Persistent Mode") _
 			 & @LF & "  kernel vmlinuz0" _
-			 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat rw liveimg overlay=UUID=" & $uuid & " quiet  rhgb " _
+			 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat rw liveimg overlay=UUID=" & $uuid & " quiet selinux=0 rhgb  rd_NO_LUKS rd_NO_MD noiswmd" _
 			 & @LF & "menu default" _
 			 & @LF & "label check0" _
 			 & @LF & "  menu label " & Translate("File Integrity Check") _
