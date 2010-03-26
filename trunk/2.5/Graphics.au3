@@ -557,8 +557,8 @@ Func _ProgressRefresh(ByRef $ID, $prc = Default)
 	_GDIPlus_GraphicsDrawImage($_Progress_Bars[$ID][3], $_Progress_Bars[$ID][4], 0, 0)
 	GUISetState($GUI_SHOW, $GUI)
 	GUISetState($GUI_SHOW, $CONTROL_GUI)
-	GUIRegisterMsg($WM_PAINT, "DrawAll")
-	ControlFocus("LinuxLive USB Creator", "", $REFRESH_AREA)
+	;GUIRegisterMsg($WM_PAINT, "DrawAll")
+	;ControlFocus("LinuxLive USB Creator", "", $REFRESH_AREA)
 EndFunc   ;==>_ProgressRefresh
 
 ; Author(s):       Prog@ndy

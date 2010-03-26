@@ -424,13 +424,17 @@ Func Rename_and_move_files($drive_letter, $release_in_list)
 		isolinux2syslinux($syslinux_path)
 
 
-	; Fix for Parted Magic 4.6
+	; Fix for Parted Magic 4.6 & 4.9
 	If ReleaseGetVariant($release_in_list) ="pmagic" Then
 		DirMove( $drive_letter & "\pmagic-usb-4.6\boot", $drive_letter,1)
 		DirMove( $drive_letter & "\pmagic-usb-4.6\pmagic", $drive_letter,1)
 		FileMove($drive_letter & "\pmagic-usb-4.6\readme.txt",$drive_letter,1)
 		FileMove( $drive_letter & "\PMAGIC\MODULES\PMAGIC_4_6.SQFS", $drive_letter & "\PMAGIC\MODULES\pmagic-4.6.sqfs",1)
 		FileDelete( $drive_letter & "\pmagic-usb-4.6\")
+
+		DirMove( $drive_letter & "\pmagic-usb-4.9\boot", $drive_letter,1)
+		DirMove( $drive_letter & "\pmagic-usb-4.9\pmagic", $drive_letter,1)
+		FileDelete( $drive_letter & "\pmagic-usb-4.9\")
 	EndIf
 
 	SendReport("End-Rename_and_move_files")

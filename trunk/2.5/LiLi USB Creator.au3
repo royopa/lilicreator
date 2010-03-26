@@ -6,7 +6,7 @@
 #AutoIt3Wrapper_UseUpx=n
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.4.88.30
+#AutoIt3Wrapper_Res_Fileversion=2.4.88.31
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_SaveSource=y
@@ -618,8 +618,8 @@ Func Control_Hover()
 			EndSwitch
 			$previous_hovered_control = $CursorCtrl[4]
 		EndIf
-		_Paint_Bars_Procedure2()
 	EndIf
+	_Paint_Bars_Procedure2()
 EndFunc   ;==>Control_Hover
 
 ; Received a message from the secondary lili's process

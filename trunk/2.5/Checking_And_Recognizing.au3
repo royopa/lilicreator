@@ -143,8 +143,13 @@ Func Check_source_integrity($linux_live_file)
 				; Trisquel (Ubuntu)
 				$release_number = _ArraySearch($codenames_list, "trisquel-last")
 			ElseIf StringInStr($shortname, "plop") Then
-				; PLoP Linux
-				$release_number = _ArraySearch($codenames_list, "plop-last")
+				if StringInStr($shortname, "-X") Then
+					; PLoP Linux with X
+					$release_number = _ArraySearch($codenames_list, "plopx-last")
+				Else
+					; PLoP Linux without X
+					$release_number = _ArraySearch($codenames_list, "plop-last")
+				EndIf
 			ElseIf StringInStr($shortname, "fedora") Or StringInStr($shortname, "F10") Or StringInStr($shortname, "F11") OR StringInStr($shortname, "F12") Then
 				; Fedora Based
 				$release_number = _ArraySearch($codenames_list, "fedora-last")
@@ -160,9 +165,9 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "clonezilla") Then
 				; Clonezilla
 				$release_number = _ArraySearch($codenames_list, "clonezilla-last")
-			ElseIf StringInStr($shortname, "gparted") Then
+			ElseIf StringInStr($shortname, "gparted-live") Then
 				; Gparted
-				$release_number = _ArraySearch($codenames_list, "gparted-last")
+				$release_number = _ArraySearch($codenames_list, "gpartedlive-last")
 			ElseIf StringInStr($shortname, "debian") Then
 				; Debian
 				$release_number = _ArraySearch($codenames_list, "debiangnome-last")
