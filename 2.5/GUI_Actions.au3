@@ -506,7 +506,7 @@ Func DisplayMirrorList($latency_table, $release_in_list)
 	Opt("GUIOnEventMode", 0)
 
 	; Create GUI
-	GUICreate("Select the mirror", 350, 250)
+	$gui_mirrors = GUICreate("Select the mirror", 350, 250)
 	$hListView = GUICtrlCreateListView("  " & Translate("Latency") & "  |  " & Translate("Server Name") & "  | ", 0, 0, 350, 200)
 	_GUICtrlListView_SetColumnWidth($hListView, 0, 80)
 	_GUICtrlListView_SetColumnWidth($hListView, 1, 230)
@@ -559,8 +559,9 @@ Func DisplayMirrorList($latency_table, $release_in_list)
 	GUISetState()
 
 	; Loop until user exits
-	Do
+	while 1
 		$msg = GUIGetMsg()
+		If $msg = $GUI_EVENT_CLOSE Then ExitLoop
 
 		If $msg = $copy_it Then
 			If GUICtrlRead($hListView) Then
@@ -582,7 +583,7 @@ Func DisplayMirrorList($latency_table, $release_in_list)
 			EndIf
 		EndIf
 
-	Until $msg = $GUI_EVENT_CLOSE
+	wend
 
 	GUIDelete()
 	Opt("GUIOnEventMode", 1)
