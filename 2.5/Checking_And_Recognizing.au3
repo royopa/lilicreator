@@ -118,9 +118,9 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "knoppix") Then
 				; Knoppix
 				$release_number = _ArraySearch($codenames_list, "knoppix-last")
-			ElseIf StringInStr($shortname, "9.10") Or StringInStr($shortname, "lucid") Then
+			ElseIf StringInStr($shortname, "10.04") Or StringInStr($shortname, "lucid") Then
 				; Ubuntu Karmic 10.04 based
-				$release_number = _ArraySearch($codenames_list, "ubuntu-10.04")
+				$release_number = _ArraySearch($codenames_list, "ubuntu-10.04beta1")
 			ElseIf (StringInStr($shortname, "karmic") Or StringInStr($shortname, "buntu")) Then
 				; Ubuntu Karmic (>=9.10) based
 				$release_number = _ArraySearch($codenames_list, "ubuntu-last")
@@ -198,6 +198,9 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "ophcrack") Then
 				; OphCrack
 				$release_number = _ArraySearch($codenames_list, "ophcrackxp-last")
+			ElseIf StringInStr($shortname, "chakra") Then
+				; Chakra
+				$release_number = _ArraySearch($codenames_list, "chakra-last")
 			ElseIf StringInStr($shortname, "crunch") Then
 				; CrunchBang Based
 				$release_number = _ArraySearch($codenames_list, "crunchbangstd-last")

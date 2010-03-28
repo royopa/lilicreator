@@ -433,6 +433,13 @@ Func DownloadRelease($release_in_list, $automatic_download)
 	$progress_bar = _ProgressCreate(38 + $offsetx0, 238 + $offsety0, 300, 30)
 	_ProgressSetImages($progress_bar, @ScriptDir & "\tools\img\progress_green.jpg", @ScriptDir & "\tools\img\progress_background.jpg")
 	_ProgressSetFont($progress_bar, "", -1, -1, 0x000000, 0)
+
+	if NOT $progress_bar Then
+		$progress_bar = _ProgressCreate(38 + $offsetx0, 238 + $offsety0, 300, 30)
+		_ProgressSetImages($progress_bar, @ScriptDir & "\tools\img\progress_green.jpg", @ScriptDir & "\tools\img\progress_background.jpg")
+		_ProgressSetFont($progress_bar, "", -1, -1, 0x000000, 0)
+	EndIf
+
 	$label_step2_status = GUICtrlCreateLabel(Translate("Looking for the fastest mirror"), 38 + $offsetx0, 231 + $offsety0 + 50, 300, 80)
 	GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 	GUICtrlSetColor(-1, 0xFFFFFF)
@@ -446,7 +453,8 @@ Func DownloadRelease($release_in_list, $automatic_download)
 	For $i = $R_MIRROR1 To $R_MIRROR10
 		$mirror = $releases[$release_in_list][$i]
 		If StringStripWS($mirror, 1) <> "" Then
-
+			_ProgressSet($progress_bar, $tested_mirrors * 100 / $available_mirrors)
+			_ProgressSetText($progress_bar, Translate("Testing mirror") & " : " & URLToHostname($mirror))
 			$temp_latency = Ping(URLToHostname($mirror))
 			$tested_mirrors = $tested_mirrors + 1
 			If @error = 0 Then
@@ -457,23 +465,20 @@ Func DownloadRelease($release_in_list, $automatic_download)
 			Else
 				$temp_latency = 10000
 			EndIf
-			_ProgressSet($progress_bar, $tested_mirrors * 100 / $available_mirrors)
-			_ProgressSetText($progress_bar, Translate("Testing mirror") & " : " & URLToHostname($mirror))
+
 		Else
 			$temp_latency = 10000
 		EndIf
 		$latency[$i] = $temp_latency
 
 	Next
-
 	If _ArrayMin($latency, 1, $R_MIRROR1, $R_MIRROR10) = 10000 Then
+		SendReport("ck2")
 		UpdateStatusStep2(Translate("No online mirror found") & " !" & @CRLF & Translate("Please check your internet connection or try with another linux"))
 		_ProgressSet($progress_bar, 100)
 		Sleep(3000)
 	Else
-
 		_ProgressSet($progress_bar, 100)
-
 		$best_mirror = $releases[$release_in_list][_ArrayMinIndex($latency, 1, $R_MIRROR1, $R_MIRROR10)]
 		If $automatic_download = 0 Then
 			; Download manually
@@ -503,10 +508,9 @@ EndFunc   ;==>DownloadRelease
 Func DisplayMirrorList($latency_table, $release_in_list)
 	Local $hImage, $hListView
 
-	Opt("GUIOnEventMode", 0)
-
 	; Create GUI
 	$gui_mirrors = GUICreate("Select the mirror", 350, 250)
+	Opt("GUIOnEventMode", 0)
 	$hListView = GUICtrlCreateListView("  " & Translate("Latency") & "  |  " & Translate("Server Name") & "  | ", 0, 0, 350, 200)
 	_GUICtrlListView_SetColumnWidth($hListView, 0, 80)
 	_GUICtrlListView_SetColumnWidth($hListView, 1, 230)
@@ -518,12 +522,13 @@ Func DisplayMirrorList($latency_table, $release_in_list)
 	Local $latency_server[$R_MIRROR10 - $R_MIRROR1 + 1][3]
 	For $i = $R_MIRROR1 To $R_MIRROR10
 		$mirror = $releases[$release_in_list][$i]
-		If $mirror <> "NotFound" And $mirror <> "" Then
+		If $mirror <> "NotFound" AND $mirror <> "" Then
 			$latency_server[$i - $R_MIRROR1][0] = $latency_table[$i]
 			$latency_server[$i - $R_MIRROR1][1] = URLToHostname($mirror)
 			$latency_server[$i - $R_MIRROR1][2] = $mirror
 		EndIf
 	Next
+
 	_GUICtrlListView_EnableGroupView($hListView)
 	_GUICtrlListView_InsertGroup($hListView, -1, 1, Translate("Best mirrors"))
 	_GUICtrlListView_InsertGroup($hListView, -1, 2, Translate("Good mirrors"))
@@ -554,9 +559,10 @@ Func DisplayMirrorList($latency_table, $release_in_list)
 			$item = $item + 1
 		EndIf
 	Next
+
 	_GUICtrlListView_SetImageList($hListView, $hImage, 1)
 	_GUICtrlListView_HideColumn($hListView, 2)
-	GUISetState()
+	GUISetState(@SW_SHOW,$gui_mirrors)
 
 	; Loop until user exits
 	while 1
@@ -584,9 +590,9 @@ Func DisplayMirrorList($latency_table, $release_in_list)
 		EndIf
 
 	wend
-
-	GUIDelete()
 	Opt("GUIOnEventMode", 1)
+	GUIDelete($gui_mirrors)
+
 	GUIRegisterMsg($WM_PAINT, "DrawAll")
 	WinActivate($for_winactivate)
 	GUISetState($GUI_SHOW, $CONTROL_GUI)
