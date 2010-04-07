@@ -55,7 +55,7 @@ Func SpaceAfterLinuxLiveMB($disk)
 	If ReleaseGetCodename($release_number) = "default" Then
 		$install_size = Round(FileGetSize($file_set) / 1048576) + 20
 	Else
-		$install_size = ReleasegetInstallSize($release_number)
+		$install_size = ReleaseGetInstallSize($release_number)
 	EndIf
 
 	If GUICtrlRead($virtualbox) == $GUI_CHECKED Then

@@ -109,12 +109,14 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 	EndIf
 	#ce
 
-	; Karmic Koala have a renamed initrd file
-	If $distrib_version="9.10" OR $distrib_version="10.04" Then
+	; Ubuntu versions > 9.10 use an initrd.lz instead of initrd.gz file
+	If GenericVersionCode($distrib_version) >= 910 Then
 		$initrd_file = "initrd.lz"
 	Else
 		$initrd_file = "initrd.gz"
 	EndIf
+
+	UpdateLog("Type of initrd file : " &$initrd_file &"( for Genereic Version Code ="&GenericVersionCode($distrib_version)&" )" )
 
 	; For official Ubuntu variants, only text.cfg need to be modified
 	if $ubuntu_variant="ubuntu" OR StringInStr($ubuntu_variant, "xubuntu") OR StringInStr($ubuntu_variant, "netbook") OR StringInStr($ubuntu_variant, "kubuntu") OR $ubuntu_variant="superos" Then
@@ -150,7 +152,7 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 		FileClose($file)
 	EndIf
 
-	If $ubuntu_variant = "crunchbang" OR $ubuntu_variant = "kuki" Then
+	If $ubuntu_variant = "crunchbang" OR $ubuntu_variant = "kuki"  OR $ubuntu_variant = "element" Then
 		$boot_text=Ubuntu_BootMenu($initrd_file,"custom") & @LF & "DISPLAY isolinux.txt"& @LF &"TIMEOUT 300"& @LF &"PROMPT 1" & @LF & "default persist"
 		UpdateLog("Creating syslinux.cfg file for "&$ubuntu_variant&" :" & @CRLF & $boot_text)
 		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)

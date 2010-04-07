@@ -36,11 +36,9 @@ Func Clean_old_installs($drive_letter,$release_in_list)
 	SendReport("Start-Clean_old_installs ( Drive : "& $drive_letter &" - Release : "& $release_in_list &" )")
 	UpdateStatus("Cleaning previous installations ( 2min )")
 	DeleteFilesInDir($files_in_source)
+	If FileExists($drive_letter & "\autorun.inf") AND NOT FileExists($drive_letter & "\autorun.inf.orig") Then FileMove($drive_letter & "\autorun.inf",$drive_letter & "\autorun.inf.orig",1)
 	FileDelete2($drive_letter & "\autorun.inf")
 	FileDelete2($drive_letter & "\lili.ico")
-
-
-
 
 	if IniRead($settings_ini, "Advanced", "skip_full_cleaning", "no") <> "yes" Then
 
@@ -741,6 +739,7 @@ EndFunc
 
 Func Uncompress_virtualbox_on_key($drive_letter)
 	SendReport("Start-Uncompress_virtualbox_on_key")
+
 	; Cleaning previous install of VBox
 	UpdateStatus("Cleaning previous VirtualBox install")
 	DirRemove2($drive_letter & "\VirtualBox\", 1)
