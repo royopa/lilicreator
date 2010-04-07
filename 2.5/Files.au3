@@ -43,6 +43,11 @@ Func isDir($file_to_test)
 EndFunc   ;==>isDir
 
 Func DeleteFilesInDir($list_of_files)
+	SendReport("Start-DeleteFilesInDir")
+	if (Ubound($list_of_files)=0) Then
+		SendReport("End-DeleteFilesInDir : list of files is not an array !")
+		return "ERROR"
+	EndIf
 	For $file In $list_of_files
 		If isDir($selected_drive & "\" & $file) Then
 			DirRemove2($selected_drive & "\" & $file, 1)
@@ -50,6 +55,7 @@ Func DeleteFilesInDir($list_of_files)
 			FileDelete2($selected_drive & "\" & $file)
 		EndIf
 	Next
+	SendReport("End-DeleteFilesInDir")
 EndFunc   ;==>DeleteFilesInDir
 
 Func HideFile($file_or_folder)

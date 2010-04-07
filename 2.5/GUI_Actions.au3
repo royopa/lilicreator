@@ -741,7 +741,7 @@ Func GUI_Launch_Creation()
 		$return = MsgBox(33,Translate("Please read"),Translate("You have already created a key")&"."&@CRLF&Translate("Are you sure that you want to recreate one")&" ?")
 		if $return == 2 Then Return ""
 	EndIf
-
+	SendReport(LogSystemConfig())
 	SendReport("Start-GUI_Launch_Creation")
 	; Disable the controls and re-enable after creation
 
@@ -872,7 +872,7 @@ EndFunc   ;==>Final_Help
 
 Func Ask_For_Feedback()
 	$return = MsgBox(65, "Help me to improve LiLi", "This is a Beta or RC version, click OK to leave a feedback or click Cancel to close this window")
-	If $return = 1 Then ShellExecute("http://www.linuxliveusb.com/feedback/index.php", "", "", "", 7)
+	If $return = 1 Then ShellExecute("http://www.linuxliveusb.com/feedback/?version="&$software_version, "", "", "", 7)
 EndFunc   ;==>Ask_For_Feedback
 
 Func GUI_Events()

@@ -131,3 +131,9 @@ Func VersionCodeForCompatList($version)
 	$parse_version = StringSplit($version, ".")
 	Return $parse_version[Ubound($parse_version)-1]
 EndFunc   ;==>VersionCode
+
+
+; Return a generic version code for some Linuxes (Ubuntu mostly)
+Func GenericVersionCode($version)
+	Return StringReplace($version,".","")
+EndFunc
