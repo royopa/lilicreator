@@ -157,8 +157,16 @@ Func Check_source_integrity($linux_live_file)
 				; Sugar on a stick
 				$release_number = _ArraySearch($codenames_list, "sugar-last")
 			ElseIf StringInStr($shortname, "mint") Then
-				; Mint Based
-				$release_number = _ArraySearch($codenames_list, "mint-last")
+				; Mint variants
+				if StringInStr($shortname, "KDE") Then
+					$release_number = _ArraySearch($codenames_list, "mintkde-last")
+				elseif StringInStr($shortname, "LXDE") Then
+					$release_number = _ArraySearch($codenames_list, "mintlxde-last")
+				elseif StringInStr($shortname, "Xfce") Then
+					$release_number = _ArraySearch($codenames_list, "mintxfce-last")
+				else
+					$release_number = _ArraySearch($codenames_list, "mint-last")
+				EndIf
 			ElseIf StringInStr($shortname, "gnewsense") Then
 				; gNewSense Based
 				$release_number = _ArraySearch($codenames_list, "gnewsense-last")
@@ -222,6 +230,12 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "SimplyMEPIS") Then
 				; SimplyMEPIS variants
 				$release_number = _ArraySearch($codenames_list, "simplymepis-last")
+			ElseIf StringInStr($shortname, "puredyne") Then
+				; Puredyne
+				$release_number = _ArraySearch($codenames_list, "puredyne-last")
+			ElseIf StringInStr($shortname, "64studio") Then
+				; 64studio
+				$release_number = _ArraySearch($codenames_list, "64studio-last")
 			ElseIf StringInStr($shortname, "antix") Then
 				; Antix MEPIS variants
 				$release_number = _ArraySearch($codenames_list, "antix-last")

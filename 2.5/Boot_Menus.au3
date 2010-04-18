@@ -94,6 +94,7 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 	$ubuntu_variant = ReleaseGetVariant($release_in_list)
 	$distrib_version = ReleaseGetDistributionVersion($release_in_list)
 	$features = ReleaseGetSupportedFeatures($release_in_list)
+	$codename = ReleaseGetCodename($release_in_list)
 
 	; No custom boot menu when using default mode.
 	If StringInStr($features,"default") >0 Then Return ""
@@ -129,9 +130,17 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 
 	; For Mint, only syslinux.cfg need to be modified
 	If $ubuntu_variant = "mint" Then
+
+		; Mint KDE uses a splash.png image
+		if StringInStr($codename,"mintkde") Then
+			$splash_img="splash.png"
+		Else
+			$splash_img="splash.jpg"
+		EndIf
+
 		$boot_text = "default vesamenu.c32" _
 				 & @LF & "timeout 100" _
-				 & @LF & "menu background splash.jpg" _
+				 & @LF & "menu background "&$splash_img _
 				 & @LF & "menu title Welcome to Linux Mint" _
 				 & @LF & "menu color border 0 #00eeeeee #00000000" _
 				 & @LF & "menu color sel 7 #ffffffff #33eeeeee" _
