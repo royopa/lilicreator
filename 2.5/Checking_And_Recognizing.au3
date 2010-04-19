@@ -109,6 +109,9 @@ Func Check_source_integrity($linux_live_file)
 			If ( StringInStr($shortname, "10.04") OR StringInStr($shortname, "lucid") OR StringInStr($shortname, "9.10") ) And StringInStr($shortname, "netbook") Then
 				; Ubuntu Karmic (>=9.10) based
 				$release_number = _ArraySearch($codenames_list, "ubuntu-netbook-last")
+			ElseIf ( StringInStr($shortname, "10.04") OR StringInStr($shortname, "lucid") OR StringInStr($shortname, "9.10") ) And StringInStr($shortname, "mythbuntu") Then
+				; Mythbuntu >=9.10
+				$release_number = _ArraySearch($codenames_list, "mythbuntu-last")
 			ElseIf StringInStr($shortname, "moblin-remix") Then
 				; Ubuntu moblin remix
 				$release_number = _ArraySearch($codenames_list, "moblin-remix-last")
@@ -120,7 +123,7 @@ Func Check_source_integrity($linux_live_file)
 				$release_number = _ArraySearch($codenames_list, "knoppix-last")
 			ElseIf StringInStr($shortname, "10.04") Or StringInStr($shortname, "lucid") Then
 				; Ubuntu Karmic 10.04 based
-				$release_number = _ArraySearch($codenames_list, "ubuntu-10.04beta1")
+				$release_number = _ArraySearch($codenames_list, "ubuntu-10.04beta2")
 			ElseIf (StringInStr($shortname, "karmic") Or StringInStr($shortname, "buntu")) Then
 				; Ubuntu Karmic (>=9.10) based
 				$release_number = _ArraySearch($codenames_list, "ubuntu-last")
