@@ -1,4 +1,4 @@
-Syslinux 3.82
+Syslinux 3.86
 Mke2fs 0.04
-7zip 4.45b
+7zip 9.13b
 dd 0.5

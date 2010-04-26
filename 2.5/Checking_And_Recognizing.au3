@@ -198,8 +198,19 @@ Func Check_source_integrity($linux_live_file)
 				; Parted Magic
 				$release_number = _ArraySearch($codenames_list, "pmagic-last")
 			ElseIf StringInStr($shortname, "pclinuxos") Then
-				; PCLinuxOS
-				$release_number = _ArraySearch($codenames_list, "pclinuxoskde-last")
+
+				; PCLinuxOS (default to KDE)
+				if StringInStr($shortname, "e17") Then
+					$release_number = _ArraySearch($codenames_list, "pclinuxose17-last")
+				elseif StringInStr($shortname, "LXDE") Then
+					$release_number = _ArraySearch($codenames_list, "pclinuxoslxde-last")
+				elseif StringInStr($shortname, "Xfce") Then
+					$release_number = _ArraySearch($codenames_list, "pclinuxosxfce-last")
+				elseif StringInStr($shortname, "gnome") Then
+					$release_number = _ArraySearch($codenames_list, "pclinuxosgnome-last")
+				else
+					$release_number = _ArraySearch($codenames_list, "pclinuxoskde-last")
+				EndIf
 			ElseIf StringInStr($shortname, "slitaz") Then
 				; Slitaz
 				$release_number = _ArraySearch($codenames_list, "slitaz-last")
