@@ -435,6 +435,12 @@ Func Rename_and_move_files($drive_letter, $release_in_list)
 		FileDelete( $drive_letter & "\pmagic-usb-4.9\")
 	EndIf
 
+	; fix for bootlogo too big of PCLinuxOS 2010
+	if NOT StringInStr(ReleaseGetSupportedFeatures($release_in_list),"fix-bootlogo") = 0 Then
+		SendReport("Fixing bootlogo too big")
+		FileCopy2(@ScriptDir&"\tools\small-bootlogo",$drive_letter & "\syslinux\bootlogo")
+	EndIf
+
 	SendReport("End-Rename_and_move_files")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
