@@ -190,6 +190,13 @@ Func SendBug()
 	AddPostData("REPORTER_ID",IniRead($settings_ini, "General", "unique_ID", "none"))
 	AddPostData("ERROR_MSG",$sErrorMsg)
 	AddPostData("SOFTWARE_VERSION",$software_version)
+	; Little fix for AutoIT 3.3.0.0
+	$os_version_long= RegRead("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ProductName")
+	if Not @error AND ( StringInStr($os_version_long,"Seven") OR StringInStr($os_version_long,"Windows 7")) Then
+		$os_version="WIN_SEVEN"
+	Else
+		$os_version=@OSVersion
+	EndIf
 	AddPostData("OS_VERSION",@OSVersion)
 	AddPostData("ARCH",@OSArch)
 	AddPostData("SERVICE_PACK",@OSServicePack)

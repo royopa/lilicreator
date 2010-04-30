@@ -12,12 +12,21 @@ EndFunc   ;==>InitLog
 Func LogSystemConfig()
 	SendReport("Start-LogSystemConfig")
 	Local $space = -1
+
+	; Little fix for AutoIT 3.3.0.0
+	$os_version_long= RegRead("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ProductName")
+	if Not @error AND ( StringInStr($os_version_long,"Seven") OR StringInStr($os_version_long,"Windows 7")) Then
+		$os_version=$os_version_long
+	Else
+		$os_version=@OSVersion
+	EndIf
+
 	$mem = MemGetStats()
 	$line = @CRLF & "--------------------------------  System Config  --------------------------------"
 	$line &= @CRLF & "LiLi USB Creator : " & $software_version
 	$line &= @CRLF & "Compatibility List Version : " & $current_compatibility_list_version
 	$line &= @CRLF & "OS Type : " & @OSType
-	$line &= @CRLF & "OS Version : " & @OSVersion
+	$line &= @CRLF & "OS Version : " & $os_version
 	$line &= @CRLF & "OS Build : " & @OSBuild
 	$line &= @CRLF & "OS Service Pack : " & @OSServicePack
 	$line &= @CRLF & "Architecture : " & @OSArch
