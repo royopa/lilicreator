@@ -214,7 +214,7 @@ EndFunc   ;==>GUI_Refresh_Drives
 
 Func GUI_Choose_ISO()
 	SendReport("Start-GUI_Choose_ISO")
-	$source_file = FileOpenDialog(Translate("Choisir l'image ISO d'un CD live de Linux"), @ScriptDir & "\", "ISO / IMG / ZIP (*.iso;*.img;*.zip)", 1)
+	$source_file = FileOpenDialog(Translate("Choisir l'image ISO d'un CD live de Linux"), "", "ISO / IMG / ZIP (*.iso;*.img;*.zip)", 1)
 	If @error Then
 		SendReport("IN-ISO_AREA (no iso)")
 		MsgBox(4096, "", Translate("No file selected"))

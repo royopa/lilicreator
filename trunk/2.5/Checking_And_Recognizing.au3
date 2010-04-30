@@ -105,13 +105,35 @@ Func Check_source_integrity($linux_live_file)
 		Else
 			; Filename is not known but trying to find what it is with its name => INTELLIGENT PROCESSING
 			SendReport("IN-Check_source_integrity (start intelligent processing)")
-
-			If ( StringInStr($shortname, "10.04") OR StringInStr($shortname, "lucid") OR StringInStr($shortname, "9.10") ) And StringInStr($shortname, "netbook") Then
-				; Ubuntu Karmic (>=9.10) based
-				$release_number = _ArraySearch($codenames_list, "ubuntu-netbook-last")
-			ElseIf ( StringInStr($shortname, "10.04") OR StringInStr($shortname, "lucid") OR StringInStr($shortname, "9.10") ) And StringInStr($shortname, "mythbuntu") Then
+			If ((StringInStr($shortname, "10.04") OR StringInStr($shortname, "lucid") OR StringInStr($shortname, "buntu")) AND NOT StringInStr($shortname, "9.10") AND NOT StringInStr($shortname, "karmic")) Then
+				if (StringInStr($shortname, "xubuntu")) Then
+					; Xubuntu
+					$release_number = _ArraySearch($codenames_list, "xubuntu-last")
+				Elseif (StringInStr($shortname, "mythbuntu")) Then
+					; Mythbuntu
+					$release_number = _ArraySearch($codenames_list, "mythbuntu-last")
+				Elseif (StringInStr($shortname, "kubuntu") AND NOT StringInStr($shortname, "netbook") ) Then
+					; Kubuntu Desktop
+					$release_number = _ArraySearch($codenames_list, "kubuntu-last")
+				Elseif (StringInStr($shortname, "kubuntu") AND StringInStr($shortname, "netbook") ) Then
+					; Kubuntu Netbook
+					$release_number = _ArraySearch($codenames_list, "kubuntu-netbook-last")
+				Elseif (StringInStr($shortname, "ubuntu") AND NOT StringInStr($shortname, "netbook") ) Then
+					; Ubuntu Desktop
+					$release_number = _ArraySearch($codenames_list, "ubuntu-last")
+				Elseif (StringInStr($shortname, "ubuntu") AND StringInStr($shortname, "netbook") ) Then
+					; Ubuntu NetBook
+					$release_number = _ArraySearch($codenames_list, "ubuntu-netbook-last")
+				Else
+					; Falls back to Ubuntu Desktop
+					$release_number = _ArraySearch($codenames_list, "ubuntu-last")
+				EndIf
+			Elseif ( StringInStr($shortname, "9.10") ) And StringInStr($shortname, "netbook") Then
+				; Ubuntu Karmic 9.10 based
+				$release_number = _ArraySearch($codenames_list, "ubuntu-netbook-9.10")
+			ElseIf ( StringInStr($shortname, "9.10") ) And StringInStr($shortname, "mythbuntu") Then
 				; Mythbuntu >=9.10
-				$release_number = _ArraySearch($codenames_list, "mythbuntu-last")
+				$release_number = _ArraySearch($codenames_list, "mythbuntu-9.10")
 			ElseIf StringInStr($shortname, "moblin-remix") Then
 				; Ubuntu moblin remix
 				$release_number = _ArraySearch($codenames_list, "moblin-remix-last")
@@ -121,12 +143,9 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "knoppix") Then
 				; Knoppix
 				$release_number = _ArraySearch($codenames_list, "knoppix-last")
-			ElseIf StringInStr($shortname, "10.04") Or StringInStr($shortname, "lucid") Then
-				; Ubuntu Karmic 10.04 based
-				$release_number = _ArraySearch($codenames_list, "ubuntu-10.04beta2")
 			ElseIf (StringInStr($shortname, "karmic") Or StringInStr($shortname, "buntu")) Then
 				; Ubuntu Karmic (>=9.10) based
-				$release_number = _ArraySearch($codenames_list, "ubuntu-last")
+				$release_number = _ArraySearch($codenames_list, "ubuntu-9.10")
 			ElseIf StringInStr($shortname, "9.04") Then
 				; Ubuntu 9.04 based
 				$release_number = _ArraySearch($codenames_list, "ubuntu-904")
@@ -253,6 +272,16 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "antix") Then
 				; Antix MEPIS variants
 				$release_number = _ArraySearch($codenames_list, "antix-last")
+			ElseIf StringInStr($shortname, "elive") Then
+				; Elive
+				$release_number = _ArraySearch($codenames_list, "elive-last")
+			ElseIf StringInStr($shortname, "livehacking") Then
+				; Live Hacking CD
+				if StringInStr($shortname, "mini") Then
+					$release_number = _ArraySearch($codenames_list, "livehackingmini-last")
+				Else
+					$release_number = _ArraySearch($codenames_list, "livehacking-last")
+				EndIf
 			Else
 				; Any Linux, except those known not to work in Live mode
 				$release_number = _ArraySearch($codenames_list, "default")

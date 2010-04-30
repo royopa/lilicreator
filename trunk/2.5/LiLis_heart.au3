@@ -605,7 +605,7 @@ Func Create_persistence_file($drive_letter,$release_in_list,$persistence_size,$h
 		$distribe = ReleaseGetDistribution($release_in_list)
 		$variant = ReleaseGetVariant($release_in_list)
 
-		if $distribe ="Ubuntu" OR $variant="BackTrack" Then
+		if StringInStr($distribe,"buntu") OR $variant="BackTrack" Then
 			$persistence_file= $drive_letter & '\casper-rw'
 		Else
 			; fedora

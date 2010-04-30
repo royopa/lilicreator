@@ -14,7 +14,6 @@
 #AutoIt3Wrapper_Res_Field=Site|http://www.linuxliveusb.com
 #AutoIt3Wrapper_Add_Constants=n
 #AutoIt3Wrapper_AU3Check_Parameters=-w 4
-#AutoIt3Wrapper_Run_After=upx.exe --best --compress-resources=0 "%out%"
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 ; Author           : Thibaut Lauzière (Slÿm)
 ; Author's Website : www.slym.fr
@@ -30,7 +29,7 @@
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ; Global constants
-Global Const $software_version = "2.5 RC1"
+Global Const $software_version = "2.5"
 Global $lang_ini = @ScriptDir & "\tools\languages\"
 Global Const $settings_ini = @ScriptDir & "\tools\settings\settings.ini"
 Global Const $compatibility_ini = @ScriptDir & "\tools\settings\compatibility_list.ini"
