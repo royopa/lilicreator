@@ -133,14 +133,19 @@ EndFunc   ;==>InitializeFilesInSource
 
 ; Create a list of files in ISO
 Func InitializeFilesInISO($iso_to_list)
+	SendReport("Start-InitializeFilesInISO ( " & $iso_to_list &")")
 	If ProcessExists("7z.exe") > 0 Then ProcessClose("7z.exe")
 	FileDelete(@ScriptDir & "\tools\filelist.txt")
-	$foo = RunWait(@ComSpec & " /c " & '7z.exe' & ' l -slt "' & $iso_to_list & '" > filelist.txt', @ScriptDir & "\tools\", @SW_HIDE)
+	$cmd=@ComSpec & " /c " & '7z.exe' & ' l -slt "' & $iso_to_list & '" > filelist.txt'
+	$foo = RunWait($cmd, @ScriptDir & "\tools\", @SW_HIDE)
+	SendReport("IN-InitializeFilesInISO : command executed -> " &@CRLF& @ComSpec & " /c " & '7z.exe' & ' l -slt "' & $iso_to_list & '" > filelist.txt')
 	AnalyzeFileList()
+	SendReport("End-InitializeFilesInISO")
 EndFunc   ;==>InitializeFilesInISO
 
 ; Analyze the listfile and only select files and folders at the root (will be used to clean previous installs and hide the newly created)
 Func AnalyzeFileList()
+	SendReport("Start-AnalyzeFileList")
 	Local $line, $filelist, $files[1]
 	Global $files_in_source
 	$filelist = FileOpen(@ScriptDir & "\tools\filelist.txt", 0)
@@ -149,12 +154,14 @@ Func AnalyzeFileList()
 		If @error = -1 Then ExitLoop
 		If StringRegExp($line, "^Path = ", 0) And StringInStr($line, "\") == 0 And StringInStr($line, "[BOOT]") == 0 Then
 			_ArrayAdd($files, StringReplace($line, "Path = ", ""))
+			SendReport("IN-AnalyzeFileList :  Found file : "&StringReplace($line, "Path = ", ""))
 		EndIf
 	WEnd
 	FileClose($filelist)
 	FileDelete(@ScriptDir & "\tools\filelist.txt")
 	_ArrayDelete($files, 0)
 	$files_in_source = $files
+	SendReport("End-AnalyzeFileList")
 EndFunc   ;==>AnalyzeFileList
 
 Func InitializeFilesInCD($searchdir)
