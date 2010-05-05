@@ -105,13 +105,20 @@ Func Check_source_integrity($linux_live_file)
 		Else
 			; Filename is not known but trying to find what it is with its name => INTELLIGENT PROCESSING
 			SendReport("IN-Check_source_integrity (start intelligent processing)")
-			If ((StringInStr($shortname, "10.04") OR StringInStr($shortname, "lucid") OR StringInStr($shortname, "buntu")) AND NOT StringInStr($shortname, "9.10") AND NOT StringInStr($shortname, "karmic")) Then
+
+			if ((StringInStr($shortname, "alternate") OR StringInStr($shortname, "server")) AND NOT StringInStr($shortname, "live") ) Then
+					; Any Server versions and alternate
+					$release_number = _ArraySearch($codenames_list, "default")
+			ElseIf ((StringInStr($shortname, "10.04") OR StringInStr($shortname, "lucid") OR StringInStr($shortname, "buntu")) AND NOT StringInStr($shortname, "9.10") AND NOT StringInStr($shortname, "karmic")) Then
 				if (StringInStr($shortname, "xubuntu")) Then
 					; Xubuntu
 					$release_number = _ArraySearch($codenames_list, "xubuntu-last")
 				Elseif (StringInStr($shortname, "mythbuntu")) Then
 					; Mythbuntu
 					$release_number = _ArraySearch($codenames_list, "mythbuntu-last")
+				Elseif (StringInStr($shortname, "lubuntu")) Then
+					; Lubuntu
+					$release_number = _ArraySearch($codenames_list, "lubuntu-last")
 				Elseif (StringInStr($shortname, "kubuntu") AND NOT StringInStr($shortname, "netbook") ) Then
 					; Kubuntu Desktop
 					$release_number = _ArraySearch($codenames_list, "kubuntu-last")
@@ -272,6 +279,9 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "antix") Then
 				; Antix MEPIS variants
 				$release_number = _ArraySearch($codenames_list, "antix-last")
+			ElseIf StringInStr($shortname, "peasy") Then
+				; Easy Peasy
+				$release_number = _ArraySearch($codenames_list, "easypeasy-last")
 			ElseIf StringInStr($shortname, "elive") Then
 				; Elive
 				$release_number = _ArraySearch($codenames_list, "elive-last")

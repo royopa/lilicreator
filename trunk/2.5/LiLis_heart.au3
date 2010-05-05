@@ -395,14 +395,18 @@ Func Rename_and_move_files($drive_letter, $release_in_list)
 	SendReport("Start-Rename_and_move_files")
 	UpdateStatus(Translate("Renaming some files"))
 
-	RunWait3("cmd /c rename " & $drive_letter & "\isolinux syslinux", @ScriptDir, @SW_HIDE)
+	DirMove($drive_letter & "\isolinux",$drive_letter & "\syslinux",1)
+	;RunWait3("cmd /c rename " & $drive_letter & "\isolinux syslinux", @ScriptDir, @SW_HIDE)
 	FileCopy2( $drive_letter & "\syslinux\text.cfg", $drive_letter & "\syslinux\text-orig.cfg")
 
 		; Default Linux processing, no intelligence
-		RunWait3("cmd /c rename " & $drive_letter & "\boot\isolinux syslinux", @ScriptDir, @SW_HIDE)
+		DirMove($drive_letter & "\boot\isolinux",$drive_letter & "\boot\syslinux",1)
+		DirMove($drive_letter & "\HBCD\isolinux",$drive_letter & "\HBCD\syslinux",1)
 
-		RunWait3("cmd /c rename " & $drive_letter & "\isolinux syslinux", @ScriptDir, @SW_HIDE)
-		RunWait3("cmd /c rename " & $drive_letter & "\HBCD\isolinux syslinux", @ScriptDir, @SW_HIDE)
+
+		;RunWait3("cmd /c rename " & $drive_letter & "\boot\isolinux syslinux", @ScriptDir, @SW_HIDE)
+		;RunWait3("cmd /c rename " & $drive_letter & "\isolinux syslinux", @ScriptDir, @SW_HIDE)
+		;RunWait3("cmd /c rename " & $drive_letter & "\HBCD\isolinux syslinux", @ScriptDir, @SW_HIDE)
 
 		FileCopy2( $drive_letter & "\syslinux\isolinux.cfg", $drive_letter & "\syslinux\isolinux-orig.cfg")
 
@@ -422,7 +426,7 @@ Func Rename_and_move_files($drive_letter, $release_in_list)
 		isolinux2syslinux($syslinux_path)
 
 
-	; Fix for Parted Magic 4.6 & 4.9
+	; Fix for Parted Magic 4.6 & 4.9 & 4.10
 	If ReleaseGetVariant($release_in_list) ="pmagic" Then
 		DirMove( $drive_letter & "\pmagic-usb-4.6\boot", $drive_letter,1)
 		DirMove( $drive_letter & "\pmagic-usb-4.6\pmagic", $drive_letter,1)
@@ -433,6 +437,10 @@ Func Rename_and_move_files($drive_letter, $release_in_list)
 		DirMove( $drive_letter & "\pmagic-usb-4.9\boot", $drive_letter,1)
 		DirMove( $drive_letter & "\pmagic-usb-4.9\pmagic", $drive_letter,1)
 		FileDelete( $drive_letter & "\pmagic-usb-4.9\")
+
+		DirMove( $drive_letter & "\pmagic-usb-4.10\boot", $drive_letter,1)
+		DirMove( $drive_letter & "\pmagic-usb-4.10\pmagic", $drive_letter,1)
+		FileDelete( $drive_letter & "\pmagic-usb-4.10\")
 	EndIf
 
 	; fix for bootlogo too big of PCLinuxOS 2010
@@ -797,18 +805,19 @@ Func Create_autorun($drive_letter,$release_in_list)
 	EndIf
 
 	$i=3
-	for $file in $files_in_source
-		if get_extension($file) = "exe" Then
-			if $i=3 Then
-				IniWrite($drive_letter  & "\autorun.inf", "autorun", "shell\linuxlive"&$i, "----> CD Menu ("& $file &")")
-			Else
-				IniWrite($drive_letter  & "\autorun.inf", "autorun", "shell\linuxlive"&$i, "----> CD Menu ("& $file &")")
+	if UBound($files_in_source)>0 Then
+		for $file in $files_in_source
+			if get_extension($file) = "exe" Then
+				if $i=3 Then
+					IniWrite($drive_letter  & "\autorun.inf", "autorun", "shell\linuxlive"&$i, "----> CD Menu ("& $file &")")
+				Else
+					IniWrite($drive_letter  & "\autorun.inf", "autorun", "shell\linuxlive"&$i, "----> CD Menu ("& $file &")")
+				EndIf
+				IniWrite($drive_letter & "\autorun.inf", "autorun", "shell\linuxlive"&$i&"\command", $drive_letter&"\"&$file)
+				$i=$i+1
 			EndIf
-			IniWrite($drive_letter & "\autorun.inf", "autorun", "shell\linuxlive"&$i&"\command", $drive_letter&"\"&$file)
-			$i=$i+1
-		EndIf
-	Next
-
+		Next
+	EndIf
 	SendReport("End-Create_autorun")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
