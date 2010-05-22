@@ -52,14 +52,15 @@ EndFunc   ;==>GetKbdCode
 
 Func Get_Disk_UUID($drive_letter)
 	SendReport("Start-Get_Disk_UUID ( Drive : " & $drive_letter & " )")
-	Local $uuid = "802B-84D8"
+	Local $uuid = "EEEE-EEEE"
 	Dim $oWMIService = ObjGet("winmgmts:{impersonationLevel=impersonate}!\\.\root\cimv2")
 	$o_ColListOfProcesses = $oWMIService.ExecQuery("SELECT * FROM Win32_LogicalDisk WHERE Name = '" & $drive_letter & "'")
 	For $o_ObjProcess In $o_ColListOfProcesses
 		$uuid = $o_ObjProcess.VolumeSerialNumber
 	Next
-	SendReport("End-Get_Disk_UUID")
-	Return StringTrimRight($uuid, 4) & "-" & StringTrimLeft($uuid, 4)
+	$result=StringTrimRight($uuid, 4) & "-" & StringTrimLeft($uuid, 4)
+	SendReport("End-Get_Disk_UUID : UUID is "&$result)
+	Return $result
 EndFunc   ;==>Get_Disk_UUID
 
 
@@ -85,6 +86,39 @@ $boot_text="display boot.msg" _
 	FileWrite($file, $boot_text)
 	FileClose($file)
 	SendReport("End-TinyCore_WriteTextCFG")
+EndFunc
+
+; Modify boot menu for Arch Linux (applied to every default Linux) but will modify only if Arch Linux detected
+Func Default_WriteTextCFG($selected_drive)
+	SendReport("Start-Default_WriteTextCFG ( Drive : " & $selected_drive & " )")
+	Local $uuid
+
+	$file = FileOpen($selected_drive & "\boot\syslinux\syslinux.cfg", 0)
+	If $file = -1 Then
+		SendReport("End-Default_WriteTextCFG : could not open syslinux.cfg")
+		Return ""
+	EndIf
+	$content=FileRead($file)
+	FileClose($file)
+
+	; Modifying Boot menu for ArchLinux only
+	; setting boot device UUID
+	$array1 = _StringBetween($content, 'archisolabel=', ' ')
+	if NOT @error Then
+		SendReport("IN-Default_WriteTextCFG => ArchLinux detected")
+		$uuid = Get_Disk_UUID($selected_drive)
+		$new_content=StringReplace($content,'archisolabel='&$array1[0],"archisodevice=/dev/disk/by-uuid/"&$uuid)
+		$file = FileOpen($selected_drive & "\boot\syslinux\syslinux.cfg", 2)
+		; Check if file opened for writing OK
+		If $file = -1 Then
+			SendReport("IN-Default_WriteTextCFG => ERROR : cannot write to syslinux.cfg")
+		Else
+			SendReport("IN-Default_WriteTextCFG => archisodevice UUID set to "&$uuid)
+			FileWrite($file,$new_content)
+			FileClose($file)
+		EndIf
+	EndIf
+	SendReport("End-Default_WriteTextCFG")
 EndFunc
 
 
