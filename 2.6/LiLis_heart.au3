@@ -487,6 +487,9 @@ Func Create_boot_menu($drive_letter,$release_in_list)
 			SendReport("IN-Create_boot_menu for TinyCore")
 			TinyCore_WriteTextCFG($drive_letter)
 		EndIf
+	Else
+		SendReport("IN-Create_boot_menu for Regular Linux")
+		Default_WriteTextCFG($drive_letter)
 	EndIf
 	SendReport("End-Create_boot_menu")
 EndFunc
