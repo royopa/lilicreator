@@ -120,7 +120,7 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 	UpdateLog("Type of initrd file : " &$initrd_file &"( for Genereic Version Code ="&GenericVersionCode($distrib_version)&" )" )
 
 	; For official Ubuntu variants, only text.cfg need to be modified
-	if $ubuntu_variant="ubuntu" OR StringInStr($ubuntu_variant, "xubuntu") OR StringInStr($ubuntu_variant, "netbook") OR StringInStr($ubuntu_variant, "easypeasy") OR StringInStr($ubuntu_variant, "kubuntu") OR $ubuntu_variant="superos" OR StringInStr($ubuntu_variant, "mythbuntu") Then
+	if $ubuntu_variant="ubuntu" OR StringInStr($ubuntu_variant, "xubuntu") OR StringInStr($ubuntu_variant, "lubuntu") OR StringInStr($ubuntu_variant, "netbook") OR StringInStr($ubuntu_variant, "easypeasy") OR StringInStr($ubuntu_variant, "kubuntu") OR $ubuntu_variant="superos" OR StringInStr($ubuntu_variant, "mythbuntu") Then
 		if (StringInStr($ubuntu_variant, "easypeasy")) Then
 			$boot_text = Ubuntu_BootMenu($initrd_file,"ubuntu-netbook")
 		Else
