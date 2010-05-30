@@ -60,8 +60,8 @@
 Func _Language()
 	SendReport("Start-_Language")
 	$force_lang = IniRead($settings_ini, "General", "force_lang", "no")
-	If $force_lang <> "no" And (FileExists($lang_ini & $force_lang & ".ini") Or $force_lang = "English") Then
-		$lang_ini = $lang_ini & $force_lang & ".ini"
+	If $force_lang <> "no" And (FileExists($lang_folder & $force_lang & ".ini") Or $force_lang = "English") Then
+		$lang_ini = $lang_folder & $force_lang & ".ini"
 		SendReport("End-_Language (Force Lang=" & $force_lang & ")")
 		Return $force_lang
 	EndIf
@@ -80,6 +80,8 @@ Func _Language()
 			$lang_found = "Italian"
 		Case StringInStr("0414,0814", @OSLang)
 			$lang_found = "Norwegian"
+		Case StringInStr("0404,0804,0c04,1004,1404", @OSLang)
+			$lang_found = "Chinese"
 		Case StringInStr("0411", @OSLang)
 			$lang_found = "Japanese"
 		Case StringInStr("041d,081d", @OSLang)
@@ -87,7 +89,7 @@ Func _Language()
 		Case Else
 			$lang_found = "English"
 	EndSelect
-	$lang_ini = $lang_ini & $lang_found & ".ini"
+	$lang_ini = $lang_folder & $lang_found & ".ini"
 	SendReport("End-_Language " & $lang_found)
 	Return $lang_found
 EndFunc   ;==>_Language

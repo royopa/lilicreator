@@ -24,9 +24,9 @@ Func Check_for_updates()
 		$check_result = _INetGetSource($check_updates_url & "?version")
 
 		; if Beta version check for beta version update too
-		if (isBeta() OR IniRead($settings_ini, "Updates", "check_for_beta_versions", "no") = "yes") Then $check_result_beta = _INetGetSource($check_updates_url & "?beta-version")
+		if (IniRead($settings_ini, "Updates", "check_for_beta_versions", "no") = "yes") Then $check_result_beta = _INetGetSource($check_updates_url & "?beta-version")
 
-		if (isBeta() OR IniRead($settings_ini, "Updates", "check_for_beta_versions", "no") = "yes") AND VersionCompare($check_result_beta, $software_version) = 1 Then
+		if (IniRead($settings_ini, "Updates", "check_for_beta_versions", "no") = "yes") AND VersionCompare($check_result_beta, $software_version) = 1 Then
 			; New beta version available
 			$return = MsgBox(68, Translate("There is a new Beta version available"), Translate("Your LiLi's version is not up to date.") & @CRLF & @CRLF & Translate("Last beta version is") & " : " & $check_result_beta & @CRLF & Translate("Your version is") & " : " & $software_version & @CRLF & @CRLF & Translate("Do want to download it ?"))
 			If $return = 6 Then ShellExecute("http://www.linuxliveusb.com/")

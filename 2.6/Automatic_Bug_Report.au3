@@ -39,7 +39,8 @@ $lang = _Language()
 ; Better if executed before running the main process
 Check_for_compatibility_list_updates()
 
-Opt("OnExitFunc", "CallBack_Exit")
+OnAutoItExitRegister( "CallBack_Exit" )
+
 
 
 
@@ -264,6 +265,8 @@ Func _ReceiveReport($report)
 		InetGet("http://www.linuxliveusb.com/stats/?distrib="&$distrib&"&id="&$anonymous_id,"",1,1)
 	ElseIf StringLeft($report, 17) = "check_for_updates" Then
 		Check_for_updates()
+	ElseIf StringLeft($report, 12) = "End-GUI_Exit" Then
+		Exit
 	Else
 		ConsoleWrite($report & @CRLF)
 		$last_report = $report

@@ -45,6 +45,9 @@ Func _Language_for_stats()
 		Case StringInStr("041d,081d", @OSLang)
 			Return "Swedish"
 
+		Case StringInStr("0404,0804,0c04,1004,1404", @OSLang)
+			Return "Chinese"
+
 		Case StringInStr("040c,080c,0c0c,100c,140c,180c", @OSLang)
 			Return "French";remove and return function specifally to oslang
 		Case Else

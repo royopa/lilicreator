@@ -21,7 +21,7 @@
 ; License          : GPL v3.0
 ; Download         : http://www.linuxliveusb.com
 ; Support          : http://www.linuxliveusb.com/bugs/
-; Compiled with    : AutoIT v3.3.0.0
+; Compiled with    : AutoIT v3.3.6.1
 
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////// Software constants and variables              ///////////////////////////////////////////////////////////////////////////////
@@ -29,7 +29,8 @@
 
 ; Global constants
 Global Const $software_version = "2.6 Beta"
-Global $lang_ini = @ScriptDir & "\tools\languages\"
+Global $lang_folder = @ScriptDir & "\tools\languages\"
+Global $lang_ini
 Global Const $settings_ini = @ScriptDir & "\tools\settings\settings.ini"
 Global Const $compatibility_ini = @ScriptDir & "\tools\settings\compatibility_list.ini"
 Global Const $blacklist_ini = @ScriptDir & "\tools\settings\black_list.ini"
@@ -101,6 +102,7 @@ Global $best_mirror, $iso_size, $filename
 Global $MD5_ISO = "", $compatible_md5, $compatible_filename, $release_number = -1, $files_in_source, $prefetched_linux_list,$current_compatibility_list_version
 Global $foo
 Global $for_winactivate
+Global $current_download
 
 Global $selected_drive,$virtualbox_check,$virtualbox_size,$downloaded_virtualbox_filename
 Global $STEP1_OK, $STEP2_OK, $STEP3_OK
@@ -129,11 +131,6 @@ Opt("GUIOnEventMode", 1)
 
 ; Checking if Tools folder exists (contains tools and settings)
 If DirGetSize(@ScriptDir & "\tools\", 2) <> -1 Then
-
-	If Not FileExists($lang_ini) Then
-		MsgBox(48, "ERROR", "Language file not found !!!")
-		Exit
-	EndIf
 
 	If Not FileExists($compatibility_ini) Then
 		; If something went bad with auto-updating the compatibility list => trying to put back the old one
@@ -187,6 +184,10 @@ EndIf
 #include <ButtonConstants.au3>
 #include <StaticConstants.au3>
 #include <EditConstants.au3>
+#include <GUIConstantsEx.au3>
+#include <GUIListBox.au3>
+#include <StaticConstants.au3>
+#include <TabConstants.au3>
 #include <Array.au3>
 #include <String.au3>
 #include <File.au3>
@@ -212,6 +213,7 @@ EndIf
 #include <Releases.au3>
 #include <LiLis_heart.au3>
 #include <GUI_Actions.au3>
+#include <Options_Menu.au3>
 
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////// Proxy settings                                                            ///////////////////////////////////////////////////
@@ -276,10 +278,6 @@ GUISetOnEvent($GUI_EVENT_CLOSE, "GUI_Events")
 GUISetOnEvent($GUI_EVENT_MINIMIZE, "GUI_Minimize")
 GUISetOnEvent($GUI_EVENT_RESTORE, "GUI_Restore")
 GUISetOnEvent($GUI_EVENT_MAXIMIZE, "GUI_Restore")
-HotKeySet("{UP}", "GUI_MoveUp")
-HotKeySet("{DOWN}", "GUI_MoveDown")
-HotKeySet("{LEFT}", "GUI_MoveLeft")
-HotKeySet("{RIGHT}", "GUI_MoveRight")
 
 GUIRegisterMsg($WM_LBUTTONDOWN, "moveGUI")
 
@@ -287,7 +285,7 @@ SetBitmap($GUI, $PNG_GUI, 255)
 GUIRegisterMsg($WM_NCHITTEST, "WM_NCHITTEST")
 GUISetState(@SW_SHOW, $GUI)
 
-$CONTROL_GUI = GUICreate("LinuxLive USB Creator", 450, 750, 0,0, $WS_POPUP, BitOR($WS_EX_LAYERED, $WS_EX_MDICHILD), $GUI)
+$CONTROL_GUI = GUICreate("LinuxLive USB Creator", 450, 750, 5,7, $WS_POPUP, BitOR($WS_EX_LAYERED, $WS_EX_MDICHILD), $GUI)
 
 ; Offset applied on every items
 $offsetx0 = 27
@@ -495,7 +493,7 @@ SendReport("check_for_updates")
 $prefetched_linux_list = Print_For_ComboBox()
 
 ; Hovering Buttons
-AdlibEnable("Control_Hover", 150)
+AdlibRegister("Control_Hover", 150)
 
 GUIRegisterMsg($WM_PAINT, "DrawAll")
 WinActivate($for_winactivate)
