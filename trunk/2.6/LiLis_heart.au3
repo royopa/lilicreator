@@ -13,7 +13,17 @@
 Func Format_FAT32($drive_letter)
 	SendReport("Start-Format_FAT32 ( Drive : "& $drive_letter &" )")
 	UpdateStatus("Formating the key")
-	RunWait3('cmd /c format /Q /X /y /V:MyLinuxLive /FS:FAT32 ' & $drive_letter, @ScriptDir, @SW_HIDE)
+	$drive_size=Round(DriveSpaceTotal($drive_letter)/1024,1)
+	if $drive_size<32 AND NOT IniRead($settings_ini, "Advanced", "force_3rdparty_format", "no") = "yes" Then
+		UpdateLog("Drive is smaller than 32GB ("&$drive_size&"GB)-> LiLi will use the Windows Format utility")
+		; default Method, will force work even when some applications are locking the drive
+		RunWait3('cmd /c format /Q /X /y /V:MyLinuxLive /FS:FAT32 ' & $drive_letter, @ScriptDir, @SW_HIDE)
+	Else
+		UpdateLog("Drive is bigger than 32GB ("&$drive_size&"GB) or force_3rdparty_format=yes -> LiLi will use the Windows Format utility")
+		; Alternative method using fat32format for filesystems bigger than 32GB
+		FAT32Format($drive_letter,"MyLinuxLive")
+	EndIf
+
 	SendReport("End-Format_FAT32")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -124,6 +134,7 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Download_virtualBox()
+	Global $current_download
 	SendReport("Start-Download_virtualBox")
 				UpdateStatus("Setting up virtualization software")
 				$no_internet = 0
@@ -167,7 +178,7 @@ Func Download_virtualBox()
 
 				$virtualbox_already_downloaded = 0
 				SendReport("Start-Download_virtualBox-2")
-				;cs
+
 				; Checking if last version has aleardy been downloaded
 				If FileExists(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename) And $virtualbox_size > 0 And $virtualbox_size = FileGetSize(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename) Then
 					; Already have last version, no download needed
@@ -182,8 +193,8 @@ Func Download_virtualBox()
 					Sleep(1000)
 					UpdateStatus("Downloading VirtualBox as a background task")
 					Sleep(1000)
-					InetGet($VirtualBoxUrl, @ScriptDir & "\tools\" & $downloaded_virtualbox_filename, 1, 1)
-					If @InetGetActive Then
+					$current_download = InetGet($VirtualBoxUrl, @ScriptDir & "\tools\" & $downloaded_virtualbox_filename, 1, 1)
+					If InetGetInfo($current_download, 4)=0 Then
 						UpdateStatus("Download started succesfully")
 						$check_vbox = 1
 					Else
@@ -206,8 +217,8 @@ Func Download_virtualBox()
 					; Does not have any version, downloading it
 					UpdateStatus("Downloading VirtualBox as a background task")
 					Sleep(1000)
-					InetGet($VirtualBoxUrl, @ScriptDir & "\tools\" & $downloaded_virtualbox_filename, 1, 1)
-					If @InetGetActive Then
+					$current_download = InetGet($VirtualBoxUrl, @ScriptDir & "\tools\" & $downloaded_virtualbox_filename, 1, 1)
+					If InetGetInfo($current_download, 4)=0 Then
 						UpdateStatus("Download started succesfully")
 						Sleep(1000)
 						$check_vbox = 1
@@ -728,12 +739,12 @@ EndFunc
 
 Func Check_virtualbox_download()
 	SendReport("Start-Check_virtualbox_download")
-	Global $virtualbox_size
-	While @InetGetActive
-		$prog = Int((100 * @InetGetBytesRead / $virtualbox_size))
-		UpdateStatusNoLog(Translate("Downloading VirtualBox") & "  : " & $prog & "% ( " & Round(@InetGetBytesRead / (1024 * 1024), 1) & "/" & Round($virtualbox_size / (1024 * 1024), 1) & " " & Translate("MB") & " )")
+	Global $virtualbox_size, $current_download
+	Do
+		$prog = Int((100 * InetGetInfo($current_download,0) / $virtualbox_size))
+		UpdateStatusNoLog(Translate("Downloading VirtualBox") & "  : " & $prog & "% ( " & Round(InetGetInfo($current_download,0) / (1024 * 1024), 1) & "/" & Round($virtualbox_size / (1024 * 1024), 1) & " " & Translate("MB") & " )")
 		Sleep(300)
-	WEnd
+	Until InetGetInfo($current_download, 2)
 	UpdateStatus("Download complete")
 	SendReport("End-Check_virtualbox_download")
 EndFunc

@@ -2,10 +2,12 @@
 ; ///////////////////////////////// Graphical Part                                ///////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#cs  Useless in AutoIT 3.3.6.1 ?
 ; Global variables for Graphical Part
 Global Const $LWA_ALPHA = 0x2
 Global Const $LWA_COLORKEY = 0x1
-Const $WM_LBUTTONDOWN = 0x0201
+Global Const $WM_LBUTTONDOWN = 0x0201
+#ce
 
 
 Func GetVertOffset($hgui)
@@ -73,7 +75,7 @@ EndFunc   ;==>SetBitmap
 ; Link : @@MsdnLink@@ SetLayeredWindowAttributes
 ; Example : Yes
 ;===============================================================================
-;
+#cs
 Func _WinAPI_SetLayeredWindowAttributes($hWnd, $i_transcolor, $Transparency = 255, $dwFlages = 0x03, $isColorRef = False)
 	; #############################################
 	; You are NOT ALLOWED to remove the following lines
@@ -143,7 +145,7 @@ Func _WinAPI_GetLayeredWindowAttributes($hWnd, ByRef $i_transcolor, ByRef $Trans
 			Return $Ret[4]
 	EndSelect
 EndFunc   ;==>_WinAPI_GetLayeredWindowAttributes
-
+#ce
 #cs ----------------------------------------------------------------------------
 
 	AutoIt Version: 3.2.12.0

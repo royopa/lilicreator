@@ -58,9 +58,10 @@ EndFunc   ;==>Enable_Hide_Option
 
 ; Clickable parts of images
 Func GUI_Exit()
+	Global $current_download
 	If WinActive("LinuxLive USB Creator") Or WinActive("LiLi USB Creator") Then
 		SendReport("Start-GUI_Exit")
-		If @InetGetActive Then InetGet("abort")
+		InetClose($current_download)
 		If $foo Then ProcessClose($foo)
 		GUIDelete($CONTROL_GUI)
 		GUIDelete($GUI)
@@ -377,8 +378,9 @@ EndFunc
 Func GUI_Back_Download()
 	SendReport("Start-GUI_Back_Download")
 	Global $label_step2_status,$label_step2_status2
+	Global $current_download
 	_ProgressDelete($progress_bar)
-	If @InetGetActive = 1 Then InetGet("abort")
+	InetClose($current_download)
 	GUI_Hide_Step2_Download_Menu()
 	GUI_Hide_Back_Button()
 	GUICtrlSetState($label_step2_status,$GUI_HIDE)
@@ -458,7 +460,7 @@ Func DownloadRelease($release_in_list, $automatic_download)
 			$temp_latency = Ping(URLToHostname($mirror))
 			$tested_mirrors = $tested_mirrors + 1
 			If @error = 0 Then
-				$temp_size = Round(InetGetSize($mirror) / 1048576)
+				$temp_size = Round(InetGetSize($mirror,3) / 1048576)
 				If $temp_size < 5 Or $temp_size > 5000 Then
 					$temp_latency = 10000
 				EndIf
@@ -488,8 +490,8 @@ Func DownloadRelease($release_in_list, $automatic_download)
 			; Download automatically
 			$iso_size = InetGetSize($best_mirror)
 			$filename = unix_path_to_name($best_mirror)
-			$inet_success = InetGet($best_mirror, @ScriptDir & "\" & $filename, 1, 1)
-			If $inet_success Then
+			$current_download = InetGet($best_mirror, @ScriptDir & "\" & $filename, 1, 1)
+			If InetGetInfo($current_download, 4)=0 Then
 				UpdateStatusStep2(Translate("Downloading") & " " & $filename & @CRLF & Translate("from") & " " & URLToHostname($best_mirror))
 				Download_State()
 			Else
@@ -600,25 +602,27 @@ EndFunc   ;==>DisplayMirrorList
 
 Func Download_State()
 	SendReport("Start-Download_State")
+	Global $current_download
 	Local $begin, $oldgetbytesread, $estimated_time = ""
 
 	$begin = TimerInit()
-	$oldgetbytesread = @InetGetBytesRead
+	$oldgetbytesread = InetGetInfo($current_download, 0)
 
 	$iso_size_mb = RoundForceDecimal($iso_size / (1024 * 1024))
-	While @InetGetActive
-		$percent_downloaded = Int((100 * @InetGetBytesRead / $iso_size))
+	Do
+		$percent_downloaded = Int((100 * InetGetInfo($current_download, 0) / $iso_size))
 		_ProgressSet($progress_bar, $percent_downloaded)
 		$dif = TimerDiff($begin)
+		$newgetbytesread = InetGetInfo($current_download, 0)
 		If $dif > 1000 Then
-			$bytes_per_ms = (@InetGetBytesRead - $oldgetbytesread) / $dif
-			$estimated_time = HumanTime(($iso_size - @InetGetBytesRead) / (1000 * $bytes_per_ms))
+			$bytes_per_ms = ($newgetbytesread - $oldgetbytesread) / $dif
+			$estimated_time = HumanTime(($iso_size - $newgetbytesread) / (1000 * $bytes_per_ms))
 			$begin = TimerInit()
-			$oldgetbytesread = @InetGetBytesRead
+			$oldgetbytesread = $newgetbytesread
 		EndIf
-		_ProgressSetText($progress_bar, $percent_downloaded & "% ( " & RoundForceDecimal(@InetGetBytesRead / (1024 * 1024)) & " / " & $iso_size_mb & " " & "MB" & " ) " & $estimated_time)
+		_ProgressSetText($progress_bar, $percent_downloaded & "% ( " & RoundForceDecimal($newgetbytesread / (1024 * 1024)) & " / " & $iso_size_mb & " " & "MB" & " ) " & $estimated_time)
 		Sleep(300)
-	WEnd
+	Until InetGetInfo($current_download, 2)
 
 	_ProgressSet($progress_bar, 100)
 	_ProgressSetText($progress_bar, "100% ( " & Round($iso_size / (1024 * 1024)) & " / " & Round($iso_size / (1024 * 1024)) & " " & "MB" & " )")
@@ -835,8 +839,6 @@ Func GUI_Launch_Creation()
 
 		Sleep(1000)
 
-
-		;Final_Help($selected_drive)
 		ShellExecute("http://www.linuxliveusb.com/using-lili.html", "", "", "", 7)
 		If isBeta() Then Ask_For_Feedback()
 	Else
@@ -845,30 +847,6 @@ Func GUI_Launch_Creation()
 	SendReport("End-GUI_Launch_Creation")
 EndFunc   ;==>GUI_Launch_Creation
 
-Func Final_Help($selected_drive)
-	SendReport("Start-Final_Help (Drive : " & $selected_drive & " )")
-	$gui_finish = GUICreate(Translate("Your LinuxLive key is now up and ready !"), 604, 378, -1, -1)
-	GUISetOnEvent($GUI_EVENT_CLOSE, "GUI_Events2")
-	GUISetOnEvent($GUI_EVENT_MINIMIZE, "GUI_Events2")
-	GUISetOnEvent($GUI_EVENT_RESTORE, "GUI_Events2")
-	GUICtrlCreatePic(@ScriptDir & "\tools\img\tuto.jpg", 350, 0, 254, 378)
-	$printme = @CRLF & @CRLF & @CRLF & @CRLF & "  " & Translate("Your LinuxLive key is now up and ready !") _
-			 & @CRLF & @CRLF & "    " & Translate("In order to launch LinuxLive :") _
-			 & @CRLF & "    " & Translate("Remove your key and insert it again.") _
-			 & @CRLF & "    " & Translate("Go to 'My Computer'") _
-			 & @CRLF & "    " & Translate("Right click on you key and select :") & @CRLF
-
-	If FileExists($selected_drive & "\VirtualBox\Virtualize_This_Key.exe") And FileExists($selected_drive & "VirtualBox\VirtualBox.exe") Then
-		$printme &= @CRLF & "    " & "-> " & Translate("'LinuxLive!' to launch linux in windows")
-		$printme &= @CRLF & "    " & "-> " & Translate("'VirtualBox Interface' to launch VirtualBox full interface")
-	EndIf
-	$printme &= @CRLF & "    " & "-> " & Translate("'CD Menu' to launch the original CD menu")
-	GUICtrlCreateLabel($printme, 0, 0, 350, 378)
-	GUICtrlSetBkColor(-1, 0x0ffffff)
-	GUICtrlSetFont(-1, 10, 600)
-	GUISetState(@SW_SHOW)
-	SendReport("End-Final_Help")
-EndFunc   ;==>Final_Help
 
 Func Ask_For_Feedback()
 	$return = MsgBox(65, "Help me to improve LiLi", "This is a Beta or RC version, click OK to leave a feedback or click Cancel to close this window")
@@ -939,6 +917,7 @@ EndFunc   ;==>GUI_Help_Step4
 
 Func GUI_Help_Step5()
 	SendReport("Start-GUI_Help_Step5")
-	_About(Translate("About this software"), "LiLi USB Creator", "CopyLeft by Thibaut Lauzière - GPL v3 License", $software_version, Translate("User's Guide"), "http://www.linuxliveusb.com/how-to.html", Translate("Homepage"), "http://www.linuxliveusb.com", Translate("Donate"), "https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=8297661", @AutoItExe, 0x0000FF, 0xFFFFFF, -1, -1, -1, -1, $CONTROL_GUI)
+	;_About(Translate("About this software"), "LiLi USB Creator", "CopyLeft by Thibaut Lauzière - GPL v3 License", $software_version, Translate("User's Guide"), "http://www.linuxliveusb.com/how-to.html", Translate("Homepage"), "http://www.linuxliveusb.com", Translate("Donate"), "https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=8297661", @AutoItExe, 0x0000FF, 0xFFFFFF, -1, -1, -1, -1, $CONTROL_GUI)
+	GUI_Options_Menu()
 	SendReport("End-GUI_Help_Step5")
 EndFunc   ;==>GUI_Help_Step5

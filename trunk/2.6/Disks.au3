@@ -174,3 +174,32 @@ Func GiveMePhysicalDisk($drive_letter)
 		Return "ERROR"
 	EndIf
 EndFunc   ;==>GiveMePhysicalDisk
+
+Func FAT32Format($drive,$label)
+	SendReport("Start-FAT32Format ( Drive : " & $drive & " )")
+	Local $lines="",$errors="",$soft=""
+	$soft='echo y | "'&@ScriptDir & '\tools\fat32format.exe" '&$drive
+	UpdateLog($soft)
+	$foo = Run(@ComSpec & " /c " &$soft, @ScriptDir, @SW_HIDE, $STDOUT_CHILD + $STDERR_CHILD)
+	While 1
+		$lines &= StdoutRead($foo)
+		If @error Then ExitLoop
+	WEnd
+	UpdateLog($lines)
+	While 1
+		$errors &= StderrRead($foo)
+		If @error Then ExitLoop
+	WEnd
+	UpdateLog($errors)
+
+	$return=DriveSetLabel($drive,$label)
+	if $return=0 Then UpdateLog("WARNING : Setting drive label failed on "&$drive)
+
+	if StringInStr($lines,"Done") Then
+		SendReport("End-FAT32Format ( Success )")
+		Return 1
+	Else
+		SendReport("End-FAT32Format ( Error, see logs )")
+		Return "ERROR"
+	EndIf
+EndFunc   ;==>RunWait3

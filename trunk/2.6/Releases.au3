@@ -13,6 +13,7 @@ Global $releases[5][30],$compatible_md5[5],$compatible_filename[5],$codenames_li
 Global $current_compatibility_list_version
 
 Func Get_Compatibility_List()
+
 	$current_compatibility_list_version=IniRead($compatibility_ini, "Compatibility_List", "Version","none")
 	$sections = IniReadSectionNames($compatibility_ini)
 	If (Not IsArray($sections)) Or (Not FileExists($compatibility_ini)) Then
@@ -21,38 +22,71 @@ Func Get_Compatibility_List()
 	EndIf
 
 	Global $releases[$sections[0]+1][30],$compatible_md5[$sections[0]+1],$compatible_filename[$sections[0]+1],$codenames_list[$sections[0]+1]
+	$timer=TimerInit()
 
 	For $i=1 to $sections[0]
 		$releases[$i][$R_CODE]=$sections[$i]
 		$codenames_list[$i]=$sections[$i]
-		$releases[$i][$R_NAME]=IniRead($compatibility_ini, $sections[$i], "Name","NotFound")
-		$releases[$i][$R_DISTRIBUTION]=IniRead($compatibility_ini, $sections[$i], "Distribution","NotFound")
-		$releases[$i][$R_DISTRIBUTION_VERSION]=IniRead($compatibility_ini, $sections[$i], "Distribution_Version","NotFound")
-		$releases[$i][$R_VARIANT]=IniRead($compatibility_ini, $sections[$i], "Variant","NotFound")
-		$releases[$i][$R_VARIANT_VERSION]=IniRead($compatibility_ini, $sections[$i], "Variant_Version","NotFound")
-		$releases[$i][$R_FEATURES]=IniRead($compatibility_ini, $sections[$i], "Supported_Features","default")
-		$releases[$i][$R_FILENAME]=IniRead($compatibility_ini, $sections[$i], "Filename","NotFound")
-		$compatible_filename[$i]=IniRead($compatibility_ini, $sections[$i], "Filename","NotFound")
-		$releases[$i][$R_FILE_MD5]=IniRead($compatibility_ini, $sections[$i], "File_MD5","NotFound")
-		$compatible_md5[$i]=IniRead($compatibility_ini, $sections[$i], "File_MD5","NotFound")
-		$releases[$i][$R_RELEASE_DATE]=IniRead($compatibility_ini, $sections[$i], "Release_Date","NotFound")
-		$releases[$i][$R_WEB]=IniRead($compatibility_ini, $sections[$i], "Web","NotFound")
-		$releases[$i][$R_DOWNLOAD_PAGE]=IniRead($compatibility_ini, $sections[$i], "Download_page","NotFound")
-		$releases[$i][$R_DOWNLOAD_SIZE]=IniRead($compatibility_ini, $sections[$i], "Download_Size","NotFound")
-		$releases[$i][$R_INSTALL_SIZE]=IniRead($compatibility_ini, $sections[$i], "Install_Size","800")
-		$releases[$i][$R_DESCRIPTION]=IniRead($compatibility_ini, $sections[$i], "Description","NotFound")
-		$releases[$i][$R_MIRROR1]=IniRead($compatibility_ini, $sections[$i], "Mirror1","NotFound")
-		$releases[$i][$R_MIRROR2]=IniRead($compatibility_ini, $sections[$i], "Mirror2","NotFound")
-		$releases[$i][$R_MIRROR3]=IniRead($compatibility_ini, $sections[$i], "Mirror3","NotFound")
-		$releases[$i][$R_MIRROR4]=IniRead($compatibility_ini, $sections[$i], "Mirror4","NotFound")
-		$releases[$i][$R_MIRROR5]=IniRead($compatibility_ini, $sections[$i], "Mirror5","NotFound")
-		$releases[$i][$R_MIRROR6]=IniRead($compatibility_ini, $sections[$i], "Mirror6","NotFound")
-		$releases[$i][$R_MIRROR7]=IniRead($compatibility_ini, $sections[$i], "Mirror7","NotFound")
-		$releases[$i][$R_MIRROR8]=IniRead($compatibility_ini, $sections[$i], "Mirror8","NotFound")
-		$releases[$i][$R_MIRROR9]=IniRead($compatibility_ini, $sections[$i], "Mirror9","NotFound")
-		$releases[$i][$R_MIRROR10]=IniRead($compatibility_ini, $sections[$i], "Mirror10","NotFound")
-		$releases[$i][$R_VISIBLE]=IniRead($compatibility_ini, $sections[$i], "Visible","NotFound")
+
+		$sec=IniReadSection($compatibility_ini, $sections[$i])
+		For $j = 1 To $sec[0][0]
+			Switch $sec[$j][0]
+				case "Name"
+					$releases[$i][$R_NAME]=$sec[$j][1]
+				case "Distribution"
+					$releases[$i][$R_DISTRIBUTION]=$sec[$j][1]
+				case "Distribution_Version"
+					$releases[$i][$R_DISTRIBUTION_VERSION]=$sec[$j][1]
+				case "Variant"
+					$releases[$i][$R_VARIANT]=$sec[$j][1]
+				case "Variant_Version"
+					$releases[$i][$R_VARIANT_VERSION]=$sec[$j][1]
+				case "Supported_Features"
+					$releases[$i][$R_FEATURES]=$sec[$j][1]
+				case "Filename"
+					$releases[$i][$R_FILENAME]=$sec[$j][1]
+					$compatible_filename[$i]=$sec[$j][1]
+				case "File_MD5"
+					$releases[$i][$R_FILE_MD5]=$sec[$j][1]
+					$compatible_md5[$i]=$sec[$j][1]
+			case "Release_Date"
+				$releases[$i][$R_RELEASE_DATE]=$sec[$j][1]
+			case "Web"
+				$releases[$i][$R_WEB]=$sec[$j][1]
+			case "Download_page"
+				$releases[$i][$R_DOWNLOAD_PAGE]=$sec[$j][1]
+			case "Download_Size"
+				$releases[$i][$R_DOWNLOAD_SIZE]=$sec[$j][1]
+			case "Install_Size"
+				$releases[$i][$R_INSTALL_SIZE]=$sec[$j][1]
+			case "Description"
+				$releases[$i][$R_DESCRIPTION]=$sec[$j][1]
+			case "Mirror1"
+				$releases[$i][$R_MIRROR1]=$sec[$j][1]
+			case "Mirror2"
+				$releases[$i][$R_MIRROR2]=$sec[$j][1]
+			case "Mirror3"
+				$releases[$i][$R_MIRROR3]=$sec[$j][1]
+			case "Mirror4"
+				$releases[$i][$R_MIRROR4]=$sec[$j][1]
+			case "Mirror5"
+				$releases[$i][$R_MIRROR5]=$sec[$j][1]
+			case "Mirror6"
+				$releases[$i][$R_MIRROR6]=$sec[$j][1]
+			case "Mirror7"
+				$releases[$i][$R_MIRROR7]=$sec[$j][1]
+			case "Mirror8"
+				$releases[$i][$R_MIRROR8]=$sec[$j][1]
+			case "Mirror9"
+				$releases[$i][$R_MIRROR9]=$sec[$j][1]
+			case "Mirror10"
+				$releases[$i][$R_MIRROR10]=$sec[$j][1]
+			case "Visible"
+				$releases[$i][$R_VISIBLE]=$sec[$j][1]
+			EndSwitch
+		Next
 	Next
+	UpdateLog("Compatibility list loaded in "&Round(TimerDiff($timer)/1000,3)&" seconds")
 	Return $releases
 EndFunc
 
@@ -94,7 +128,7 @@ Func Print_For_ComboBox()
 		if $releases[$release_in_list][$R_VISIBLE]="yes" Then $temp &=  ReleaseGetDescription($release_in_list)&"|"
 			;& "// Size : " & $releases[$release_in_list][$R_DOWNLOAD_SIZE] _
 			;& " (" & $releases[$release_in_list][$R_RELEASE_DATE] & ") |"
-	Next
+		Next
 	Return $temp
 EndFunc
 
