@@ -84,6 +84,8 @@ Func _Language()
 			$lang_found = "Chinese"
 		Case StringInStr("0411", @OSLang)
 			$lang_found = "Japanese"
+		Case StringInStr("0412", @OSLang)
+			$lang_found = "Korean"
 		Case StringInStr("041d,081d", @OSLang)
 			$lang_found = "Swedish"
 		Case Else

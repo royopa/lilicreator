@@ -171,6 +171,12 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "trisquel") Then
 				; Trisquel (Ubuntu)
 				$release_number = _ArraySearch($codenames_list, "trisquel-last")
+			;ElseIf StringInStr($shortname, "ultimate-edition") Then
+				; Ultimate Edition (Ubuntu)
+				;$release_number = _ArraySearch($codenames_list, "ultimate-last")
+			ElseIf StringInStr($shortname, "ylmf") Then
+				; Ylmf (Ubuntu)
+				$release_number = _ArraySearch($codenames_list, "ylmf-last")
 			ElseIf StringInStr($shortname, "plop") Then
 				if StringInStr($shortname, "-X") Then
 					; PLoP Linux with X
@@ -379,24 +385,29 @@ Func Check_ISO($FileToHash)
 	$label_step2_status = GUICtrlCreateLabel(Translate("Checking file")&" : "&path_to_name($FileToHash), 38 + $offsetx0, 231 + $offsety0 + 50, 300, 80)
 	GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 	GUICtrlSetColor(-1, 0xFFFFFF)
-	Global $BufferSize = 0x20000
-	Global $FileHandle = FileOpen($FileToHash, 16)
+
+	Local $filehandle = FileOpen($FileToHash, 16)
+	Local $buffersize=0x20000,$final=0,$hash=""
+
 	If $FileToHash = "" Then
-		SendReport("End-MD5_ISO (no iso)")
+		SendReport("End-Check_ISO (no iso)")
 		Return "no iso"
 	EndIf
 
-	$MD5CTX = _MD5Init()
-	$iterations = Ceiling(FileGetSize($FileToHash) / $BufferSize)
+	_Crypt_Startup()
+	$iterations = Ceiling(FileGetSize($FileToHash) / $buffersize)
+
+
 	For $i = 1 To $iterations
-		_MD5Input($MD5CTX, FileRead($FileHandle, $BufferSize))
+		if $i=$iterations Then $final=1
+		$hash=_Crypt_HashData(FileRead($filehandle, $buffersize),0x00008003,$final,$hash)
 		$percent_md5 = Round(100 * $i / $iterations)
 		_ProgressSet($progress_bar,$percent_md5 )
 		_ProgressSetText($progress_bar, $percent_md5&"%" )
 	Next
+	FileClose($filehandle)
+	_Crypt_Shutdown()
 
-	$hash = _MD5Result($MD5CTX)
-	FileClose($FileHandle)
 	_ProgressSet($progress_bar,100 )
 	_ProgressSetText($progress_bar, "100%" )
 	_ProgressDelete($progress_bar)
@@ -405,33 +416,6 @@ Func Check_ISO($FileToHash)
 	SendReport("End-MD5_ISO ( Hash : " & $hexa_hash & " )")
 	Return $hexa_hash
 EndFunc
-
-Func MD5_ISO($FileToHash)
-
-	ProgressOn(Translate("Verifying"), Translate("Integrity + compatibility check"), "0 %", -1, -1, 16)
-	Global $BufferSize = 0x20000
-	If $FileToHash = "" Then
-		SendReport("End-MD5_ISO (no iso)")
-		Return "no iso"
-	EndIf
-	Global $FileHandle = FileOpen($FileToHash, 16)
-
-	$MD5CTX = _MD5Init()
-	$iterations = Ceiling(FileGetSize($FileToHash) / $BufferSize)
-	For $i = 1 To $iterations
-		_MD5Input($MD5CTX, FileRead($FileHandle, $BufferSize))
-		$percent_md5 = Round(100 * $i / $iterations)
-		ProgressSet($percent_md5, $percent_md5 & " %")
-	Next
-	$hash = _MD5Result($MD5CTX)
-	FileClose($FileHandle)
-	ProgressSet(100, "100%", Translate("Check completed"))
-	Sleep(500)
-	ProgressOff()
-	$hexa_hash = StringTrimLeft($hash, 2)
-	SendReport("End-MD5_ISO ( Hash : " & $hexa_hash & " )")
-	Return $hexa_hash
-EndFunc   ;==>MD5_ISO
 
 #cs
 	Func Check_folder_integrity($folder)

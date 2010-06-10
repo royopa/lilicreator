@@ -151,20 +151,9 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 		$initrd_file = "initrd.gz"
 	EndIf
 
-	UpdateLog("Type of initrd file : " &$initrd_file &"( for Genereic Version Code ="&GenericVersionCode($distrib_version)&" )" )
+	if $ubuntu_variant = "ylmfos" Then $initrd_file="initrd.img"
 
-	; For official Ubuntu variants, only text.cfg need to be modified
-	if $ubuntu_variant="ubuntu" OR StringInStr($ubuntu_variant, "xubuntu") OR StringInStr($ubuntu_variant, "lubuntu") OR StringInStr($ubuntu_variant, "netbook") OR StringInStr($ubuntu_variant, "easypeasy") OR StringInStr($ubuntu_variant, "kubuntu") OR $ubuntu_variant="superos" OR StringInStr($ubuntu_variant, "mythbuntu") Then
-		if (StringInStr($ubuntu_variant, "easypeasy")) Then
-			$boot_text = Ubuntu_BootMenu($initrd_file,"ubuntu-netbook")
-		Else
-			$boot_text = Ubuntu_BootMenu($initrd_file,$ubuntu_variant)
-		EndIf
-		UpdateLog("Creating text.cfg file for Ubuntu variants :" & @CRLF & $boot_text)
-		$file = FileOpen($selected_drive & "\syslinux\text.cfg", 2)
-		FileWrite($file, $boot_text)
-		FileClose($file)
-	EndIf
+	UpdateLog("Type of initrd file : " &$initrd_file &"( for Generic Version Code ="&GenericVersionCode($distrib_version)&" )" )
 
 	; For Mint, only syslinux.cfg need to be modified
 	If $ubuntu_variant = "mint" Then
@@ -197,6 +186,8 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
 		FileWrite($file, $boot_text)
 		FileClose($file)
+		SendReport("End-Ubuntu_WriteTextCFG")
+		Return 1
 	EndIf
 
 	If $ubuntu_variant = "crunchbang" OR $ubuntu_variant = "kuki"  OR $ubuntu_variant = "element" Then
@@ -207,10 +198,47 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 		FileClose($file)
 		FileCopy($selected_drive & "\syslinux\isolinux.txt",$selected_drive & "\syslinux\isolinux-orig.txt")
 		FileCopy(@ScriptDir & "\tools\"&$ubuntu_variant&"-isolinux.txt", $selected_drive & "\syslinux\isolinux.txt", 1)
+		SendReport("End-Ubuntu_WriteTextCFG")
+		Return 1
 	EndIf
 
+	; For official Ubuntu variants and most others, only text.cfg need to be modified
+	$boot_text = Ubuntu_BootMenu($initrd_file,AutomaticPreseed($selected_drive,$ubuntu_variant))
+	UpdateLog("Creating text.cfg file for Ubuntu variants :" & @CRLF & $boot_text)
+	$file = FileOpen($selected_drive & "\syslinux\text.cfg", 2)
+	FileWrite($file, $boot_text)
+	FileClose($file)
 	SendReport("End-Ubuntu_WriteTextCFG")
 EndFunc   ;==>Ubuntu_WriteTextCFG
+
+Func AutomaticPreseed($selected_drive,$preseed_variant)
+	SendReport("Start-AutomaticPreseed( "& $selected_drive&" , "& $preseed_variant&" )")
+
+	if FileExists($selected_drive&"\preseed\"&$preseed_variant&".seed") Then
+		SendReport("IN-AutomaticPreseed : preseed file same as variant name ( "&$preseed_variant&" )")
+		Return StringLower($preseed_variant)
+	Else
+		SendReport("IN-AutomaticPreseed -> Starting automatic search")
+		$content = FileRead("G:\syslinux\text.cfg")
+		$content &=  FileRead("G:\syslinux\syslinux.cfg")
+		$content &=  FileRead("G:\syslinux\isolinux.cfg")
+		$content &=  FileRead("G:\syslinux\isolinux.txt")
+
+		Local $preseed="",$found_preseed = _StringBetween($content, 'seed/', '.seed')
+		if NOT @error Then
+			if UBound($found_preseed) > 0 Then
+				SendReport("IN-AutomaticPreseed -> automatic search found preseed : "&$found_preseed[0])
+				Return $found_preseed[0]
+			EndIf
+		EndIf
+		if FileExists($selected_drive&"\preseed\cli.seed") Then $preseed="cli"
+		if FileExists($selected_drive&"\preseed\ubuntu.seed") Then $preseed="ubuntu"
+		if FileExists($selected_drive&"\preseed\ubuntu-netbook.seed") Then $preseed="ubuntu-netbook"
+		if $preseed="" Then $preseed="custom"
+		SendReport("IN-AutomaticPreseed -> preseed selected : "&$preseed)
+		Return $preseed
+	EndIf
+EndFunc
 
 Func Ubuntu_BootMenu($initrd_file,$seed_name)
 	Local $kbd_code
