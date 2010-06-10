@@ -6,7 +6,7 @@
 #AutoIt3Wrapper_UseUpx=n
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.6.88.35
+#AutoIt3Wrapper_Res_Fileversion=2.6.88.36
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_SaveSource=y
@@ -98,7 +98,7 @@ Global $offsety0,$offsety3,$offsety4
 Global $step2_display_menu = 0
 
 ; Others Global vars
-Global $best_mirror, $iso_size, $filename
+Global $best_mirror, $iso_size, $filename, $temp_filename
 Global $MD5_ISO = "", $compatible_md5, $compatible_filename, $release_number = -1, $files_in_source, $prefetched_linux_list,$current_compatibility_list_version
 Global $foo
 Global $for_winactivate
@@ -194,6 +194,7 @@ EndIf
 #include <INet.au3>
 #include <IE.au3>
 #include <WinHTTP.au3>
+#include <Crypt.au3>
 
 ; LiLi's components
 #include <Languages.au3>
@@ -202,7 +203,6 @@ EndIf
 #include <Automatic_Bug_Report.au3>
 #include <Ressources.au3>
 #include <Graphics.au3>
-#include <MD5.au3>
 #include <Files.au3>
 #include <External_Tools.au3>
 #include <Disks.au3>
@@ -477,8 +477,6 @@ GUICtrlSetColor(-1, 0xFFFFFF)
 ; Filling the combo box with drive list
 
 $combo = GUICtrlCreateCombo("-> " & Translate("Choose a USB Key"), 90 + $offsetx0, 145 + $offsety0, 200, -1, 3)
-GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
-GUICtrlSetColor(-1, 0xFFFFFF)
 GUICtrlSetOnEvent(-1, "GUI_Choose_Drive")
 Refresh_DriveList()
 

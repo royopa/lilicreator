@@ -278,9 +278,6 @@ Func GUI_Download()
 
 	if NOT $combo_linux Then
 		$combo_linux = GUICtrlCreateCombo(">> " & Translate("Select your favourite Linux"), 38 + $offsetx0, 240 + $offsety0, 300, -1, BitOR($CBS_DROPDOWNLIST, $WS_VSCROLL))
-
-		GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
-		GUICtrlSetColor(-1, 0xFFFFFF)
 		GUICtrlSetOnEvent(-1, "GUI_Select_Linux")
 		GUICtrlSetState($combo_linux, $GUI_SHOW)
 
@@ -490,7 +487,8 @@ Func DownloadRelease($release_in_list, $automatic_download)
 			; Download automatically
 			$iso_size = InetGetSize($best_mirror)
 			$filename = unix_path_to_name($best_mirror)
-			$current_download = InetGet($best_mirror, @ScriptDir & "\" & $filename, 1, 1)
+			$temp_filename = StringReplace($filename,get_extension($filename),"temp")
+			$current_download = InetGet($best_mirror, @ScriptDir & "\" & $temp_filename, 1, 1)
 			If InetGetInfo($current_download, 4)=0 Then
 				UpdateStatusStep2(Translate("Downloading") & " " & $filename & @CRLF & Translate("from") & " " & URLToHostname($best_mirror))
 				Download_State()
@@ -623,7 +621,7 @@ Func Download_State()
 		_ProgressSetText($progress_bar, $percent_downloaded & "% ( " & RoundForceDecimal($newgetbytesread / (1024 * 1024)) & " / " & $iso_size_mb & " " & "MB" & " ) " & $estimated_time)
 		Sleep(300)
 	Until InetGetInfo($current_download, 2)
-
+	FileMove(@ScriptDir & "\" & $temp_filename,@ScriptDir & "\" & $filename)
 	_ProgressSet($progress_bar, 100)
 	_ProgressSetText($progress_bar, "100% ( " & Round($iso_size / (1024 * 1024)) & " / " & Round($iso_size / (1024 * 1024)) & " " & "MB" & " )")
 
@@ -631,6 +629,7 @@ Func Download_State()
 	Sleep(3000)
 	_ProgressDelete($progress_bar)
 	GUI_Hide_Step2_Download_Menu()
+
 	$file_set = @ScriptDir & "\" & $filename
 	Check_source_integrity($file_set)
 	SendReport("End-Download_State")
