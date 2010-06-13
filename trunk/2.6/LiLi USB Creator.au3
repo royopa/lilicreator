@@ -37,6 +37,10 @@ Global Const $blacklist_ini = @ScriptDir & "\tools\settings\black_list.ini"
 Global Const $log_dir = @ScriptDir & "\logs\"
 Global Const $check_updates_url = "http://www.linuxliveusb.com/updates/"
 
+; Auto-Clean feature (relative to the usb drive path)
+Global Const $autoclean_file = "Remove_LiLi.bat"
+Global Const $autoclean_settings = "Autoclean.ini"
+
 ; Global that will be set up later
 Global $lang, $anonymous_id,$logfile
 
