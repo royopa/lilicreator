@@ -1,10 +1,10 @@
 #NoTrayIcon
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
-#AutoIt3Wrapper_icon=..\..\tools\img\lili.ico
+#AutoIt3Wrapper_icon=..\tools\img\lili.ico
 #AutoIt3Wrapper_Compression=3
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.0.88.4
+#AutoIt3Wrapper_Res_Fileversion=2.0.88.6
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_Language=1033
@@ -13,7 +13,8 @@
 #AutoIt3Wrapper_Run_After=upx.exe --best --compress-resources=0 "%out%"
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
-#include <includes/md5.au3>
+#include <Crypt.au3>
+_Crypt_Startup()
 
 $Filename= FileOpenDialog("Select files to hash", @ScriptDir & "\", "All Files (*.*)", 5)
 
@@ -46,25 +47,29 @@ $Filename= FileOpenDialog("Select files to hash", @ScriptDir & "\", "All Files (
 		MsgBox(64, "Result", "MD5 hash of file "& $Filename & " is :" & @CRLF & @CRLF & @TAB & $hash & @CRLF & @CRLF & "It has been put in your clipboard, you just have to paste it." )
 	EndIf
 
+_Crypt_Shutdown()
 
-Func MD5($Filename)
-		Global $FileHandle = FileOpen($FileName, 16)
-		Global $BufferSize = 0x20000
-		ProgressOn("Computing hash", "File : " & path_to_name($FileName), "0 %", -1, -1, 16)
-		$MD5CTX = _MD5Init()
-		$iterations = Ceiling(FileGetSize($FileName) / $BufferSize)
-		For $i = 1 To $iterations
-			_MD5Input($MD5CTX, FileRead($FileHandle, $BufferSize))
-			$percent_md5 = Round(100 * $i / $iterations)
-			ProgressSet($percent_md5, $percent_md5 & " %")
-		Next
-		$hash = _MD5Result($MD5CTX)
-		FileClose($FileHandle)
+Func MD5($FileToHash)
 
-		ProgressSet(100, "100%" ,"File hashed")
-		ProgressOff()
-		Return StringTrimLeft($hash, 2)
+	Local $filehandle = FileOpen($FileToHash, 16)
+	Local $buffersize=0x20000,$final=0,$hash=""
+
+	$iterations = Ceiling(FileGetSize($FileToHash) / $buffersize)
+
+	ProgressOn("Computing hash", "File : " & path_to_name($FileToHash), "0 %", -1, -1, 16)
+	For $i = 1 To $iterations
+		if $i=$iterations Then $final=1
+		$hash=_Crypt_HashData(FileRead($filehandle, $buffersize),$CALG_MD5,$final,$hash)
+		$percent_md5 = Round(100 * $i / $iterations)
+		ProgressSet($percent_md5, $percent_md5 & " %")
+	Next
+	FileClose($filehandle)
+
+	ProgressSet(100, "100%" ,"File hashed")
+	ProgressOff()
+	Return StringTrimLeft($hash, 2)
 EndFunc
+
 
 Func path_to_name($filepath)
 	$short_name = StringSplit($filepath, '\')

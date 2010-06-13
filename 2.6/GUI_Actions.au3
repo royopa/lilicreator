@@ -810,6 +810,7 @@ Func GUI_Launch_Creation()
 			; Create Autorun menu
 			Create_autorun($selected_drive, $release_number)
 		EndIf
+		CreateUninstaller($files_in_source,$selected_drive,$release_number)
 
 		If (GUICtrlRead($hide_files) == $GUI_CHECKED) Then Hide_live_files($selected_drive)
 

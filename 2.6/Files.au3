@@ -121,7 +121,56 @@ Func FileCopy2($arg1, $arg2)
 	SendReport("End-_FileCopy2")
 EndFunc   ;==>_FileCopy2
 
+Func GetPreviousInstallSizeMB($drive_letter)
+	SendReport("Start-GetPreviousInstallSizeMB for drive "&$drive_letter)
+	Local $array,$array2
+	if FileExists($drive_letter&"\"&$autoclean_settings) Then
+		$array=IniReadSection($drive_letter&"\"&$autoclean_settings,"Files")
+		$total=0
+		if Ubound($array) > 1 Then
+			for $i=1 To Ubound($array)-1
+				$total+=FileGetSize($drive_letter&"\"&$array[$i][0])
+			Next
+		EndIf
 
+		$array2=IniReadSection($drive_letter&"\"&$autoclean_settings,"Folders")
+		if Ubound($array2) > 1 Then
+			for $i=1 To Ubound($array2)-1
+				$total+=DirGetSize($drive_letter&"\"&$array2[$i][0]&"\")
+			Next
+		EndIf
+		SendReport("End-GetPreviousInstallSizeMB ( Previous install : "&Round($total/(1024*1024),1)& " MB")
+		Return Round($total/(1024*1024),0)
+	Else
+		Return 0
+	EndIf
+EndFunc
+
+Func AutoCleanPreviousInstall($drive_letter)
+	SendReport("Start-AutoCleanPreviousInstall for drive "&$drive_letter)
+	Local $array,$array2
+	if FileExists($drive_letter&"\"&$autoclean_settings) Then
+		$array=IniReadSection($drive_letter&"\"&$autoclean_settings,"Files")
+		$total=0
+		if Ubound($array) > 1 Then
+			for $i=1 To Ubound($array)-1
+				FileDelete2($drive_letter&"\"&$array[$i][0])
+			Next
+		EndIf
+
+		$array2=IniReadSection($drive_letter&"\"&$autoclean_settings,"Folders")
+		if Ubound($array2) > 1 Then
+			for $i=1 To Ubound($array2)-1
+				DirRemove2($drive_letter&"\"&$array2[$i][0],1)
+			Next
+		EndIf
+		FileDelete2($drive_letter&"\"&$autoclean_settings)
+		SendReport("End-AutoCleanPreviousInstall")
+		Return 1
+	Else
+		Return 0
+	EndIf
+EndFunc
 
 Func InitializeFilesInSource($path)
 	If isDir($path) == 1 Then

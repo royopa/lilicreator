@@ -45,10 +45,22 @@ Func Clean_old_installs($drive_letter,$release_in_list)
 	If IniRead($settings_ini, "Advanced", "skip_cleaning", "no") = "yes" Then Return 0
 	SendReport("Start-Clean_old_installs ( Drive : "& $drive_letter &" - Release : "& $release_in_list &" )")
 	UpdateStatus("Cleaning previous installations ( 2min )")
+
+	if AutoCleanPreviousInstall($drive_letter)=1 Then
+		SendReport(" -> Autocleaning successful")
+		Return 1
+	Else
+		SendReport(" -> Autocleaning not used, now using the old alertnative method")
+	EndIf
+
+
 	DeleteFilesInDir($files_in_source)
 	If FileExists($drive_letter & "\autorun.inf") AND NOT FileExists($drive_letter & "\autorun.inf.orig") Then FileMove($drive_letter & "\autorun.inf",$drive_letter & "\autorun.inf.orig",1)
 	FileDelete2($drive_letter & "\autorun.inf")
 	FileDelete2($drive_letter & "\lili.ico")
+
+	FileDelete2($drive_letter&"\"&$autoclean_settings)
+	FileDelete2($drive_letter&"\"&$autoclean_file)
 
 	if IniRead($settings_ini, "Advanced", "skip_full_cleaning", "no") <> "yes" Then
 
@@ -109,10 +121,7 @@ Func Clean_old_installs($drive_letter,$release_in_list)
 		FileDelete2($drive_letter & "\menu.lst")
 		FileDelete2($drive_letter & "\BootCD.txt")
 		DirRemove2($drive_letter & "\HBCD\",1)
-
-
 	EndIf
-
 	SendReport("End-Clean_old_installs")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -837,7 +846,63 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+#cs
+	Description : Creates The uninstaller
+	Input :
+		$list_of_files = List of files in the ISO
+		$drive_letter = Letter of the drive (pre-formated like "E:" )
+		$release_in_list = number of the release in the compatibility list (-1 if not present)
+	Output :
+		0 = sucess
+		1 = error see @error
+#ce
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Func CreateUninstaller($list_of_files,$drive_letter,$release_in_list)
+	SendReport("Start-CreateUninstaller")
 
+	$codename = ReleaseGetCodename($release_in_list)
+	$description = ReleaseGetDescription($release_in_list)
+
+	if (Ubound($list_of_files)=0) Then
+		SendReport("End-CreateUninstaller : list of files is not an array !")
+		return "ERROR"
+	EndIf
+
+	Local $total=0
+	_ArrayAdd($list_of_files,"lili.ico")
+	_ArrayAdd($list_of_files,"autorun.inf")
+	_ArrayAdd($list_of_files,"autorun.inf.orig")
+	_ArrayAdd($list_of_files,"ldlinux.sys")
+	_ArrayAdd($list_of_files,"syslinux")
+	_ArrayAdd($list_of_files,"casper-rw")
+	_ArrayAdd($list_of_files,$autoclean_settings)
+	_ArrayAdd($list_of_files,$autoclean_file)
+
+	$handle=FileOpen($drive_letter&"\"&$autoclean_file,2)
+
+	For $file In $list_of_files
+		$current_file=$drive_letter & "\" & $file
+		$size_to_add=0
+		If isDir($current_file) Then
+			$size_to_add=DirGetSize($current_file)
+			IniWrite($drive_letter&"\"&$autoclean_settings,"Folders",$file,$size_to_add)
+			FileWriteLine($handle,"RMDIR /S /Q "&$file)
+		Elseif FileExists($current_file) Then
+			$size_to_add=FileGetSize($current_file)
+			IniWrite($drive_letter&"\"&$autoclean_settings,"Files",$file,$size_to_add)
+			FileWriteLine($handle,"ATTRIB -H -S "&$file)
+			FileWriteLine($handle,"DEL /F /Q "&$file)
+		EndIf
+		$total+=$size_to_add
+	Next
+	FileCLose($handle)
+
+	IniWrite($drive_letter&"\"&$autoclean_settings,"General","Total_Size",$total)
+	IniWrite($drive_letter&"\"&$autoclean_settings,"General","Installed_Linux",$description)
+	IniWrite($drive_letter&"\"&$autoclean_settings,"General","Installed_Linux_Codename",$codename)
+	SendReport("End-CreateUninstaller")
+EndFunc   ;==>DeleteFilesInDir
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 #cs

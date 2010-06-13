@@ -75,7 +75,7 @@ Func SpaceAfterLinuxLiveMB($disk)
 			Return 0
 		EndIf
 	Else
-		$spacefree = DriveSpaceFree($disk) - $install_size
+		$spacefree = DriveSpaceFree($disk) + GetPreviousInstallSizeMB($disk) - $install_size
 		If $spacefree >= 0 And $spacefree <= 3950 Then
 			Return Round($spacefree / 100, 0) * 100
 		ElseIf $spacefree >= 0 And $spacefree > 3950 Then
@@ -90,7 +90,7 @@ EndFunc   ;==>SpaceAfterLinuxLiveMB
 
 Func SpaceAfterLinuxLiveGB($disk)
 	SendReport("Start-SpaceAfterLinuxLiveGB (Disk: " & $disk & " )")
-
+	#cs
 	If ReleaseGetCodename($release_number) = "default" Then
 		$install_size = Round(FileGetSize($file_set) / 1048576) + 20
 	Else
@@ -112,7 +112,7 @@ Func SpaceAfterLinuxLiveGB($disk)
 			Return 0
 		EndIf
 	Else
-		$spacefree = DriveSpaceFree($disk) - ReleasegetInstallSize($release_number)
+		$spacefree = DriveSpaceFree($disk) + GetPreviousInstallSizeMB($disk) - ReleasegetInstallSize($release_number)
 		If $spacefree >= 0 Then
 			SendReport("End-SpaceAfterLinuxLiveGB (Free : " & Round($spacefree / 1024, 1) & "GB )")
 			Return Round($spacefree / 1024, 1)
@@ -121,7 +121,10 @@ Func SpaceAfterLinuxLiveGB($disk)
 			Return 0
 		EndIf
 	EndIf
-
+	#ce
+	$space=Round(SpaceAfterLinuxLiveMB($disk)/1024,1)
+	SendReport("End-SpaceAfterLinuxLiveGB (Free : "&$space&"GB )")
+	Return $space
 EndFunc   ;==>SpaceAfterLinuxLiveGB
 
 ; returns the physical disk (\\.\PhysicalDiskX) corresponding to a drive letter
