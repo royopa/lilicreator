@@ -31,7 +31,7 @@ Global $current_logfile = @ScriptDir & "\logs\crash-report-" & @MDAY & "-" & @MO
 Global $user_system
 
 Global $oMyRet[2]
-Global $oMyError
+Global $oMyError,$crash_detected=0
 
 Global $iPID
 $lang = _Language()
@@ -57,7 +57,6 @@ _OnAutoItError()
 
 ;   this function is made to be customized !
 Func _OnAutoItError()
-
     If StringInStr($CmdLineRaw,"/AutoIt3ExecuteScript") Then Return
     Opt("TrayIconHide",1)
     ;   run a second instance
@@ -70,10 +69,9 @@ Func _OnAutoItError()
     While 1
         $sErrorMsg&=StdoutRead($iPID)
         If @error Then ExitLoop
-        Sleep(1)
+        Sleep(1000)
     WEnd
     If $sErrorMsg="" Then Exit
-
 
     GUICreate("LiLi USB Creator Automatic Bug Report",400,90,Default,Default,-2134376448);BitOR($WS_CAPTION,$WS_POPUP,$WS_SYSMENU)
     GUISetBkColor(0xE0DFE2)
@@ -138,16 +136,16 @@ Func _OnAutoItError()
 			GUICtrlSetOnEvent(-1, "GUI_Err_Stop")
         $clos=GUICtrlCreateIcon("shell32.dll",240,249,63,16,16)
             GUICtrlSetCursor(-1,0)
-    GUISetState()
-    WinSetOnTop(@ScriptName,"",1)
+
     Opt("TrayIconHide",0)
     Opt("TrayAutoPause",0)
 
     TraySetToolTip("LiLi Creator Automatic Bug Report")
 	TraySetIcon(@ScriptDir&"\tools\img\lili.ico")
-
+    GUISetState()
+    WinSetOnTop("LiLi USB Creator Automatic Bug Report","",1)
     ;   choose action to be taken
-	If IniRead($settings_ini, "Advanced", "skip_autoreport", "no")=="no" Then
+	If ReadSetting("Advanced", "skip_autoreport")<>"yes" Then
 		If SendBug() <> "OK" Then
 			GUICtrlSetData($sending_status,Translate("Report status")& " : " & Translate("Error (not sent)"))
 		Else
@@ -164,6 +162,21 @@ Func _OnAutoItError()
     Wend
 
 EndFunc
+
+#cs
+Func CheckIfRunningOrphaned()
+	If @Compiled Then
+		$list = ProcessList("LiLi USB Creator.exe")
+	Else
+		$list = ProcessList("AutoIT3.exe")
+	EndIf
+
+	if $crash_detected=0 AND $list[0][0]<2 Then
+		_ArrayDisplay($list)
+		Exit
+	EndIf
+EndFunc
+#ce
 
 Func GUI_Err_Debug()
 	If @Compiled=0 Then MsgBox(270400,Translate("Show bug report"),ConstructReport())
@@ -188,7 +201,7 @@ Func SendBug()
 	_WinHttpAddRequestHeaders($h_openRequest, "Content-Type: multipart/form-data; boundary=" & $HTTP_POST_BOUNDARY)
 
 	InitPostData()
-	AddPostData("REPORTER_ID",IniRead($settings_ini, "General", "unique_ID", "none"))
+	AddPostData("REPORTER_ID",ReadSetting( "General", "unique_ID"))
 	AddPostData("ERROR_MSG",$sErrorMsg)
 	AddPostData("SOFTWARE_VERSION",$software_version)
 	; Little fix for AutoIT 3.3.0.0
@@ -238,12 +251,12 @@ EndFunc
 Func ConstructReport()
 	$temp = Translate("Error") & " :" & @CRLF & $sErrorMsg &  @CRLF & Translate("30 " & "dernières actions") & _
 	": " & @CRLF & _ArrayToString($last_actions,@CRLF & "--> ") & @CRLF & $last_config  & @CRLF & _
-	Translate("Unique anonymous ID") &  ": " & IniRead($settings_ini, "General", "unique_ID", "none")
+	Translate("Unique anonymous ID") &  ": " & ReadSetting( "General", "unique_ID")
 	Return $temp
 EndFunc
 
 Func ConstructHTMLReport()
-	$temp = "<html><head></head><body><center><h3>Report ID : "& IniRead($settings_ini, "General", "unique_ID", "none") & "</h3></center><br/><h3><u>Erreur :</u></h3><br/><pre>" & $sErrorMsg & "</pre><br/><h3><u>30 dernières actions : </u></h3><pre>" & _
+	$temp = "<html><head></head><body><center><h3>Report ID : "& ReadSetting( "General", "unique_ID") & "</h3></center><br/><h3><u>Erreur :</u></h3><br/><pre>" & $sErrorMsg & "</pre><br/><h3><u>30 dernières actions : </u></h3><pre>" & _
 	_ArrayToString($last_actions,@CRLF & "--> ")  &  "</pre><br/><h3><u>Configuration Système :</u></h3><pre>" & $last_config  & "</pre></body></html>"
 	Return $temp
 EndFunc

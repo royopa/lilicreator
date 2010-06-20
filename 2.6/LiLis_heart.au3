@@ -14,7 +14,7 @@ Func Format_FAT32($drive_letter)
 	SendReport("Start-Format_FAT32 ( Drive : "& $drive_letter &" )")
 	UpdateStatus("Formating the key")
 	$drive_size=Round(DriveSpaceTotal($drive_letter)/1024,1)
-	if $drive_size<32 AND NOT IniRead($settings_ini, "Advanced", "force_3rdparty_format", "no") = "yes" Then
+	if $drive_size<32 AND NOT ReadSetting( "Advanced", "force_3rdparty_format") = "yes" Then
 		UpdateLog("Drive is smaller than 32GB ("&$drive_size&"GB)-> LiLi will use the Windows Format utility")
 		; default Method, will force work even when some applications are locking the drive
 		RunWait3('cmd /c format /Q /X /y /V:MyLinuxLive /FS:FAT32 ' & $drive_letter, @ScriptDir, @SW_HIDE)
@@ -42,7 +42,7 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Clean_old_installs($drive_letter,$release_in_list)
-	If IniRead($settings_ini, "Advanced", "skip_cleaning", "no") = "yes" Then Return 0
+	If ReadSetting( "Advanced", "skip_cleaning") = "yes" Then Return 0
 	SendReport("Start-Clean_old_installs ( Drive : "& $drive_letter &" - Release : "& $release_in_list &" )")
 	UpdateStatus("Cleaning previous installations ( 2min )")
 
@@ -62,7 +62,7 @@ Func Clean_old_installs($drive_letter,$release_in_list)
 	FileDelete2($drive_letter&"\"&$autoclean_settings)
 	FileDelete2($drive_letter&"\"&$autoclean_file)
 
-	if IniRead($settings_ini, "Advanced", "skip_full_cleaning", "no") <> "yes" Then
+	if ReadSetting( "Advanced", "skip_full_cleaning") <> "yes" Then
 
 		; Common Linux Live files
 		DirRemove2($drive_letter & "\isolinux\", 1)
@@ -149,8 +149,8 @@ Func Download_virtualBox()
 				$no_internet = 0
 				$virtualbox_size = -1
 
-				$VirtualBoxUrl1 = IniRead($settings_ini, "VirtualBox", "portable_virtualbox_mirror1", "none")
-				$VirtualBoxUrl2 = IniRead($settings_ini, "VirtualBox", "portable_virtualbox_mirror2", "none")
+				$VirtualBoxUrl1 = ReadSetting("VirtualBox", "portable_virtualbox_mirror1")
+				$VirtualBoxUrl2 = ReadSetting("VirtualBox", "portable_virtualbox_mirror2")
 
 
 				; Testing download mirrors
@@ -280,7 +280,7 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Func Uncompress_ISO_on_key($drive_letter,$iso_file,$release_in_list)
-	If IniRead($settings_ini, "Advanced", "skip_copy", "no") = "yes" Then Return 0
+	If ReadSetting("Advanced", "skip_copy") = "yes" Then Return 0
 	SendReport("Start-Uncompress_ISO_on_key ( Drive : "& $drive_letter &" - File : "& $iso_file &" - Release : "& $release_in_list &" )")
 
 	If ProcessExists("7z.exe") > 0 Then ProcessClose("7z.exe")
@@ -318,7 +318,7 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Func Create_Stick_From_CD($drive_letter,$path_to_cd)
-	If IniRead($settings_ini, "Advanced", "skip_copy", "no") = "yes" Then Return 0
+	If ReadSetting("Advanced", "skip_copy") = "yes" Then Return 0
 	SendReport("Start-Create_Stick_From_CD ( Drive : "& $drive_letter &" - CD Folder : "& $path_to_cd &" )")
 	FileCopyShell($path_to_cd & "\*.*", $drive_letter & "\")
 	SendReport("End-Create_Stick_From_CD")
@@ -411,7 +411,7 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Func Rename_and_move_files($drive_letter, $release_in_list)
-	If IniRead($settings_ini, "Advanced", "skip_moving_renaming", "no") = "yes" Then Return 0
+	If ReadSetting("Advanced", "skip_moving_renaming") = "yes" Then Return 0
 	SendReport("Start-Rename_and_move_files")
 	UpdateStatus(Translate("Renaming some files"))
 
@@ -531,7 +531,7 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Hide_live_files($drive_letter)
-	If IniRead($settings_ini, "Advanced", "skip_hiding", "no") = "yes" Then return 0
+	If ReadSetting("Advanced", "skip_hiding") = "yes" Then return 0
 	SendReport("Start-Hide_live_files")
 
 	UpdateStatus("Hiding files")
@@ -618,7 +618,7 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Create_persistence_file($drive_letter,$release_in_list,$persistence_size,$hide_it)
-	If IniRead($settings_ini, "Advanced", "skip_persistence", "no") = "yes" Then Return 0
+	If ReadSetting( "Advanced", "skip_persistence") = "yes" Then Return 0
 	SendReport("Start-Create_persistence_file")
 
 	; Checking if persistence is supported for this Linux
@@ -694,7 +694,7 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Func Install_boot_sectors($drive_letter,$release_in_list,$hide_it)
-	If IniRead($settings_ini, "Advanced", "skip_bootsector", "no") = "yes" Then Return 0
+	If ReadSetting( "Advanced", "skip_bootsector") = "yes" Then Return 0
 	SendReport("Start-Install_boot_sectors")
 	UpdateStatus("Installing boot sectors")
 	$features=ReleaseGetSupportedFeatures($release_in_list)
@@ -804,7 +804,7 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Create_autorun($drive_letter,$release_in_list)
-	If IniRead($settings_ini, "Advanced", "skip_autorun", "no") = "yes" Then Return 0
+	If ReadSetting( "Advanced", "skip_autorun") = "yes" Then Return 0
 
 	SendReport("Start-Create_autorun")
 	If FileExists($drive_letter & "\autorun.inf") Then FileMove($drive_letter & "\autorun.inf",$drive_letter & "\autorun.bak",1)

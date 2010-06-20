@@ -1,26 +1,18 @@
-#include <ButtonConstants.au3>
-#include <EditConstants.au3>
-#include <GUIConstantsEx.au3>
-#include <GUIListBox.au3>
-#include <StaticConstants.au3>
-#include <TabConstants.au3>
-#include <WindowsConstants.au3>
-#include <GuiTreeView.au3>
-#include <GuiImageList.au3>
-#include <Array.au3>
 
 #Region ### START Koda GUI section ### Form=Menu.kxf
 ;GUI_Options_Menu()
 
 Global $proxy_status,$available_languages[50]
 
-Global $check_for_updates,$stable_only,$all_release
+Global $check_for_updates,$stable_only,$all_release,$hTreeView,$treeview_items
+
 
 Func GUI_Options_Menu()
+	;WinSetState($CONTROL_GUI, "", @SW_DISABLE)
+
 
 	Opt("GUIOnEventMode", 0)
-
-	$main_menu = GUICreate("LinuxLive USB Creator >> Options", 401, 436, 389, 407)
+	$main_menu = GUICreate("Options", 401, 436, -1, -1,-1, -1,$CONTROL_GUI)
 	$Tabs = GUICtrlCreateTab(8, 8, 385, 393)
 	GUICtrlSetResizing(-1, $GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
 	$tab_general = GUICtrlCreateTabItem("General")
@@ -40,10 +32,16 @@ Func GUI_Options_Menu()
 	GUICtrlSetCursor(-1,0)
 
 	$tab_language = GUICtrlCreateTabItem("Language")
-	$language_list = GUICtrlCreateList("English", 80, 136, 180, 120)
+	$language_list = GUICtrlCreateList("English", 80, 136, 180, 200,$WS_BORDER+$WS_VSCROLL)
 	GUICtrlSetData(-1, Available_Languages())
 
-	 _GUICtrlListBox_SelectString($language_list,$lang)
+	$forced_lang=ReadSetting("General","force_lang")
+	if $forced_lang="" Then
+		_GUICtrlListBox_SelectString($language_list,"Automatic")
+	Else
+		_GUICtrlListBox_SelectString($language_list,$forced_lang)
+	EndIf
+
 	$label_languages = GUICtrlCreateLabel("Available languages", 32, 88, 323, 25)
 	GUICtrlSetFont($label_languages, 14)
 
@@ -55,19 +53,19 @@ Func GUI_Options_Menu()
 	GUICtrlSetFont(-1, 10)
 	$label_proxy_url = GUICtrlCreateLabel("Proxy URL", 42, 85, 87, 21, $WS_GROUP)
 
-	$proxy_url = GUICtrlCreateInput("", 150, 85, 217, 22, $WS_GROUP)
+	$proxy_url = GUICtrlCreateInput(ReadSetting( "Proxy", "proxy_url"), 150, 85, 217, 22, $WS_GROUP)
 
 	$label_proxy_port = GUICtrlCreateLabel("Port", 42, 118, 71, 21, $WS_GROUP)
 
-	$proxy_port = GUICtrlCreateInput("", 150, 118, 49, 22, $WS_GROUP)
+	$proxy_port = GUICtrlCreateInput(ReadSetting( "Proxy", "proxy_port"), 150, 118, 49, 22, $WS_GROUP+$ES_NUMBER)
 
 	$label_proxy_user = GUICtrlCreateLabel("Username", 42, 148, 84, 21, $WS_GROUP)
 
-	$proxy_username = GUICtrlCreateInput("", 150, 148, 160, 22, $WS_GROUP)
+	$proxy_username = GUICtrlCreateInput(ReadSetting( "Proxy", "proxy_username"), 150, 148, 160, 22, $WS_GROUP)
 
 	$label_proxy_password = GUICtrlCreateLabel("Password", 42, 184, 82, 21, $WS_GROUP)
 
-	$proxy_password = GUICtrlCreateInput("", 150, 184, 160, 22, $WS_GROUP)
+	$proxy_password = GUICtrlCreateInput(ReadSetting( "Proxy", "proxy_password"), 150, 184, 160, 22, $WS_GROUP+$ES_PASSWORD)
 
 
 	$group_status = GUICtrlCreateGroup("Status", 22, 263, 353, 65)
@@ -116,22 +114,23 @@ Func GUI_Options_Menu()
 
 	$iStyle = BitOR($TVS_HASBUTTONS, $TVS_DISABLEDRAGDROP,$TVS_CHECKBOXES, $TVS_SHOWSELALWAYS)
 
-	$hTreeView = GUICtrlCreateTreeView(16, 74, 369, 319,$iStyle,$WS_EX_CLIENTEDGE)
+	$hTreeView = GUICtrlCreateTreeView(16, 74, 369, 319,$iStyle)
 	Populate_Treeview($hTreeView)
+
 
 
 	;-----------------------
 
-	$tab_help = GUICtrlCreateTabItem("Help")
-	GUICtrlCreateTabItem("")
+	;$tab_help = GUICtrlCreateTabItem("Help")
+	;GUICtrlCreateTabItem("")
 
-	$tab_credits = GUICtrlCreateTabItem("Credits")
-	GUICtrlCreateTabItem("")
+	;$tab_credits = GUICtrlCreateTabItem("Credits")
+	;GUICtrlCreateTabItem("")
 
 	$ok_button = GUICtrlCreateButton("OK", 304, 408, 81, 23, $WS_GROUP)
 
 
-	GUISetState()
+	GUISetState(@SW_SHOW, $main_menu)
 	Check_Internet_Status()
 
 
@@ -141,43 +140,126 @@ Func GUI_Options_Menu()
 		$nMsg = GUIGetMsg()
 		Switch $nMsg
 			Case $GUI_EVENT_CLOSE
+				WriteAdvancedSettings()
 				GUIDelete($main_menu)
+				ControlFocus("LinuxLive USB Creator", "", $REFRESH_AREA)
+				;GUIRegisterMsg($WM_PAINT, "DrawAll")
+				;WinActivate($for_winactivate)
+				;GuiSetState($GUI_SHOW,$CONTROL_GUI)
 				Opt("GUIOnEventMode", 1)
-				GUIRegisterMsg($WM_PAINT, "DrawAll")
-				WinActivate($for_winactivate)
-				GuiSetState($GUI_SHOW,$CONTROL_GUI)
 				Return ""
 			Case $test_proxy
 				Check_Internet_Status()
 			Case $ok_button
+				WriteAdvancedSettings()
+				GUIDelete($main_menu)
+				ControlFocus("LinuxLive USB Creator", "", $REFRESH_AREA)
+				;GUIRegisterMsg($WM_PAINT, "DrawAll")
+				;WinActivate($for_winactivate)
+				;GuiSetState($GUI_SHOW,$CONTROL_GUI)
+				Opt("GUIOnEventMode", 1)
 				Return ""
 			Case $language_list
-					IniWrite($settings_ini, "General", "force_lang", GUICtrlRead($language_list))
+				$language_selected=GUICtrlRead($language_list)
+				if $language_selected="Automatic" OR StringInStr($language_selected,"—")>0 Then
+					WriteSetting("General", "force_lang","")
+				Else
+					WriteSetting("General", "force_lang",$language_selected)
+				EndIf
 			Case $check_for_updates
-				If GUICtrlRead($check_for_updates)==$GUI_CHECKED Then
-					IniWrite($settings_ini, "Updates", "check_for_updates", "yes")
-				Else
-					IniWrite($settings_ini, "Updates", "check_for_updates", "no")
-				EndIf
+				Checkbox_To_Setting($check_for_updates,"Updates","check_for_updates")
 			Case $licence
-				MsgBox(0,"mlkml","lkmlk")
 				ShellExecute("http://www.linuxliveusb.com/licence")
-			Case $all_release OR $stable_only
-				If GUICtrlRead($stable_only)==$GUI_CHECKED Then
-					IniWrite($settings_ini, "Updates", "check_for_beta_versions", "no")
+			Case $all_release
+				Checkbox_To_Setting($all_release,"Updates","check_for_beta_versions")
+			Case $stable_only
+				Checkbox_To_Setting_Reverse($stable_only,"Updates","check_for_beta_versions")
+			Case $proxy_url
+				WriteSetting("Proxy", "proxy_url",GUICtrlRead($proxy_url))
+			Case $proxy_port
+				WriteSetting("Proxy", "proxy_port",GUICtrlRead($proxy_port))
+			Case $proxy_username
+				WriteSetting("Proxy", "proxy_username",GUICtrlRead($proxy_username))
+			Case $proxy_password
+				WriteSetting("Proxy", "proxy_password",GUICtrlRead($proxy_password))
+			Case $test_proxy
+				; Apply proxy settings
+				$proxy_url = ReadSetting( "Proxy", "proxy_url")
+				$proxy_port = ReadSetting( "Proxy", "proxy_port")
+				$proxy_username = ReadSetting( "Proxy", "proxy_username")
+				$proxy_password = ReadSetting( "Proxy", "proxy_password")
+
+				If $proxy_url <> "" AND  $proxy_port <> "" Then
+					$proxy_url &= ":" & $proxy_port
+					If $proxy_username <> "" Then
+						If $proxy_password <> "" Then
+							HttpSetProxy(2, $proxy_url, $proxy_username, $proxy_password)
+						Else
+							HttpSetProxy(2, $proxy_url, $proxy_username)
+						EndIf
+					Else
+						HttpSetProxy(2, $proxy_url)
+					EndIf
 				Else
-					IniWrite($settings_ini, "Updates", "check_for_beta_versions", "yes")
+					HttpSetProxy(0)
 				EndIf
+				GUICtrlSetColor($proxy_status,0x007f00)
+				GUICtrlSetData($proxy_status,"Testing")
+				Check_Internet_Status()
 
 		EndSwitch
 	WEnd
 
-
-
 EndFunc
 
+Func WriteAdvancedSettings()
+	for $i=1 To Ubound($treeview_items)-1
+		$item_text = _GUICtrlTreeView_GetText($hTreeView,$treeview_items[$i])
+		if $item_text<>"" Then
+			If _GUICtrlTreeView_GetChecked($hTreeView, $treeview_items[$i]) Then
+				WriteSetting("Advanced",$item_text,"yes")
+			Else
+				WriteSetting("Advanced",$item_text,"no")
+			EndIf
+		EndIf
+	Next
+EndFunc
+
+Func Setting_To_Checkbox($checkbox,$setting_category,$setting_key)
+	If ReadSetting($setting_category,$setting_key)="yes" Then
+		GUICtrlSetState($checkbox,$GUI_CHECKED)
+	Else
+		GUICtrlSetState($checkbox,$GUI_UNCHECKED)
+	EndIf
+EndFunc
+
+Func Setting_To_Checkbox_Reverse($checkbox,$setting_category,$setting_key)
+	If ReadSetting($setting_category,$setting_key)="yes" Then
+		GUICtrlSetState($checkbox,$GUI_UNCHECKED)
+	Else
+		GUICtrlSetState($checkbox,$GUI_CHECKED)
+	EndIf
+EndFunc
+
+Func Checkbox_To_Setting($checkbox,$setting_category,$setting_key)
+	If GUICtrlRead($checkbox)==$GUI_CHECKED Then
+		WriteSetting( $setting_category,$setting_key , "yes")
+	Else
+		WriteSetting( $setting_category, $setting_key, "no")
+	EndIf
+EndFunc
+
+Func Checkbox_To_Setting_Reverse($checkbox,$setting_category,$setting_key)
+	If GUICtrlRead($checkbox)==$GUI_CHECKED Then
+		WriteSetting( $setting_category,$setting_key , "no")
+	Else
+		WriteSetting( $setting_category, $setting_key, "yes")
+	EndIf
+EndFunc
+
+
 Func Available_Languages()
-	Local $language_list="|English"
+	Local $language_list="|Automatic|————————————————————|English"
 	$available_languages[0]="English"
 	; Shows the filenames of all files in the current directory.
 	$search = FileFindFirstFile(@ScriptDir&"\tools\languages\*.ini")
@@ -196,20 +278,17 @@ Func Available_Languages()
 		$i+=1
 	WEnd
 	;MsgBox(4096, "File:", $language_list)
-	$language_list&="|"
+	;$language_list&="|"
 	; Close the search handle
 	FileClose($search)
 	Return $language_list
 EndFunc
 
 Func InitUpdateTab()
-	if IniRead($settings_ini, "Updates", "check_for_updates", "yes") = "no" Then
-		GUICtrlSetState($check_for_updates,$GUI_UNCHECKED)
-	Else
-		GUICtrlSetState($check_for_updates,$GUI_CHECKED)
-	EndIf
 
-	if (isBeta() OR IniRead($settings_ini, "Updates", "check_for_beta_versions", "no") = "yes") Then
+	Setting_To_Checkbox($check_for_updates,"Updates", "check_for_updates")
+
+	if (isBeta() OR ReadSetting( "Updates", "check_for_beta_versions") = "yes") Then
 		GUICtrlSetState($all_release,$GUI_CHECKED)
 	Else
 		GUICtrlSetState($stable_only,$GUI_CHECKED)
@@ -217,13 +296,15 @@ Func InitUpdateTab()
 EndFunc
 
 Func Display_Options()
+
 	$var = IniReadSection($settings_ini, "Advanced")
 	If @error Then
 		MsgBox(4096, "", "Error occurred, probably no INI file.")
 	Else
 		For $i = 1 To $var[0][0]
-			GUICtrlCreateCheckbox($var[$i][0],100, 50+$i*23, 260, 17);=$var[$i][1]
-			if IniRead($settings_ini, "Advanced", $var[$i][0], "no")="yes" Then GUICtrlSetState(-1,$GUI_CHECKED)
+			$current_checkbox = GUICtrlCreateCheckbox($var[$i][0],100, 50+$i*23, 260, 17);=$var[$i][1]
+			Setting_To_Checkbox($current_checkbox, "Advanced",$var[$i][0])
+			;if ReadSetting( "Advanced", $var[$i][0])="yes" Then GUICtrlSetState(-1,$GUI_CHECKED)
 			;MsgBox(4096, "", "Key: " & $var[$i][0] & @CRLF & "Value: " & $var[$i][1])
 		Next
 	EndIf
@@ -232,13 +313,15 @@ EndFunc
 Func Populate_Treeview($htree)
 
 	$var = IniReadSection($settings_ini, "Advanced")
+	Global $treeview_items[$var[0][0]+1]
 	If @error Then
 		MsgBox(4096, "", "Error occurred, probably no INI file.")
 	Else
 		_GUICtrlTreeView_BeginUpdate($htree)
 		For $i = 1 To $var[0][0]
-			_GUICtrlTreeView_Add($htree, 0,$var[$i][0])
-			if IniRead($settings_ini, "Advanced", $var[$i][0], "no")="yes" Then GUICtrlSetState(-1,$GUI_CHECKED)
+			$treeview_items[$i] = _GUICtrlTreeView_Add($htree, 0,$var[$i][0])
+			;Setting_To_Checkbox($current_item, "Advanced",$var[$i][0])
+			if ReadSetting( "Advanced", $var[$i][0])="yes" Then _GUICtrlTreeView_SetChecked($htree,$treeview_items[$i],true)
 		Next
 		_GUICtrlTreeView_EndUpdate($htree)
 	EndIf
@@ -255,10 +338,10 @@ Func Check_Internet_Status()
 EndFunc
 
 Func OnlineStatus()
-	$ping = Ping("www.google.com")
-    If $ping Then
-		return 1
-    Else
+	$inet = InetGet("http://www.google.com", @TempDir & "\connectivity-test.tmp",3,0)
+    If @error OR $inet=0 Then
 		return 0
+    Else
+		return 1
     EndIf
 EndFunc

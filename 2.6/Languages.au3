@@ -59,8 +59,8 @@
 
 Func _Language()
 	SendReport("Start-_Language")
-	$force_lang = IniRead($settings_ini, "General", "force_lang", "no")
-	If $force_lang <> "no" And (FileExists($lang_folder & $force_lang & ".ini") Or $force_lang = "English") Then
+	$force_lang = ReadSetting("General", "force_lang")
+	If $force_lang <> "" And (FileExists($lang_folder & $force_lang & ".ini") Or $force_lang = "English") Then
 		$lang_ini = $lang_folder & $force_lang & ".ini"
 		SendReport("End-_Language (Force Lang=" & $force_lang & ")")
 		Return $force_lang

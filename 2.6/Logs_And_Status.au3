@@ -4,7 +4,7 @@
 
 Func InitLog()
 	DirCreate($log_dir)
-	$logfile = @ScriptDir & "\logs\" & @MDAY & "-" & @MON & "-" & @YEAR & " (" & @HOUR & "h" & @MIN & "s" & @SEC & ").log"
+	$logfile = @ScriptDir & "\logs\" & @MDAY & "-" & @MON & "-" & @YEAR&".log"
 	UpdateLog(LogSystemConfig())
 	SendReport("logfile-" & $logfile)
 EndFunc   ;==>InitLog
@@ -51,15 +51,19 @@ Func LogSystemConfig()
 EndFunc   ;==>LogSystemConfig
 
 Func UpdateStatus($status)
+	Global $label_step5_status
 	SendReport(IniRead($lang_ini, "English", $status, $status))
-	_FileWriteLog($logfile, "Status : " & Translate($status))
+	GUICtrlSetData($label_step5_status, "")
 	GUICtrlSetData($label_step5_status, Translate($status))
+	_FileWriteLog($logfile, "Status : " & Translate($status))
 EndFunc   ;==>UpdateStatus
 
 Func UpdateStatusStep2($status)
+	Global $label_step2_status
 	SendReport(IniRead($lang_ini, "English", $status, $status))
-	_FileWriteLog($logfile, "Status : " & Translate($status))
+	GUICtrlSetData($label_step2_status, "")
 	GUICtrlSetData($label_step2_status, Translate($status))
+	_FileWriteLog($logfile, "Status : " & Translate($status))
 EndFunc   ;==>UpdateStatusStep2
 
 Func UpdateLog($status)
@@ -67,11 +71,13 @@ Func UpdateLog($status)
 EndFunc   ;==>UpdateLog
 
 Func UpdateStatusNoLog($status)
+	Global $label_step5_status
+	GUICtrlSetData($label_step5_status, "")
 	GUICtrlSetData($label_step5_status, Translate($status))
 EndFunc   ;==>UpdateStatusNoLog
 
 Func SendReport($report)
-	If IniRead($settings_ini, "General", "verbose_logging", "no") = "yes" Then UpdateLog($report)
+	If ReadSetting( "General", "verbose_logging") = "yes" Then UpdateLog($report)
 	_SendData($report, "lili-Reporter")
 EndFunc   ;==>SendReport
 

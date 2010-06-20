@@ -51,7 +51,7 @@ Func Check_source_integrity($linux_live_file)
 
 
 	; No check if it's an img file or if the user do not want to
-	If IniRead($settings_ini, "Advanced", "skip_recognition", "no") == "yes" Or get_extension($linux_live_file) = "img" Then
+	If ReadSetting( "Advanced", "skip_recognition") == "yes" Or get_extension($linux_live_file) = "img" Then
 		Step2_Check("good")
 		$temp_index = _ArraySearch($codenames_list, "default")
 		$release_number = $temp_index
@@ -79,7 +79,7 @@ Func Check_source_integrity($linux_live_file)
 		EndIf
 	EndIf
 
-	If IniRead($settings_ini, "Advanced", "skip_md5", "no") = "no" Then
+	If ReadSetting( "Advanced", "skip_md5") <> "yes" Then
 		$MD5_ISO = Check_ISO($linux_live_file)
 		$temp_index = _ArraySearch($compatible_md5, $MD5_ISO)
 	Else
@@ -374,10 +374,17 @@ EndFunc   ;==>Check_if_version_non_grata
 
 Func Check_ISO($FileToHash)
 	SendReport("Start-Check_ISO ( File : " & $FileToHash & " )")
-	; Used to avoid redrawing the old elements of Step 2 (ISO, CD and download)
 
+	; Used to avoid redrawing the old elements of Step 2 (ISO, CD and download)
 	if $step2_display_menu=0 Then GUI_Hide_Step2_Default_Menu()
 	if $step2_display_menu=1 Then GUI_Hide_Step2_Download_Menu()
+
+	; Check if present in cache
+	$hexa_hash=Check_cache($FileToHash)
+	if $hexa_hash <> ""  Then
+		GUI_Show_Back_Button()
+		Return $hexa_hash
+	EndIf
 
 	$progress_bar = _ProgressCreate(38 + $offsetx0, 238 + $offsety0, 300, 30)
 	_ProgressSetImages($progress_bar, @ScriptDir & "\tools\img\progress_green.jpg", @ScriptDir & "\tools\img\progress_background.jpg")
@@ -397,7 +404,6 @@ Func Check_ISO($FileToHash)
 	_Crypt_Startup()
 	$iterations = Ceiling(FileGetSize($FileToHash) / $buffersize)
 
-
 	For $i = 1 To $iterations
 		if $i=$iterations Then $final=1
 		$hash=_Crypt_HashData(FileRead($filehandle, $buffersize),0x00008003,$final,$hash)
@@ -413,15 +419,49 @@ Func Check_ISO($FileToHash)
 	_ProgressDelete($progress_bar)
 	GUI_Show_Back_Button()
 	$hexa_hash = StringTrimLeft($hash, 2)
+	WriteSetting("Cached_MD5",CleanPathForCache($FileToHash),$hexa_hash&"||"&FileGetSize($FileToHash)&"||"&FileGetTime($FileToHash,0,1)&"||"&FileGetTime($FileToHash,1,1))
 	SendReport("End-MD5_ISO ( Hash : " & $hexa_hash & " )")
 	Return $hexa_hash
 EndFunc
 
+Func Check_cache($FileToHash)
+	SendReport("Start-Check_Cache for file "&$FileToHash)
+	$cached_md5=ReadSetting("Cached_MD5",CleanPathForCache($FileToHash))
+
+	if $cached_md5 = "" Then
+		SendReport("IN-Check_Cache : no cache for this file")
+		Return ""
+	Else
+		$cached_settings=StringSplit($cached_md5,"||",1)
+
+		if Ubound($cached_settings)=5 Then
+			$file_settings=FileGetSize($FileToHash)&"||"&FileGetTime($FileToHash,0,1)&"||"&FileGetTime($FileToHash,1,1)
+			$cache_settings_nomd5=$cached_settings[2]&"||"&$cached_settings[3]&"||"&$cached_settings[4]
+
+			if $file_settings=$cache_settings_nomd5 Then
+				SendReport("End-Check_Cache : Hash found ="&$cached_settings[1])
+				Return $cached_settings[1]
+			Else
+				SendReport("End-Check_Cache : file modified "&$file_settings&" <> "&$cache_settings_nomd5)
+				Return ""
+			EndIf
+
+		Else
+			SendReport("End-Check_Cache -> Warning cache error (wrong number of parameters)")
+			Return ""
+		EndIf
+	EndIf
+EndFunc
+
+Func CleanPathForCache($filepath)
+	; Cleaning leading+ trailing spaces and equal signs
+	Return StringStripWS(StringReplace($filepath,"=","--"),3)
+EndFunc
 #cs
 	Func Check_folder_integrity($folder)
 	SendReport("Start-Check_folder_integrity ( Folder : " & $folder & " )")
 	Global $version_in_file, $MD5_FOLDER
-	If IniRead($settings_ini, "Advanced", "skip_checking", "no") == "yes" Then
+	If ReadSetting( "Advanced", "skip_checking") = "yes" Then
 	Step2_Check("good")
 	SendReport("End-Check_folder_integrity (skip)")
 	Return ""
