@@ -764,7 +764,7 @@ Func GUI_Launch_Creation()
 	EndIf
 
 	; Initializing log file, already initialized when using verbose_logging
-	If IniRead($settings_ini, "General", "verbose_logging", "no") = "no" Then InitLog()
+	If ReadSetting( "General", "verbose_logging") <> "yes" Then InitLog()
 
 	; Format option has been selected
 	If (GUICtrlRead($formater) == $GUI_CHECKED) And $annuler <> 2 Then
