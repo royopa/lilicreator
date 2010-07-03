@@ -6,15 +6,16 @@
 #AutoIt3Wrapper_UseUpx=n
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.6.88.37
+#AutoIt3Wrapper_Res_Fileversion=2.6.88.40
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=Y
-#AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slï¿½m
+#AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_SaveSource=y
 #AutoIt3Wrapper_Res_Field=AutoIt Version|%AutoItVer%
 #AutoIt3Wrapper_Res_Field=Site|http://www.linuxliveusb.com
 #AutoIt3Wrapper_AU3Check_Parameters=-w 4
-#EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
-; Author           : Thibaut Lauzière (Slm)
+#EndRegion
+;**** Directives created by AutoIt3Wrapper_GUI ****
+; Author           : Thibaut Lauzière (Slÿm)
 ; Author's Website : www.slym.fr
 ; e-Mail           : contact@linuxliveusb.com
 ; License          : GPL v3.0
@@ -38,7 +39,7 @@ Global Const $check_updates_url = "http://www.linuxliveusb.com/updates/"
 
 ; Auto-Clean feature (relative to the usb drive path)
 Global Const $autoclean_file = "Remove_LiLi.bat"
-Global Const $autoclean_settings = "Autoclean.ini"
+Global Const $autoclean_settings = "SmartClean.ini"
 
 ; Global that will be set up later
 Global $lang, $anonymous_id,$logfile
@@ -170,6 +171,7 @@ Else
 	Exit
 EndIf
 
+$begin = TimerInit()
 
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////// Includes     															  ///////////////////////////////////////////////////
@@ -198,19 +200,16 @@ EndIf
 #include <String.au3>
 #include <File.au3>
 #include <INet.au3>
-#include <IE.au3>
 #include <WinHTTP.au3>
 #include <Crypt.au3>
 
 ; LiLi's components
 #include <Languages.au3>
-#include <About.au3>
 #include <Updates.au3>
 #include <Settings.au3>
-#include <Automatic_Bug_Report.au3>
-#include <Ressources.au3>
-#include <Graphics.au3>
 #include <Files.au3>
+#include <Automatic_Bug_Report.au3>
+#include <Graphics.au3>
 #include <External_Tools.au3>
 #include <Disks.au3>
 #include <Logs_And_Status.au3>
@@ -226,26 +225,37 @@ EndIf
 ; ///////////////////////////////// Proxy settings                                                            ///////////////////////////////////////////////////
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+$dif = TimerDiff($begin)
+ConsoleWrite("Timer 2 : "&Round($dif))
+$begin = TimerInit()
+
 ; Apply proxy settings
+$proxy_mode = ReadSetting( "Proxy", "proxy_mode")
 $proxy_url = ReadSetting( "Proxy", "proxy_url")
 $proxy_port = ReadSetting( "Proxy", "proxy_port")
 $proxy_username = ReadSetting( "Proxy", "proxy_username")
 $proxy_password = ReadSetting( "Proxy", "proxy_password")
 
-If $proxy_url <> "" AND  $proxy_port <> "" Then
-	$proxy_url &= ":" & $proxy_port
-	If $proxy_username <> "" Then
-		If $proxy_password <> "" Then
-			HttpSetProxy(2, $proxy_url, $proxy_username, $proxy_password)
+if $proxy_mode =2 Then
+	If $proxy_url <> "" AND  $proxy_port <> "" Then
+		$proxy_url &= ":" & $proxy_port
+		If $proxy_username <> "" Then
+			If $proxy_password <> "" Then
+				HttpSetProxy(2, $proxy_url, $proxy_username, $proxy_password)
+			Else
+				HttpSetProxy(2, $proxy_url, $proxy_username)
+			EndIf
 		Else
-			HttpSetProxy(2, $proxy_url, $proxy_username)
+			HttpSetProxy(2, $proxy_url)
 		EndIf
-	Else
-		HttpSetProxy(2, $proxy_url)
 	EndIf
 Else
-	HttpSetProxy(0)
+	HttpSetProxy($proxy_mode)
 EndIf
+
+$dif = TimerDiff($begin)
+SendReport("Timer 3 : "&Round($dif))
+$begin = TimerInit()
 
 ; Initializing log file for verbose logging
 If ReadSetting("General", "verbose_logging") = "yes" Then InitLog()
@@ -253,12 +263,22 @@ If ReadSetting("General", "verbose_logging") = "yes" Then InitLog()
 _SetAsReceiver("lili-main")
 _SetReceiverFunction("ReceiveFromSecondary")
 
+$dif = TimerDiff($begin)
+SendReport("Timer 4 : "&Round($dif))
+$begin = TimerInit()
+
 SendReport("Starting LiLi USB Creator " & $software_version)
 
-SendReport("Proxy found : "&$proxy_url&" user="&$proxy_username&" pass="&$proxy_password)
+$dif = TimerDiff($begin)
+SendReport("Timer 5 : "&Round($dif))
+$begin = TimerInit()
 
 ; initialize list of compatible releases (load the compatibility_list.ini)
 Get_Compatibility_List()
+
+$dif = TimerDiff($begin)
+SendReport("Timer 6 : "&Round($dif))
+$begin = TimerInit()
 
 _GDIPlus_Startup()
 
@@ -283,6 +303,10 @@ $REFRESH_PNG = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\refresh.png")
 $BACK_PNG = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\back.png")
 $BACK_HOVER_PNG = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\back_hover.png")
 $PNG_GUI = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\GUI.png")
+
+$dif = TimerDiff($begin)
+SendReport("Timer 7 : "&Round($dif))
+$begin = TimerInit()
 
 SendReport("Creating GUI")
 
@@ -371,6 +395,10 @@ $HELP_STEP3 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 
 $HELP_STEP4 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335 + $offsetx0, 451 + $offsety0, 20, 20)
 $HELP_STEP5 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335 + $offsetx0, 565 + $offsety0, 20, 20)
 
+$dif = TimerDiff($begin)
+SendReport("Timer 8 : "&Round($dif))
+$begin = TimerInit()
+
 ; Put the state for the first 3 steps
 Step1_Check("bad")
 Step2_Check("bad")
@@ -422,7 +450,7 @@ GUICtrlSetOnEvent(-1, "GUI_Persistence_Input")
 $slider_visual_Mo = GUICtrlCreateLabel(Translate("MB"), 135 + $offsetx3 + $offsetx0, 258 + $offsety3 + $offsety0, 20, 20)
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
-$slider_visual_mode = GUICtrlCreateLabel(Translate("(Live mode only)"), 160 + $offsetx3 + $offsetx0, 258 + $offsety3 + $offsety0, 100, 20)
+$slider_visual_mode = GUICtrlCreateLabel(Translate("(Live mode only)"), 160 + $offsetx3 + $offsetx0, 258 + $offsety3 + $offsety0, 150, 20)
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
 
@@ -486,6 +514,9 @@ GUICtrlSetFont($label_step5_status, 9, 800, 0, "Arial")
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
 
+$dif = TimerDiff($begin)
+SendReport("Timer 9 : "&Round($dif))
+$begin = TimerInit()
 
 ; Filling the combo box with drive list
 
@@ -493,15 +524,27 @@ $combo = GUICtrlCreateCombo("-> " & Translate("Choose a USB Key"), 90 + $offsetx
 GUICtrlSetOnEvent(-1, "GUI_Choose_Drive")
 Refresh_DriveList()
 
+$dif = TimerDiff($begin)
+SendReport("Timer 10 : "&Round($dif))
+$begin = TimerInit()
 
 ; Sending anonymous statistics
 SendStats()
 SendReport(LogSystemConfig())
 
-; Starting to check for updates in the secondary LiLi's process
-SendReport("check_for_updates")
+$dif = TimerDiff($begin)
+SendReport("Timer 11 : "&Round($dif))
+$begin = TimerInit()
 
-;$prefetched_linux_list = Print_For_ComboBox()
+$dif = TimerDiff($begin)
+SendReport("Timer 12 : "&Round($dif))
+$begin = TimerInit()
+
+$prefetched_linux_list = Print_For_ComboBox()
+
+$dif = TimerDiff($begin)
+SendReport("Timer 13 : "&Round($dif))
+$begin = TimerInit()
 
 ; Hovering Buttons
 AdlibRegister("Control_Hover", 150)
@@ -509,6 +552,17 @@ AdlibRegister("Control_Hover", 150)
 GUIRegisterMsg($WM_PAINT, "DrawAll")
 WinActivate($for_winactivate)
 GUISetState($GUI_SHOW, $CONTROL_GUI)
+
+$dif = TimerDiff($begin)
+SendReport("Timer 15 : "&Round($dif))
+$begin = TimerInit()
+
+; Starting to check for updates in the secondary LiLi's process
+SendReport("check_for_updates")
+
+$dif = TimerDiff($begin)
+SendReport("Timer 16 : "&Round($dif))
+$begin = TimerInit()
 
 Func MoveGUI($hW)
 	_SendMessage($GUI, $WM_SYSCOMMAND, 0xF012, 0)

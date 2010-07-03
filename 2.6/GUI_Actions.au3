@@ -215,7 +215,7 @@ EndFunc   ;==>GUI_Refresh_Drives
 
 Func GUI_Choose_ISO()
 	SendReport("Start-GUI_Choose_ISO")
-	$source_file = FileOpenDialog(Translate("Choisir l'image ISO d'un CD live de Linux"), "", "ISO / IMG / ZIP (*.iso;*.img;*.zip)", 1)
+	$source_file = FileOpenDialog(Translate("Please choose an ISO image of LinuxLive CD"), "", "ISO / IMG / ZIP (*.iso;*.img;*.zip)", 1)
 	If @error Then
 		SendReport("IN-ISO_AREA (no iso)")
 		MsgBox(4096, "", Translate("No file selected"))
@@ -810,7 +810,7 @@ Func GUI_Launch_Creation()
 			; Create Autorun menu
 			Create_autorun($selected_drive, $release_number)
 		EndIf
-		CreateUninstaller($files_in_source,$selected_drive,$release_number)
+		CreateUninstaller($selected_drive,$release_number)
 
 		If (GUICtrlRead($hide_files) == $GUI_CHECKED) Then Hide_live_files($selected_drive)
 
