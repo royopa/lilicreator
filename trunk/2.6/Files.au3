@@ -146,28 +146,38 @@ Func GetPreviousInstallSizeMB($drive_letter)
 	EndIf
 EndFunc
 
-Func AutoCleanPreviousInstall($drive_letter)
+Func AddToSmartClean($drive_letter,$file_to_smartclean)
+	if FileExists($drive_letter&"\"&$file_to_smartclean) AND _ArraySearch($files_in_source,$file_to_smartclean)=-1  Then _ArrayAdd($files_in_source,$file_to_smartclean)
+EndFunc
+
+Func SmartCleanPreviousInstall($drive_letter)
 	SendReport("Start-AutoCleanPreviousInstall for drive "&$drive_letter)
-	Local $array,$array2
+	Local $array,$i
 	if FileExists($drive_letter&"\"&$autoclean_settings) Then
 		$array=IniReadSection($drive_letter&"\"&$autoclean_settings,"Files")
-		$total=0
+		SendReport("Found "&Ubound($array)&" files to delete")
 		if Ubound($array) > 1 Then
 			for $i=1 To Ubound($array)-1
 				FileDelete2($drive_letter&"\"&$array[$i][0])
 			Next
 		EndIf
 
-		$array2=IniReadSection($drive_letter&"\"&$autoclean_settings,"Folders")
-		if Ubound($array2) > 1 Then
-			for $i=1 To Ubound($array2)-1
-				DirRemove2($drive_letter&"\"&$array2[$i][0],1)
+		$array=IniReadSection($drive_letter&"\"&$autoclean_settings,"Folders")
+		SendReport("Found "&Ubound($array)&" folders to delete")
+		if Ubound($array) > 1 Then
+			for $i=1 To Ubound($array)-1
+				DirRemove2($drive_letter&"\"&$array[$i][0],1)
 			Next
 		EndIf
 		FileDelete2($drive_letter&"\"&$autoclean_settings)
-		SendReport("End-AutoCleanPreviousInstall")
+		SendReport("End-AutoCleanPreviousInstall (found autoclean.ini)")
 		Return 1
+	Elseif Ubound($files_in_source>0) Then
+		DeleteFilesInDir($files_in_source)
+		SendReport("End-AutoCleanPreviousInstall (no autoclean.ini -> deleting listed files)")
+		Return 0
 	Else
+		SendReport("End-AutoCleanPreviousInstall : WARNING (no autoclean.ini and no file list)")
 		Return 0
 	EndIf
 EndFunc

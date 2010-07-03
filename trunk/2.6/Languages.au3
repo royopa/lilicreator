@@ -88,6 +88,8 @@ Func _Language()
 			$lang_found = "Korean"
 		Case StringInStr("041d,081d", @OSLang)
 			$lang_found = "Swedish"
+		Case StringInStr("0419", @OSLang)
+			$lang_found = "Russian"
 		Case Else
 			$lang_found = "English"
 	EndSelect

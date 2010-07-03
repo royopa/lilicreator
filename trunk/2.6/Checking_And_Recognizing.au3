@@ -165,6 +165,18 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "element") Then
 				; Element (Ubuntu)
 				$release_number = _ArraySearch($codenames_list, "element-last")
+			ElseIf StringInStr($shortname, "Super_OS") Then
+				; Super OS (Ubuntu)
+				$release_number = _ArraySearch($codenames_list, "superos-last")
+			ElseIf StringInStr($shortname, "sidux") Then
+				; Sidux
+				if StringInStr($shortname, "kde") Then
+					$release_number = _ArraySearch($codenames_list, "sidux-kdelite-last")
+				elseif StringInStr($shortname, "xfce") Then
+					$release_number = _ArraySearch($codenames_list, "sidux-xfce-last")
+				else
+					$release_number = _ArraySearch($codenames_list, "sidux-kdelite-last")
+				EndIf
 			ElseIf StringInStr($shortname, "android") Then
 				; Android x86
 				$release_number = _ArraySearch($codenames_list, "android-last")
@@ -191,6 +203,9 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "soas") Then
 				; Sugar on a stick
 				$release_number = _ArraySearch($codenames_list, "sugar-last")
+			ElseIf StringInStr($shortname, "peppermint") Then
+				; PepperMint
+				$release_number = _ArraySearch($codenames_list, "peppermint-one-last")
 			ElseIf StringInStr($shortname, "mint") Then
 				; Mint variants
 				if StringInStr($shortname, "KDE") Then
@@ -220,6 +235,9 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "puppy") Or StringInStr($shortname, "pup-") Then
 				; Puppy Linux
 				$release_number = _ArraySearch($codenames_list, "puppy-last")
+			ElseIf StringInStr($shortname, "qrky") Or StringInStr($shortname, "quirky") Then
+				; Quirky Linux
+				$release_number = _ArraySearch($codenames_list, "quirky-last")
 			ElseIf StringInStr($shortname, "slax") Then
 				; Slax
 				$release_number = _ArraySearch($codenames_list, "slax-last")
@@ -291,6 +309,9 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "elive") Then
 				; Elive
 				$release_number = _ArraySearch($codenames_list, "elive-last")
+			ElseIf StringInStr($shortname, "ylmf") Then
+				; Ylmf OS
+				$release_number = _ArraySearch($codenames_list, "ylmf-last")
 			ElseIf StringInStr($shortname, "livehacking") Then
 				; Live Hacking CD
 				if StringInStr($shortname, "mini") Then

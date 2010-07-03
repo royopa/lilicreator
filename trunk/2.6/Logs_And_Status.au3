@@ -34,6 +34,7 @@ Func LogSystemConfig()
 	$line &= @CRLF & "Language : " & @OSLang
 	$line &= @CRLF & "Keyboard : " & @KBLayout
 	$line &= @CRLF & "Resolution : " & @DesktopWidth & "x" & @DesktopHeight
+	$line &= @CRLF & "Proxy settings : " & ProxySettingsReport()
 	$line &= @CRLF & "Chosen Key : " & $selected_drive
 	$line &= @CRLF & "Filesystem : " & DriveGetFileSystem($selected_drive)
 	If $selected_drive Then $space = Round(DriveSpaceFree($selected_drive))
@@ -49,6 +50,24 @@ Func LogSystemConfig()
 	SendReport("End-LogSystemConfig")
 	Return $line
 EndFunc   ;==>LogSystemConfig
+
+Func ProxySettingsReport()
+	; Apply proxy settings
+	$proxy_mode = ReadSetting( "Proxy", "proxy_mode")
+	$proxy_url = ReadSetting( "Proxy", "proxy_url")
+	$proxy_port = ReadSetting( "Proxy", "proxy_port")
+
+	if $proxy_mode =2 Then
+		If $proxy_url <> "" AND  $proxy_port <> "" Then
+			$proxy_url &= ":" & $proxy_port
+		EndIf
+		Return "Use custom settings ( "&$proxy_url&" )"
+	Elseif $proxy_mode =1 Then
+		Return "No proxy (direct access)"
+	Else
+		Return "Use system settings"
+	EndIf
+EndFunc
 
 Func UpdateStatus($status)
 	Global $label_step5_status

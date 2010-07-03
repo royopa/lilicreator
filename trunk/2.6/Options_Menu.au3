@@ -2,14 +2,13 @@
 #Region ### START Koda GUI section ### Form=Menu.kxf
 ;GUI_Options_Menu()
 
-Global $proxy_status,$available_languages[50]
+Global $proxy_modes[3],$proxy_status,$available_languages[50]
 
 Global $check_for_updates,$stable_only,$all_release,$hTreeView,$treeview_items
 
 
 Func GUI_Options_Menu()
 	;WinSetState($CONTROL_GUI, "", @SW_DISABLE)
-
 
 	Opt("GUIOnEventMode", 0)
 	$main_menu = GUICreate("Options", 401, 436, -1, -1,-1, -1,$CONTROL_GUI)
@@ -49,33 +48,52 @@ Func GUI_Options_Menu()
 	$tab_proxy = GUICtrlCreateTabItem("Proxy")
 
 
-	$group_proxy_settings = GUICtrlCreateGroup("Proxy settings", 24, 56, 353, 169)
+	$group_proxy_settings = GUICtrlCreateGroup("Proxy settings", 24, 46, 353, 260)
 	GUICtrlSetFont(-1, 10)
-	$label_proxy_url = GUICtrlCreateLabel("Proxy URL", 42, 85, 87, 21, $WS_GROUP)
+	;$prox = GUICtrlCreateCheckbox("Check for updates", 56, 70, 297, 17)
 
-	$proxy_url = GUICtrlCreateInput(ReadSetting( "Proxy", "proxy_url"), 150, 85, 217, 22, $WS_GROUP)
+	$no_proxy = GUICtrlCreateRadio("No proxy", 46, 70, 297, 17)
 
-	$label_proxy_port = GUICtrlCreateLabel("Port", 42, 118, 71, 21, $WS_GROUP)
+	$text_for_system="Use system settings"
+	$current_proxy=RegRead("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings", "ProxyServer")
+	if $current_proxy<>"" AND RegRead("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings", "ProxyEnable")=1 Then
+		$text_for_system&=" ("&$current_proxy&")"
+	EndIf
+	$system_proxy = GUICtrlCreateRadio($text_for_system, 46, 100, 297, 17)
+	$custom_proxy = GUICtrlCreateRadio("Use custom settings", 46, 130, 297, 17)
 
-	$proxy_port = GUICtrlCreateInput(ReadSetting( "Proxy", "proxy_port"), 150, 118, 49, 22, $WS_GROUP+$ES_NUMBER)
+	$proxy_modes[0]=$system_proxy
+	$proxy_modes[1]=$no_proxy
+	$proxy_modes[2]=$custom_proxy
 
-	$label_proxy_user = GUICtrlCreateLabel("Username", 42, 148, 84, 21, $WS_GROUP)
+	GUICtrlSetState($proxy_modes[ReadSetting("Proxy", "proxy_mode")],$GUI_CHECKED)
 
-	$proxy_username = GUICtrlCreateInput(ReadSetting( "Proxy", "proxy_username"), 150, 148, 160, 22, $WS_GROUP)
+	$label_proxy_url = GUICtrlCreateLabel("Proxy URL", 85, 170, 87, 21, $WS_GROUP)
 
-	$label_proxy_password = GUICtrlCreateLabel("Password", 42, 184, 82, 21, $WS_GROUP)
+	$proxy_url_input = GUICtrlCreateInput(ReadSetting( "Proxy", "proxy_url"), 150, 170, 217, 22, $WS_GROUP)
 
-	$proxy_password = GUICtrlCreateInput(ReadSetting( "Proxy", "proxy_password"), 150, 184, 160, 22, $WS_GROUP+$ES_PASSWORD)
+	$label_proxy_port = GUICtrlCreateLabel("Port", 85, 203, 71, 21, $WS_GROUP)
+
+	$proxy_port_input = GUICtrlCreateInput(ReadSetting( "Proxy", "proxy_port"), 150, 203, 49, 22, $WS_GROUP+$ES_NUMBER)
+
+	$label_proxy_user = GUICtrlCreateLabel("Username", 85, 233, 84, 21, $WS_GROUP)
+
+	$proxy_username_input = GUICtrlCreateInput(ReadSetting( "Proxy", "proxy_username"), 150, 233, 160, 22, $WS_GROUP)
+
+	$label_proxy_password = GUICtrlCreateLabel("Password", 85, 269, 82, 21, $WS_GROUP)
+
+	$proxy_password_input = GUICtrlCreateInput(ReadSetting( "Proxy", "proxy_password"), 150, 269, 160, 22, $WS_GROUP+$ES_PASSWORD)
 
 
-	$group_status = GUICtrlCreateGroup("Status", 22, 263, 353, 65)
+	$group_status = GUICtrlCreateGroup("Status", 22, 323, 353, 65)
 	GUICtrlSetFont(-1, 10)
-	$test_proxy = GUICtrlCreateButton("Test settings", 204, 288, 161, 25, $WS_GROUP)
-	$proxy_status = GUICtrlCreateLabel("Not tested yet", 32, 291, 164, 26,$WS_GROUP)
+	$test_proxy = GUICtrlCreateButton("Test settings", 204, 348, 161, 25, $WS_GROUP)
+	$proxy_status = GUICtrlCreateLabel("Not tested yet", 32, 351, 164, 26,$WS_GROUP)
 	GUICtrlSetColor($proxy_status,0x007f00)
 	GUICtrlSetFont($proxy_status, 12)
 
 
+;RegRead("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings", "ProxyEnable")
 
 
 	#cs
@@ -148,8 +166,6 @@ Func GUI_Options_Menu()
 				;GuiSetState($GUI_SHOW,$CONTROL_GUI)
 				Opt("GUIOnEventMode", 1)
 				Return ""
-			Case $test_proxy
-				Check_Internet_Status()
 			Case $ok_button
 				WriteAdvancedSettings()
 				GUIDelete($main_menu)
@@ -174,15 +190,14 @@ Func GUI_Options_Menu()
 				Checkbox_To_Setting($all_release,"Updates","check_for_beta_versions")
 			Case $stable_only
 				Checkbox_To_Setting_Reverse($stable_only,"Updates","check_for_beta_versions")
-			Case $proxy_url
-				WriteSetting("Proxy", "proxy_url",GUICtrlRead($proxy_url))
-			Case $proxy_port
-				WriteSetting("Proxy", "proxy_port",GUICtrlRead($proxy_port))
-			Case $proxy_username
-				WriteSetting("Proxy", "proxy_username",GUICtrlRead($proxy_username))
-			Case $proxy_password
-				WriteSetting("Proxy", "proxy_password",GUICtrlRead($proxy_password))
-			Case $test_proxy
+			Case $no_proxy
+				WriteSetting("Proxy", "proxy_mode",1)
+				HttpSetProxy(1)
+			Case $system_proxy
+				WriteSetting("Proxy", "proxy_mode",0)
+				HttpSetProxy(0)
+			Case $custom_proxy
+				WriteSetting("Proxy", "proxy_mode",2)
 				; Apply proxy settings
 				$proxy_url = ReadSetting( "Proxy", "proxy_url")
 				$proxy_port = ReadSetting( "Proxy", "proxy_port")
@@ -200,11 +215,45 @@ Func GUI_Options_Menu()
 					Else
 						HttpSetProxy(2, $proxy_url)
 					EndIf
+				EndIf
+
+			Case $proxy_url_input
+				WriteSetting("Proxy", "proxy_url",GUICtrlRead($proxy_url_input))
+			Case $proxy_port_input
+				WriteSetting("Proxy", "proxy_port",GUICtrlRead($proxy_port_input))
+			Case $proxy_username_input
+				WriteSetting("Proxy", "proxy_username",GUICtrlRead($proxy_username_input))
+			Case $proxy_password_input
+				WriteSetting("Proxy", "proxy_password",GUICtrlRead($proxy_password_input))
+			Case $test_proxy
+
+				if GuiCtrlRead($custom_proxy) = $GUI_CHECKED Then
+					WriteSetting("Proxy", "proxy_mode",2)
+					; Apply proxy settings
+					$proxy_url = ReadSetting( "Proxy", "proxy_url")
+					$proxy_port = ReadSetting( "Proxy", "proxy_port")
+					$proxy_username = ReadSetting( "Proxy", "proxy_username")
+					$proxy_password = ReadSetting( "Proxy", "proxy_password")
+
+					If $proxy_url <> "" AND  $proxy_port <> "" Then
+						$proxy_url &= ":" & $proxy_port
+						If $proxy_username <> "" Then
+							If $proxy_password <> "" Then
+								HttpSetProxy(2, $proxy_url, $proxy_username, $proxy_password)
+							Else
+								HttpSetProxy(2, $proxy_url, $proxy_username)
+							EndIf
+						Else
+							HttpSetProxy(2, $proxy_url)
+						EndIf
+					EndIf
+				Elseif GuiCtrlRead($custom_proxy) = $GUI_CHECKED Then
+					WriteSetting("Proxy", "proxy_mode",1)
+					HttpSetProxy(1)
 				Else
+					WriteSetting("Proxy", "proxy_mode",0)
 					HttpSetProxy(0)
 				EndIf
-				GUICtrlSetColor($proxy_status,0x007f00)
-				GUICtrlSetData($proxy_status,"Testing")
 				Check_Internet_Status()
 
 		EndSwitch
@@ -338,7 +387,9 @@ Func Check_Internet_Status()
 EndFunc
 
 Func OnlineStatus()
-	$inet = InetGet("http://www.google.com", @TempDir & "\connectivity-test.tmp",3,0)
+	GUICtrlSetColor($proxy_status,0xFF9104)
+	GUICtrlSetData($proxy_status,"Testing")
+	$inet = InetGet("http://www.google.com", @TempDir & "\connectivity-test.tmp",1,0)
     If @error OR $inet=0 Then
 		return 0
     Else

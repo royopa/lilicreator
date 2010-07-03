@@ -27,7 +27,8 @@ Global $aMessageQueue[1]=[0]
 Global $last_config, $last_report,$sErrorMsg
 Global  $last_actions[30] = [ "" , "" , "" ,"" , "" , "" ,"" , "" , "" , "","" , "" , "" ,"" , "" , "" ,"" , "" , "" , "","" , "" , "" ,"" , "" , "" ,"" , "" , "" , "" ]
 Global $sending_status
-Global $current_logfile = @ScriptDir & "\logs\crash-report-" & @MDAY & "-" & @MON & "-" & @YEAR & " (" & @HOUR & "h" & @MIN & "s" & @SEC & ").log"
+Global $current_crashlog = @ScriptDir & "\logs\crash-report-" & @MDAY & "-" & @MON & "-" & @YEAR & " (" & @HOUR & "h" & @MIN & "s" & @SEC & ").log"
+Global $current_logfile = @ScriptDir & "\logs\" & @MDAY & "-" & @MON & "-" & @YEAR&".log"
 Global $user_system
 
 Global $oMyRet[2]
@@ -35,6 +36,30 @@ Global $oMyError,$crash_detected=0
 
 Global $iPID
 $lang = _Language()
+
+; Apply proxy settings
+$proxy_mode = ReadSetting( "Proxy", "proxy_mode")
+$proxy_url = ReadSetting( "Proxy", "proxy_url")
+$proxy_port = ReadSetting( "Proxy", "proxy_port")
+$proxy_username = ReadSetting( "Proxy", "proxy_username")
+$proxy_password = ReadSetting( "Proxy", "proxy_password")
+
+if $proxy_mode =2 Then
+	If $proxy_url <> "" AND  $proxy_port <> "" Then
+		$proxy_url &= ":" & $proxy_port
+		If $proxy_username <> "" Then
+			If $proxy_password <> "" Then
+				HttpSetProxy(2, $proxy_url, $proxy_username, $proxy_password)
+			Else
+				HttpSetProxy(2, $proxy_url, $proxy_username)
+			EndIf
+		Else
+			HttpSetProxy(2, $proxy_url)
+		EndIf
+	EndIf
+Else
+	HttpSetProxy($proxy_mode)
+EndIf
 
 ; Better if executed before running the main process
 Check_for_compatibility_list_updates()
@@ -72,7 +97,10 @@ Func _OnAutoItError()
         Sleep(1000)
     WEnd
     If $sErrorMsg="" Then Exit
-
+	; Updating last log file with crash report
+	$report=ConstructReport()
+	_FileWriteLog($current_logfile,"!!!!!! Crash Detected : "&$sErrorMsg)
+	_FileWriteLog($current_crashlog,$report)
     GUICreate("LiLi USB Creator Automatic Bug Report",400,90,Default,Default,-2134376448);BitOR($WS_CAPTION,$WS_POPUP,$WS_SYSMENU)
     GUISetBkColor(0xE0DFE2)
         GUICtrlSetBkColor(GUICtrlCreateLabel("",1,1,398,1),0x41689E)
@@ -153,9 +181,6 @@ Func _OnAutoItError()
 		EndIf
 
 	Endif
-
-	; Updating last log file with crash report
-	_FileWriteLog($current_logfile,ConstructReport())
 
     While 1
 		Sleep(60000)
@@ -249,15 +274,15 @@ Func SendBug()
 EndFunc
 
 Func ConstructReport()
-	$temp = Translate("Error") & " :" & @CRLF & $sErrorMsg &  @CRLF & Translate("30 " & "dernières actions") & _
+	$temp = Translate("Error") & " :" & @CRLF & $sErrorMsg &  @CRLF & Translate("30 Last Actions") & _
 	": " & @CRLF & _ArrayToString($last_actions,@CRLF & "--> ") & @CRLF & $last_config  & @CRLF & _
 	Translate("Unique anonymous ID") &  ": " & ReadSetting( "General", "unique_ID")
 	Return $temp
 EndFunc
 
 Func ConstructHTMLReport()
-	$temp = "<html><head></head><body><center><h3>Report ID : "& ReadSetting( "General", "unique_ID") & "</h3></center><br/><h3><u>Erreur :</u></h3><br/><pre>" & $sErrorMsg & "</pre><br/><h3><u>30 dernières actions : </u></h3><pre>" & _
-	_ArrayToString($last_actions,@CRLF & "--> ")  &  "</pre><br/><h3><u>Configuration Système :</u></h3><pre>" & $last_config  & "</pre></body></html>"
+	$temp = "<html><head></head><body><center><h3>Report ID : "& ReadSetting( "General", "unique_ID") & "</h3></center><br/><h3><u>Error :</u></h3><br/><pre>" & $sErrorMsg & "</pre><br/><h3><u>30 last actions : </u></h3><pre>" & _
+	_ArrayToString($last_actions,@CRLF & "--> ")  &  "</pre><br/><h3><u>System configuration :</u></h3><pre>" & $last_config  & "</pre></body></html>"
 	Return $temp
 EndFunc
 
@@ -271,8 +296,8 @@ Func _ReceiveReport($report)
 	ElseIf StringLeft($report, 6) = "stats-" Then
 		$stats = StringTrimLeft($report, 6)
 		InetGet("http://www.linuxliveusb.com/stats/?"&$stats,"",1,1)
-	ElseIf StringLeft($report, 8) = "logfile-" Then
-		$current_logfile = StringTrimLeft($report, 6)
+	;ElseIf StringLeft($report, 8) = "logfile-" Then
+	;	$current_logfile = StringTrimLeft($report, 6)
 	ElseIf StringLeft($report, 8) = "distrib-" Then
 		$distrib= StringTrimLeft($report, 8)
 		InetGet("http://www.linuxliveusb.com/stats/?distrib="&$distrib&"&id="&$anonymous_id,"",1,1)

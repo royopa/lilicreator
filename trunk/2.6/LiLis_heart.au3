@@ -46,15 +46,14 @@ Func Clean_old_installs($drive_letter,$release_in_list)
 	SendReport("Start-Clean_old_installs ( Drive : "& $drive_letter &" - Release : "& $release_in_list &" )")
 	UpdateStatus("Cleaning previous installations ( 2min )")
 
-	if AutoCleanPreviousInstall($drive_letter)=1 Then
-		SendReport(" -> Autocleaning successful")
+	if SmartCleanPreviousInstall($drive_letter)=1 Then
+		SendReport("End-Clean_old_installs -> Autocleaning successful")
 		Return 1
 	Else
-		SendReport(" -> Autocleaning not used, now using the old alertnative method")
+		SendReport("IN-Clean_old_installs -> Autocleaning not working, now using the old alertnative method")
 	EndIf
 
 
-	DeleteFilesInDir($files_in_source)
 	If FileExists($drive_letter & "\autorun.inf") AND NOT FileExists($drive_letter & "\autorun.inf.orig") Then FileMove($drive_letter & "\autorun.inf",$drive_letter & "\autorun.inf.orig",1)
 	FileDelete2($drive_letter & "\autorun.inf")
 	FileDelete2($drive_letter & "\lili.ico")
@@ -446,21 +445,23 @@ Func Rename_and_move_files($drive_letter, $release_in_list)
 		isolinux2syslinux($syslinux_path)
 
 
-	; Fix for Parted Magic 4.6 & 4.9 & 4.10
-	If ReleaseGetVariant($release_in_list) ="pmagic" Then
-		DirMove( $drive_letter & "\pmagic-usb-4.6\boot", $drive_letter,1)
-		DirMove( $drive_letter & "\pmagic-usb-4.6\pmagic", $drive_letter,1)
-		FileMove($drive_letter & "\pmagic-usb-4.6\readme.txt",$drive_letter,1)
-		FileMove( $drive_letter & "\PMAGIC\MODULES\PMAGIC_4_6.SQFS", $drive_letter & "\PMAGIC\MODULES\pmagic-4.6.sqfs",1)
-		FileDelete( $drive_letter & "\pmagic-usb-4.6\")
+	; Fix for Parted Magic > 4.6 (support is discontinued for 4.6)
+	If ReleaseGetVariant($release_in_list) ="pmagic"  Then
+		$search = FileFindFirstFile($drive_letter&"\pmagic-usb-*")
 
-		DirMove( $drive_letter & "\pmagic-usb-4.9\boot", $drive_letter,1)
-		DirMove( $drive_letter & "\pmagic-usb-4.9\pmagic", $drive_letter,1)
-		FileDelete( $drive_letter & "\pmagic-usb-4.9\")
+		; Check if the search was successful
+		If $search <> -1 Then
+			$pmagic_folder = FileFindNextFile($search)
+			SendReport("IN-Rename_and_move_files : Found pmagic folder (automatic) = "&$pmagic_folder)
+		Else
+			$pmagic_folder="pmagic-usb-"&ReleaseGetVariantVersion($release_in_list)
+			SendReport("IN-Rename_and_move_files : Found pmagic folder (manual)= "&$pmagic_folder)
+		EndIf
 
-		DirMove( $drive_letter & "\pmagic-usb-4.10\boot", $drive_letter,1)
-		DirMove( $drive_letter & "\pmagic-usb-4.10\pmagic", $drive_letter,1)
-		FileDelete( $drive_letter & "\pmagic-usb-4.10\")
+		DirMove( $drive_letter & "\"&$pmagic_folder&"\boot", $drive_letter,1)
+		DirMove( $drive_letter & "\"&$pmagic_folder&"\pmagic", $drive_letter,1)
+		FileSetAttrib($drive_letter & "\"&$pmagic_folder, "-R-A-H", 1)
+		DirRemove( $drive_letter & "\"&$pmagic_folder&"\",1)
 	EndIf
 
 	; fix for bootlogo too big of PCLinuxOS 2010
@@ -542,6 +543,8 @@ Func Hide_live_files($drive_letter)
 	HideFile($drive_letter & "\autorun.bak")
 	HideFile($drive_letter & "\lili.ico")
 	HideFile($drive_letter & "\autorun.inf")
+
+	HideFile($drive_letter & "\" & $autoclean_settings)
 
 	; Fix for Parted Magic 4.6
 	If ReleaseGetVariant($release_number)="pmagic" Then
@@ -850,7 +853,6 @@ EndFunc
 #cs
 	Description : Creates The uninstaller
 	Input :
-		$list_of_files = List of files in the ISO
 		$drive_letter = Letter of the drive (pre-formated like "E:" )
 		$release_in_list = number of the release in the compatibility list (-1 if not present)
 	Output :
@@ -858,44 +860,104 @@ EndFunc
 		1 = error see @error
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-Func CreateUninstaller($list_of_files,$drive_letter,$release_in_list)
+Func CreateUninstaller($drive_letter,$release_in_list)
 	SendReport("Start-CreateUninstaller")
-
+	Global $files_in_source
 	$codename = ReleaseGetCodename($release_in_list)
 	$description = ReleaseGetDescription($release_in_list)
 
-	if (Ubound($list_of_files)=0) Then
+	if (Ubound($files_in_source)=0) Then
 		SendReport("End-CreateUninstaller : list of files is not an array !")
 		return "ERROR"
 	EndIf
 
-	Local $total=0
-	_ArrayAdd($list_of_files,"lili.ico")
-	_ArrayAdd($list_of_files,"autorun.inf")
-	_ArrayAdd($list_of_files,"autorun.inf.orig")
-	_ArrayAdd($list_of_files,"ldlinux.sys")
-	_ArrayAdd($list_of_files,"syslinux")
-	_ArrayAdd($list_of_files,"casper-rw")
-	_ArrayAdd($list_of_files,$autoclean_settings)
-	_ArrayAdd($list_of_files,$autoclean_file)
+	AddToSmartClean($drive_letter,"lili.ico")
+	AddToSmartClean($drive_letter,"autorun.inf")
+	AddToSmartClean($drive_letter,"autorun.inf.orig")
+	AddToSmartClean($drive_letter,"ldlinux.sys")
+	AddToSmartClean($drive_letter,"syslinux")
+	AddToSmartClean($drive_letter,"casper-rw")
+	if ReleaseGetVariant($release_in_list)="pmagic" Then
+		AddToSmartClean($drive_letter,"pmagic")
+		AddToSmartClean($drive_letter,"boot")
+	EndIf
+
+	_ArrayAdd($files_in_source,$autoclean_file)
 
 	$handle=FileOpen($drive_letter&"\"&$autoclean_file,2)
 
-	For $file In $list_of_files
+	$intro="@echo off" _
+	&@CRLF&"rem This batch file was created by Thibaut Lauziere for LinuxLive USB Creator" _
+	&@CRLF&"rem More infos available at www.linuxliveusb.com" _
+	&@CRLF&"cls" _
+	&@CRLF&"echo -----------------------------------------------------------------" _
+	&@CRLF&"echo ----------- Welcome to LinuxLive Uninstaller --------------------" _
+	&@CRLF&"echo -----------------------------------------------------------------" _
+	&@CRLF&"echo." _
+	&@CRLF&"echo." _
+	&@CRLF&"echo." _
+	&@CRLF&"echo --------------------- WARNING! ---------------------------------" _
+	&@CRLF&"echo." _
+	&@CRLF&"echo This batch file will permanently remove LinuxLive from your key" _
+	&@CRLF&"echo." _
+	&@CRLF&"echo -----------------------------------------------------------------" _
+	&@CRLF&"echo." _
+	&@CRLF&"echo." _
+	&@CRLF&'choice /c yn /M "Are you sure you want to remove Linux Live from your key"' _
+	&@CRLF&"if errorlevel 2 goto End" _
+	&@CRLF&"cls" _
+	&@CRLF&"echo -----------------------------------------------------------------" _
+	&@CRLF&"echo -----------        Removal of LinuxLive      --------------------" _
+	&@CRLF&"echo -----------------------------------------------------------------" _
+	&@CRLF&"echo."&@CRLF
+	FileWrite($handle,$intro)
+
+	Local $total=0
+	For $file In $files_in_source
 		$current_file=$drive_letter & "\" & $file
 		$size_to_add=0
 		If isDir($current_file) Then
 			$size_to_add=DirGetSize($current_file)
 			IniWrite($drive_letter&"\"&$autoclean_settings,"Folders",$file,$size_to_add)
+			FileWriteLine($handle,"echo Removing folder : "&$file )
 			FileWriteLine($handle,"RMDIR /S /Q "&$file)
 		Elseif FileExists($current_file) Then
 			$size_to_add=FileGetSize($current_file)
 			IniWrite($drive_letter&"\"&$autoclean_settings,"Files",$file,$size_to_add)
-			FileWriteLine($handle,"ATTRIB -H -S "&$file)
-			FileWriteLine($handle,"DEL /F /Q "&$file)
+
+			; The Auto-Clean batch needs to be removed at the end
+			if $file <> $autoclean_file Then
+				FileWriteLine($handle,"echo Removing file : "&$file )
+				FileWriteLine($handle,"ATTRIB -H -S "&$file)
+				FileWriteLine($handle,"DEL /F /Q "&$file)
+			EndIf
 		EndIf
 		$total+=$size_to_add
 	Next
+
+	$outro="cls" _
+	&@CRLF&"echo -----------------------------------------------------------------" _
+	&@CRLF&"echo." _
+	&@CRLF&"echo." _
+	&@CRLF&"echo." _
+	&@CRLF&"echo." _
+	&@CRLF&"echo." _
+	&@CRLF&"echo." _
+	&@CRLF&"echo --------- LinuxLive USB has been removed from your key  ----------" _
+	&@CRLF&"echo." _
+	&@CRLF&"echo." _
+	&@CRLF&"echo." _
+	&@CRLF&"echo." _
+	&@CRLF&"echo." _
+	&@CRLF&"echo." _
+	&@CRLF&"echo -----------------------------------------------------------------" _
+	&@CRLF&"pause" _
+	&@CRLF&"Removing uninstaller : "&$autoclean_file _
+	&@CRLF&"ATTRIB -H -S "&$autoclean_file _
+	&@CRLF&"DEL /F /Q "&$autoclean_file _
+	&@CRLF&":End"
+
+	FileWrite($handle,$outro)
 	FileCLose($handle)
 
 	IniWrite($drive_letter&"\"&$autoclean_settings,"General","Total_Size",$total)

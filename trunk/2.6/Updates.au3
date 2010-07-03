@@ -26,11 +26,11 @@ Func Check_for_updates()
 		; if Beta version check for beta version update too
 		if (ReadSetting( "Updates", "check_for_beta_versions") = "yes") Then $check_result_beta = _INetGetSource($check_updates_url & "?beta-version")
 
-		if (ReadSetting( "Updates", "check_for_beta_versions") = "yes") AND VersionCompare($check_result_beta, $software_version) = 1 Then
+		if (ReadSetting( "Updates", "check_for_beta_versions") = "yes") AND VersionCompare($check_result_beta, $software_version) = 1  And Not $check_result_beta = 0 And Not $check_result_beta ="" Then
 			; New beta version available
 			$return = MsgBox(68, Translate("There is a new Beta version available"), Translate("Your LiLi's version is not up to date.") & @CRLF & @CRLF & Translate("Last beta version is") & " : " & $check_result_beta & @CRLF & Translate("Your version is") & " : " & $software_version & @CRLF & @CRLF & Translate("Do want to download it ?"))
 			If $return = 6 Then ShellExecute("http://www.linuxliveusb.com/")
-		ElseIf Not $check_result = 0 And VersionCompare($check_result, $software_version) = 1 Then
+		ElseIf Not $check_result = 0 And Not $check_result ="" And VersionCompare($check_result, $software_version) = 1 Then
 			; New stable version available
 			$return = MsgBox(68, Translate("There is a new version available"), Translate("Your LiLi's version is not up to date.") & @CRLF & @CRLF & Translate("Last version is") & " : " & $check_result & @CRLF & Translate("Your version is") & " : " & $software_version & @CRLF & @CRLF & Translate("Do want to download it ?"))
 			If $return = 6 Then ShellExecute("http://www.linuxliveusb.com/")
