@@ -88,6 +88,37 @@ $boot_text="display boot.msg" _
 	SendReport("End-TinyCore_WriteTextCFG")
 EndFunc
 
+Func Sidux_WriteTextCFG($selected_drive)
+	SendReport("Start-Sidux_WriteTextCFG ( Drive : " & $selected_drive & " )")
+	Local $boot_text = ""
+	if FileExists($selected_drive&"\boot\vmlinuz0.686") Then
+		$arch="686"
+	Else
+		$arch="amd"
+	EndIf
+	$boot_text="UI gfxboot bootlogo"
+
+	if FileExists($selected_drive&"\sidux\sidux-rw") Then
+		$boot_text &=@LF & "LABEL " & Translate("Persistent Mode") _
+		& @LF & "	KERNEL /boot/vmlinuz0."&$arch _
+		& @LF & "	APPEND boot=fll persist=/sidux/sidux-rw" _
+		& @LF & "	INITRD /boot/initrd0."&$arch
+	EndIf
+
+	$boot_text&= @LF & "LABEL " & Translate("Live Mode") _
+	& @LF & "	KERNEL /boot/vmlinuz0."&$arch _
+	& @LF & "	APPEND boot=fll " _
+	& @LF & "	INITRD /boot/initrd0."&$arch _
+	& @LF & "LABEL Boot_from_Hard_Disk" _
+	& @LF & "	localboot 0x80" _
+	& @LF & "LABEL "& Translate("Memory Test") _
+	& @LF & "	KERNEL /boot/memtest"
+	$file = FileOpen($selected_drive & "\boot\syslinux\syslinux.cfg", 2)
+	FileWrite($file, $boot_text)
+	FileClose($file)
+	SendReport("End-Sidux_WriteTextCFG")
+EndFunc
+
 ; Modify boot menu for Arch Linux (applied to every default Linux) but will modify only if Arch Linux detected
 Func Default_WriteTextCFG($selected_drive)
 	SendReport("Start-Default_WriteTextCFG ( Drive : " & $selected_drive & " )")
@@ -241,12 +272,14 @@ Func AutomaticPreseed($selected_drive,$preseed_variant)
 EndFunc
 
 Func Ubuntu_BootMenu($initrd_file,$seed_name)
-	Local $kbd_code
+	Local $kbd_code,$boot_text=""
 	$kbd_code = GetKbdCode()
-	$boot_text = @LF& "label persist" & @LF & "menu label ^" & Translate("Persistent Mode") _
-		& @LF & "  kernel /casper/vmlinuz" _
-		& @LF & "  append  " & $kbd_code & "noprompt cdrom-detect/try-usb=true persistent file=/cdrom/preseed/" & $seed_name & ".seed boot=casper initrd=/casper/" & $initrd_file & " splash--" _
-		& @LF & "label live" _
+	If FileExists($selected_drive&"\casper-rw") Then
+		$boot_text = @LF& "label persist" & @LF & "menu label ^" & Translate("Persistent Mode") _
+			& @LF & "  kernel /casper/vmlinuz" _
+			& @LF & "  append  " & $kbd_code & "noprompt cdrom-detect/try-usb=true persistent file=/cdrom/preseed/" & $seed_name & ".seed boot=casper initrd=/casper/" & $initrd_file & " splash--"
+	EndIf
+	$boot_text&= @LF & "label live" _
 		& @LF & "  menu label ^" & Translate("Live Mode") _
 		& @LF & "  kernel /casper/vmlinuz" _
 		& @LF & "  append   " & $kbd_code & "noprompt cdrom-detect/try-usb=true file=/cdrom/preseed/" & $seed_name  & ".seed boot=casper initrd=/casper/" & $initrd_file & " splash--" _
@@ -283,12 +316,15 @@ Func Fedora_WriteTextCFG($drive_letter)
 			 & @LF & "menu color timeout 0 #ffffffff #00000000" _
 			 & @LF & "menu color cmdline 0 #ffffffff #00000000" _
 			 & @LF & "menu hidden" _
-			 & @LF & "menu hiddenrow 5" _
-			 & @LF & "label linux1" _
+			 & @LF & "menu hiddenrow 5"
+		If FileExists($drive_letter & '\LiveOS\overlay-' & StringReplace(DriveGetLabel($drive_letter)," ", "_") & '-' & $uuid) Then
+			$boot_text&= @LF & "label persist" _
 			 & @LF & "  menu label " & Translate("Live Mode") _
 			 & @LF & "  kernel vmlinuz0" _
-			 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat ro liveimg quiet selinux=0 rhgb  rd_NO_LUKS rd_NO_MD noiswmd" _
-			 & @LF & "label linux0" _
+			 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat ro liveimg quiet selinux=0 rhgb  rd_NO_LUKS rd_NO_MD noiswmd"
+		 EndIf
+
+			 $boot_text&= @LF & "label live" _
 			 & @LF & "  menu label " & Translate("Persistent Mode") _
 			 & @LF & "  kernel vmlinuz0" _
 			 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat rw liveimg overlay=UUID=" & $uuid & " quiet selinux=0 rhgb  rd_NO_LUKS rd_NO_MD noiswmd" _
@@ -330,16 +366,24 @@ Func CentOS_WriteTextCFG($drive_letter)
 			 & @LF & "menu color timeout 0 #ffffffff #00000000" _
 			 & @LF & "menu color cmdline 0 #ffffffff #00000000" _
 			 & @LF & "menu hidden" _
-			 & @LF & "menu hiddenrow 5" _
-			 & @LF & "label linux0" _
+			 & @LF & "menu hiddenrow 5"
+
+	If FileExists($drive_letter & '\LiveOS\overlay-' & StringReplace(DriveGetLabel($drive_letter)," ", "_") & '-' & $uuid) Then
+			 $boot_text&= @LF & "label persist" _
+			 & @LF & "  menu label " & Translate("Persistent Mode") _
+			 & @LF & "  kernel vmlinuz0" _
+			 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat rw liveimg quiet overlay=UUID="&$uuid
+	EndIf
+
+  $boot_text&= @LF & "label live" _
 			 & @LF & "  menu label " & Translate("Live Mode") _
 			 & @LF & "  kernel vmlinuz0" _
 			 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat rw liveimg quiet " _
 			 & @LF & "menu default" _
-			 & @LF & "label check0" _
-			 & @LF & "  menu label " & Translate("File Integrity Check") _
-			 & @LF & "  kernel vmlinuz0" _
-			 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat rw liveimg quiet check" _
+			 & @LF & "label installer" _
+			 & @LF & "  menu label Network Installation" _
+			 & @LF & "  kernel vminst" _
+			 & @LF & "  append initrd=install.img text" _
 			 & @LF & "label memtest" _
 			 & @LF & " menu label " & Translate("Memory Test") _
 			 & @LF & "  kernel memtest" _

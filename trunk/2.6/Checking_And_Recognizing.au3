@@ -312,6 +312,9 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "ylmf") Then
 				; Ylmf OS
 				$release_number = _ArraySearch($codenames_list, "ylmf-last")
+			ElseIf StringInStr($shortname, "archlinux") Then
+				; Arch Linux
+				$release_number = _ArraySearch($codenames_list, "archlinux-last")
 			ElseIf StringInStr($shortname, "livehacking") Then
 				; Live Hacking CD
 				if StringInStr($shortname, "mini") Then
