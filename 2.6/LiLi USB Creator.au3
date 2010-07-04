@@ -171,8 +171,6 @@ Else
 	Exit
 EndIf
 
-$begin = TimerInit()
-
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////// Includes     															  ///////////////////////////////////////////////////
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -225,10 +223,6 @@ $begin = TimerInit()
 ; ///////////////////////////////// Proxy settings                                                            ///////////////////////////////////////////////////
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-$dif = TimerDiff($begin)
-ConsoleWrite("Timer 2 : "&Round($dif))
-$begin = TimerInit()
-
 ; Apply proxy settings
 $proxy_mode = ReadSetting( "Proxy", "proxy_mode")
 $proxy_url = ReadSetting( "Proxy", "proxy_url")
@@ -253,32 +247,16 @@ Else
 	HttpSetProxy($proxy_mode)
 EndIf
 
-$dif = TimerDiff($begin)
-SendReport("Timer 3 : "&Round($dif))
-$begin = TimerInit()
-
 ; Initializing log file for verbose logging
 If ReadSetting("General", "verbose_logging") = "yes" Then InitLog()
 
 _SetAsReceiver("lili-main")
 _SetReceiverFunction("ReceiveFromSecondary")
 
-$dif = TimerDiff($begin)
-SendReport("Timer 4 : "&Round($dif))
-$begin = TimerInit()
-
 SendReport("Starting LiLi USB Creator " & $software_version)
-
-$dif = TimerDiff($begin)
-SendReport("Timer 5 : "&Round($dif))
-$begin = TimerInit()
 
 ; initialize list of compatible releases (load the compatibility_list.ini)
 Get_Compatibility_List()
-
-$dif = TimerDiff($begin)
-SendReport("Timer 6 : "&Round($dif))
-$begin = TimerInit()
 
 _GDIPlus_Startup()
 
@@ -303,10 +281,6 @@ $REFRESH_PNG = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\refresh.png")
 $BACK_PNG = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\back.png")
 $BACK_HOVER_PNG = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\back_hover.png")
 $PNG_GUI = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\GUI.png")
-
-$dif = TimerDiff($begin)
-SendReport("Timer 7 : "&Round($dif))
-$begin = TimerInit()
 
 SendReport("Creating GUI")
 
@@ -394,10 +368,6 @@ $HELP_STEP2 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 
 $HELP_STEP3 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335 + $offsetx0, 339 + $offsety0, 20, 20)
 $HELP_STEP4 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335 + $offsetx0, 451 + $offsety0, 20, 20)
 $HELP_STEP5 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335 + $offsetx0, 565 + $offsety0, 20, 20)
-
-$dif = TimerDiff($begin)
-SendReport("Timer 8 : "&Round($dif))
-$begin = TimerInit()
 
 ; Put the state for the first 3 steps
 Step1_Check("bad")
@@ -514,37 +484,17 @@ GUICtrlSetFont($label_step5_status, 9, 800, 0, "Arial")
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
 
-$dif = TimerDiff($begin)
-SendReport("Timer 9 : "&Round($dif))
-$begin = TimerInit()
-
 ; Filling the combo box with drive list
 
 $combo = GUICtrlCreateCombo("-> " & Translate("Choose a USB Key"), 90 + $offsetx0, 145 + $offsety0, 200, -1, 3)
 GUICtrlSetOnEvent(-1, "GUI_Choose_Drive")
 Refresh_DriveList()
 
-$dif = TimerDiff($begin)
-SendReport("Timer 10 : "&Round($dif))
-$begin = TimerInit()
-
 ; Sending anonymous statistics
 SendStats()
 SendReport(LogSystemConfig())
 
-$dif = TimerDiff($begin)
-SendReport("Timer 11 : "&Round($dif))
-$begin = TimerInit()
-
-$dif = TimerDiff($begin)
-SendReport("Timer 12 : "&Round($dif))
-$begin = TimerInit()
-
 $prefetched_linux_list = Print_For_ComboBox()
-
-$dif = TimerDiff($begin)
-SendReport("Timer 13 : "&Round($dif))
-$begin = TimerInit()
 
 ; Hovering Buttons
 AdlibRegister("Control_Hover", 150)
@@ -553,16 +503,8 @@ GUIRegisterMsg($WM_PAINT, "DrawAll")
 WinActivate($for_winactivate)
 GUISetState($GUI_SHOW, $CONTROL_GUI)
 
-$dif = TimerDiff($begin)
-SendReport("Timer 15 : "&Round($dif))
-$begin = TimerInit()
-
 ; Starting to check for updates in the secondary LiLi's process
 SendReport("check_for_updates")
-
-$dif = TimerDiff($begin)
-SendReport("Timer 16 : "&Round($dif))
-$begin = TimerInit()
 
 Func MoveGUI($hW)
 	_SendMessage($GUI, $WM_SYSCOMMAND, 0xF012, 0)

@@ -794,43 +794,43 @@ Func GUI_Launch_Creation()
 		ElseIf $file_set_mode = "folder" Then
 			Create_Stick_From_CD($selected_drive, $file_set)
 		ElseIf $file_set_mode = "img" Then
-			Create_Stick_From_IMG($selected_drive, $file_set)
+			if Create_Stick_From_IMG($selected_drive, $file_set)=-1 Then Return -1
 		EndIf
 
 		; If it's not an IMG file, we have to do all these things :
 		If $file_set_mode <> "img" Then
 			Rename_and_move_files($selected_drive, $release_number)
 
-			Create_boot_menu($selected_drive, $release_number)
-
 			Create_persistence_file($selected_drive, $release_number, GUICtrlRead($slider_visual), GUICtrlRead($hide_files))
+
+			Create_boot_menu($selected_drive, $release_number)
 
 			Install_boot_sectors($selected_drive,$release_number, GUICtrlRead($hide_files))
 
 			; Create Autorun menu
 			Create_autorun($selected_drive, $release_number)
+
+			CreateUninstaller($selected_drive,$release_number)
+
+			If (GUICtrlRead($hide_files) == $GUI_CHECKED) Then Hide_live_files($selected_drive)
+
+			If GUICtrlRead($virtualbox) == $GUI_CHECKED And $virtualbox_check >= 1 Then
+
+				If $virtualbox_check <> 2 Then Check_virtualbox_download()
+
+				; maybe check downloaded file ?
+
+				; Next step : uncompressing vbox on the key
+				Uncompress_virtualbox_on_key($selected_drive)
+
+				UpdateStatus("Applying VirtualBox settings")
+				Setup_RAM_for_VM($selected_drive,$release_number)
+
+				;Run($selected_drive & "\Portable-VirtualBox\Launch_usb.exe", @ScriptDir, @SW_HIDE)
+
+			EndIf
+
 		EndIf
-		CreateUninstaller($selected_drive,$release_number)
-
-		If (GUICtrlRead($hide_files) == $GUI_CHECKED) Then Hide_live_files($selected_drive)
-
-		If GUICtrlRead($virtualbox) == $GUI_CHECKED And $virtualbox_check >= 1 Then
-
-			If $virtualbox_check <> 2 Then Check_virtualbox_download()
-
-			; maybe check downloaded file ?
-
-			; Next step : uncompressing vbox on the key
-			Uncompress_virtualbox_on_key($selected_drive)
-
-			UpdateStatus("Applying VirtualBox settings")
-			Setup_RAM_for_VM($selected_drive,$release_number)
-
-			;Run($selected_drive & "\Portable-VirtualBox\Launch_usb.exe", @ScriptDir, @SW_HIDE)
-
-		EndIf
-
-
 
 		; Creation is now done
 		UpdateStatus("Your LinuxLive key is now up and ready !")

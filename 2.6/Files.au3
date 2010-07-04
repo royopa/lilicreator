@@ -3,33 +3,31 @@
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Func DirRemove2($arg1, $arg2)
-	SendReport("Start-DirRemove2 ( " & $arg1 & " )")
-	UpdateLog("Deleting folder : " & $arg1)
+	Local $status="Deleting folder : " & $arg1
 	If DirRemove($arg1, $arg2) Then
-		UpdateLog("                   " & "Folder deleted")
+		$status &=" -> " & "Deleted successfully"
 	Else
 		If DirGetSize($arg1) >= 0 Then
-			UpdateLog("                   " & "Error while deleting")
+			$status &=" -> " & "Not deleted"
 		Else
-			UpdateLog("                   " & "Folder not found")
+			Return 1
 		EndIf
 	EndIf
-	SendReport("End-DirRemove2")
+	UpdateLog($status)
 EndFunc   ;==>DirRemove2
 
 Func FileDelete2($arg1)
-	SendReport("Start-FileDelete2 ( " & $arg1 & " )")
-	UpdateLog("Deleting file : " & $arg1)
+	Local $status="Deleting file : " & $arg1
 	If FileDelete($arg1) == 1 Then
-		UpdateLog("                   " & "File deleted")
+		$status &=" -> " & "Deleted successfully"
 	Else
 		If FileExists($arg1) Then
-			UpdateLog("                   " & "Error while deleting")
+			$status &=" -> " & "Not Deleted"
 		Else
-			UpdateLog("                   " & "File not found")
+			Return 1
 		EndIf
 	EndIf
-	SendReport("End-FileDelete2")
+	UpdateLog($status)
 EndFunc   ;==>FileDelete2
 
 Func HideFilesInDir($list_of_files)
@@ -59,46 +57,46 @@ Func DeleteFilesInDir($list_of_files)
 EndFunc   ;==>DeleteFilesInDir
 
 Func HideFile($file_or_folder)
-	SendReport("Start-HideFile ( " & $file_or_folder & " )")
-	UpdateLog("Hiding file : " & $file_or_folder)
+	Local $status="Hiding file : " & $file_or_folder
+
 	If FileSetAttrib($file_or_folder, "+SH") == 1 Then
-		UpdateLog("                   " & "File hided")
+		$status &=" -> " &"Hided successfully"
 	Else
 		If FileExists($file_or_folder) Then
-			UpdateLog("                   " & "File not found")
+			$status &=" -> " & "Not hided"
 		Else
-			UpdateLog("                   " & "Error while hiding")
+			return 1
 		EndIf
 	EndIf
-	SendReport("End-HideFile")
+	UpdateLog($status)
 EndFunc   ;==>HideFile
 
 Func ShowFile($file_or_folder)
-	SendReport("Start-HideFile ( " & $file_or_folder & " )")
-	UpdateLog("Showing file : " & $file_or_folder)
+	Local $status="Unhiding file : " & $file_or_folder
 	If FileSetAttrib($file_or_folder, "-SH") == 1 Then
-		UpdateLog("                   " & "File showed")
+		$status &=" -> " &"Unhided successfully"
 	Else
 		If FileExists($file_or_folder) Then
-			UpdateLog("                   " & "File not showed")
+			$status &=" -> " & "Not hided"
 		Else
-			UpdateLog("                   " & "Error while showing")
+			return 1
 		EndIf
 	EndIf
-	SendReport("End-HideFile")
+	UpdateLog($status)
 EndFunc   ;==>ShowFile
 
 Func FileRename($file1, $file2)
-	SendReport("Start-FileRename ( " & $file1 & "-->" & $file2 & " )")
-	UpdateLog("Renaming File : " & $file1 & "-->" & $file2)
-
+	Local $status="Renaming File : " & $file1 & " in " & $file2
 	If FileMove($file1, $file2, 1) == 1 Then
-		UpdateLog("                   File renamed successfully")
+		$status &=" -> " & "File renamed successfully"
 	Else
-		UpdateLog("                   Error : " & $file1 & " cannot be moved")
+		if FileExists($file1) Then
+			$status &=" -> " & "Not renamed"
+		Else
+			Return 1
+		EndIf
 	EndIf
-
-	SendReport("End-FileRename")
+	UpdateLog($status)
 EndFunc   ;==>FileRename
 
 Func FileCopyShell($fromFile, $tofile)
@@ -111,14 +109,17 @@ Func FileCopyShell($fromFile, $tofile)
 EndFunc   ;==>_FileCopy
 
 Func FileCopy2($arg1, $arg2)
-	SendReport("Start-_FileCopy2 ( " & $arg1 & " -> " & $arg2 & " )")
-	UpdateLog("Copying file(s) " & $arg1 & " to " & $arg2)
+	Local $status="Copying File : " & $arg1 & " to " & $arg2
 	If FileCopy($arg1, $arg2,1) Then
-		UpdateLog("                   File copied successfully")
+		$status &=" -> " &"Copied successfully"
 	Else
-		UpdateLog("                   Error : " & $arg1 & " has not been copied")
+		if FileExists($arg1) Then
+			$status &=" -> " & "Not copied"
+		Else
+			Return 1
+		EndIf
 	EndIf
-	SendReport("End-_FileCopy2")
+	UpdateLog($status)
 EndFunc   ;==>_FileCopy2
 
 Func GetPreviousInstallSizeMB($drive_letter)
@@ -155,15 +156,15 @@ Func SmartCleanPreviousInstall($drive_letter)
 	Local $array,$i
 	if FileExists($drive_letter&"\"&$autoclean_settings) Then
 		$array=IniReadSection($drive_letter&"\"&$autoclean_settings,"Files")
-		SendReport("Found "&Ubound($array)&" files to delete")
+		SendReport("Found "&(Ubound($array)-1)&" files to delete")
 		if Ubound($array) > 1 Then
 			for $i=1 To Ubound($array)-1
-				FileDelete2($drive_letter&"\"&$array[$i][0])
+				if $array[$i][0] <> $autoclean_settings Then FileDelete2($drive_letter&"\"&$array[$i][0])
 			Next
 		EndIf
 
 		$array=IniReadSection($drive_letter&"\"&$autoclean_settings,"Folders")
-		SendReport("Found "&Ubound($array)&" folders to delete")
+		SendReport("Found "&(Ubound($array)-1)&" folders to delete")
 		if Ubound($array) > 1 Then
 			for $i=1 To Ubound($array)-1
 				DirRemove2($drive_letter&"\"&$array[$i][0],1)

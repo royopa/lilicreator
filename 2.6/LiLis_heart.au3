@@ -285,10 +285,17 @@ Func Uncompress_ISO_on_key($drive_letter,$iso_file,$release_in_list)
 	If ProcessExists("7z.exe") > 0 Then ProcessClose("7z.exe")
 	UpdateStatus(Translate("Extracting ISO file on key") & " ( 5-10" & Translate("min") & " )")
 
+	#cs
 	if ReleaseGetCodename($release_in_list)="default" Then
 		$install_size=Round(FileGetSize($iso_file)/1048576)
 	Else
 		$install_size = ReleasegetInstallSize($release_number)
+	EndIf
+	#ce
+	if get_extension($iso_file)="iso" Then
+		$install_size=Round(FileGetSize($iso_file)/1048576)
+	Else
+		$install_size = ReleasegetInstallSize($release_in_list)
 	EndIf
 
 	; Just in case ...
@@ -344,7 +351,7 @@ Func Create_Stick_From_IMG($drive_letter,$img_file)
 
 	if NOT ($physical_disk_number <> "ERROR" AND $physical_disk_number >0 AND $physical_disk_number <> GiveMePhysicalDisk("C:")) Then
 		MsgBox(16,"Error","There was an error while trying to write IMG file to USB."&@CRLF&@CRLF&"Please contact debug-img@linuxliveusb.com."&@CRLF&@CRLF&"Thank You")
-		Return 0
+		Return -1
 	EndIf
 
 	$img_size= Ceiling(FileGetSize($img_file)/1048576)
@@ -369,12 +376,15 @@ Func Create_Stick_From_IMG($drive_letter,$img_file)
 		EndIf
 		Sleep(500)
 	Wend
-	UpdateLog($lines)
 	While 1
 		$errors &= StderrRead($foo)
 		If @error Then ExitLoop
 	WEnd
-	;if StringInStr($errors,"error") then MsgBox(0,"ERROR","An error occurred")
+	UpdateLog($lines&$errors)
+	if StringInStr($errors,"error") Then
+		UpdateStatus("An error occurred."&@CRLF&"Please close any application accessing your key and try again.")
+		Return -1
+	EndIf
 	SendReport("End-Create_Stick_From_IMG")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -507,6 +517,9 @@ Func Create_boot_menu($drive_letter,$release_in_list)
 		Elseif $variant = "TinyCore" Then
 			SendReport("IN-Create_boot_menu for TinyCore")
 			TinyCore_WriteTextCFG($drive_letter)
+		Elseif $variant = "Sidux" Then
+			SendReport("IN-Create_boot_menu for Sidux")
+			Sidux_WriteTextCFG($drive_letter)
 		EndIf
 	Else
 		SendReport("IN-Create_boot_menu for Regular Linux")
@@ -639,11 +652,15 @@ Func Create_persistence_file($drive_letter,$release_in_list,$persistence_size,$h
 		$distribe = ReleaseGetDistribution($release_in_list)
 		$variant = ReleaseGetVariant($release_in_list)
 
-		if StringInStr($distribe,"buntu") OR $variant="BackTrack" Then
+		if StringInStr($features,"ubuntu-persistence")<>0 Then
 			$persistence_file= $drive_letter & '\casper-rw'
-		Else
+		Elseif StringInStr($features,"sidux-persistence")<>0 Then
+			$persistence_file= $drive_letter &"\sidux\sidux-rw"
+		Elseif StringInStr($features,"fedora-persistence")<>0 Then
 			; fedora
 			$persistence_file= $drive_letter & '\LiveOS\overlay-' & StringReplace(DriveGetLabel($drive_letter)," ", "_") & '-' & Get_Disk_UUID($drive_letter)
+		Else
+			$persistence_file= $drive_letter & '\casper-rw'
 		Endif
 
 		Create_Empty_File($persistence_file, $persistence_size)
@@ -881,7 +898,7 @@ Func CreateUninstaller($drive_letter,$release_in_list)
 		AddToSmartClean($drive_letter,"pmagic")
 		AddToSmartClean($drive_letter,"boot")
 	EndIf
-
+	_ArrayAdd($files_in_source,$autoclean_settings)
 	_ArrayAdd($files_in_source,$autoclean_file)
 
 	$handle=FileOpen($drive_letter&"\"&$autoclean_file,2)
