@@ -21,10 +21,10 @@ Func Check_for_updates()
 	If $ping Then
 
 		; check for stable version update
-		$check_result = _INetGetSource($check_updates_url & "?version")
+		$check_result = BinaryToString(INetRead($check_updates_url & "?version"))
 
 		; if Beta version check for beta version update too
-		if (ReadSetting( "Updates", "check_for_beta_versions") = "yes") Then $check_result_beta = _INetGetSource($check_updates_url & "?beta-version")
+		if (ReadSetting( "Updates", "check_for_beta_versions") = "yes") Then $check_result_beta = BinaryToString(INetRead($check_updates_url & "?beta-version"))
 
 		if (ReadSetting( "Updates", "check_for_beta_versions") = "yes") AND VersionCompare($check_result_beta, $software_version) = 1  And Not $check_result_beta = 0 And Not $check_result_beta ="" Then
 			; New beta version available
@@ -46,7 +46,7 @@ Func Check_for_compatibility_list_updates()
 		$current_compatibility_list_version=IniRead($compatibility_ini, "Compatibility_List", "Version","none")
 
 		; Check the available version
-		$available_version = _InetGetSource($check_updates_url & "?last_compatibility_list_of="&$software_version)
+		$available_version = BinaryToString(INetRead($check_updates_url & "?last_compatibility_list_of="&$software_version))
 
 		; Compare with the current version
 		if VersionCodeForCompatList($current_compatibility_list_version) < VersionCodeForCompatList($available_version) Then
@@ -59,7 +59,7 @@ Func Check_for_compatibility_list_updates()
 				FileMove(@ScriptDir &"\tools\settings\new_compatibility_list.ini",$compatibility_ini,1)
 				; Send a message to the main process to force reloading the file
 				SendReportToMain("compatibility_updated")
-				$new_linux = _InetGetSource($check_updates_url & "?new-linux-since="&$current_compatibility_list_version)
+				$new_linux = BinaryToString(INetRead($check_updates_url & "?new-linux-since="&$current_compatibility_list_version))
 				MsgBox(64, "LinuxLive USB Creator", Translate("The compatibility list has been updated")&"."&@CRLF&@CRLF&Translate("These linuxes are now supported")&" :"&@CRLF&@CRLF&$new_linux);
 
 			EndIf

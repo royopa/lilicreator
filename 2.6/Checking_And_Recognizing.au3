@@ -412,6 +412,7 @@ Func Check_ISO($FileToHash)
 
 	$progress_bar = _ProgressCreate(38 + $offsetx0, 238 + $offsety0, 300, 30)
 	_ProgressSetImages($progress_bar, @ScriptDir & "\tools\img\progress_green.jpg", @ScriptDir & "\tools\img\progress_background.jpg")
+	_ProgressSetImages($progress_bar, @ScriptDir & "\tools\img\progress_green.jpg", @ScriptDir & "\tools\img\progress_background.jpg")
 	_ProgressSetFont($progress_bar, "", -1, -1, 0x000000, 0)
 	$label_step2_status = GUICtrlCreateLabel(Translate("Checking file")&" : "&path_to_name($FileToHash), 38 + $offsetx0, 231 + $offsety0 + 50, 300, 80)
 	GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)

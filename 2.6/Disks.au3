@@ -10,7 +10,7 @@ Func Refresh_DriveList()
 	$all_drives = "|-> " & Translate("Choose a USB Key") & "|"
 	If Not @error Then
 		Dim $description[100]
-		If UBound($drive_list) >= 1 Then
+		If UBound($drive_list) > 1 Then
 			For $i = 1 To $drive_list[0]
 				$label = DriveGetLabel($drive_list[$i])
 				$fs = DriveGetFileSystem($drive_list[$i])
@@ -26,7 +26,7 @@ Func Refresh_DriveList()
 	If Not @error Then
 		$all_drives &= "-> " & Translate("Hard drives") & " -------------|"
 		Dim $description[100]
-		If UBound($drive_list) >= 1 Then
+		If UBound($drive_list) > 1 Then
 			For $i = 1 To $drive_list[0]
 				$label = DriveGetLabel($drive_list[$i])
 				$fs = DriveGetFileSystem($drive_list[$i])
@@ -52,11 +52,19 @@ Func SpaceAfterLinuxLiveMB($disk)
 	SendReport("Start-SpaceAfterLinuxLiveMB (Disk: " & $disk & " )")
 	Local $install_size
 
+	#cs
 	If ReleaseGetCodename($release_number) = "default" Then
 		$install_size = Round(FileGetSize($file_set) / 1048576) + 20
 	Else
 		$install_size = ReleaseGetInstallSize($release_number)
 	EndIf
+	#ce
+	if get_extension($file_set)="iso" Then
+		$install_size = Round(FileGetSize($file_set) / 1048576)+10
+	Else
+		$install_size = ReleaseGetInstallSize($release_number)
+	EndIf
+
 
 	If GUICtrlRead($virtualbox) == $GUI_CHECKED Then
 		; Need 140MB for VirtualBox
@@ -75,9 +83,12 @@ Func SpaceAfterLinuxLiveMB($disk)
 			Return 0
 		EndIf
 	Else
-		$spacefree = DriveSpaceFree($disk) + GetPreviousInstallSizeMB($disk) - $install_size
+		$previous_installsize=GetPreviousInstallSizeMB($disk)
+		$spacefree = DriveSpaceFree($disk) + $previous_installsize - $install_size
 		If $spacefree >= 0 And $spacefree <= 3950 Then
-			Return Round($spacefree / 100, 0) * 100
+			$rounded=Round($spacefree / 100, 0) * 100
+			SendReport("End-SpaceAfterLinuxLiveGB (Free : "&$rounded&"MB - Previous install : "&$previous_installsize&"MB)")
+			Return $rounded
 		ElseIf $spacefree >= 0 And $spacefree > 3950 Then
 			SendReport("End-SpaceAfterLinuxLiveGB (Free : 3950MB )")
 			Return 3950
@@ -89,41 +100,7 @@ Func SpaceAfterLinuxLiveMB($disk)
 EndFunc   ;==>SpaceAfterLinuxLiveMB
 
 Func SpaceAfterLinuxLiveGB($disk)
-	SendReport("Start-SpaceAfterLinuxLiveGB (Disk: " & $disk & " )")
-	#cs
-	If ReleaseGetCodename($release_number) = "default" Then
-		$install_size = Round(FileGetSize($file_set) / 1048576) + 20
-	Else
-		$install_size = ReleasegetInstallSize($release_number)
-	EndIf
-
-	If GUICtrlRead($virtualbox) == $GUI_CHECKED Then
-		; Need 140MB for VirtualBox
-		$install_size = $install_size + 140
-	EndIf
-
-	If GUICtrlRead($formater) == $GUI_CHECKED Then
-		$spacefree = DriveSpaceTotal($disk) - ReleasegetInstallSize($release_number)
-		If $spacefree >= 0 Then
-			SendReport("End-SpaceAfterLinuxLiveGB (Free : " & Round($spacefree / 1024, 1) & "GB )")
-			Return Round($spacefree / 1024, 1)
-		Else
-			SendReport("End-SpaceAfterLinuxLiveGB (Free : 0GB )")
-			Return 0
-		EndIf
-	Else
-		$spacefree = DriveSpaceFree($disk) + GetPreviousInstallSizeMB($disk) - ReleasegetInstallSize($release_number)
-		If $spacefree >= 0 Then
-			SendReport("End-SpaceAfterLinuxLiveGB (Free : " & Round($spacefree / 1024, 1) & "GB )")
-			Return Round($spacefree / 1024, 1)
-		Else
-			SendReport("End-SpaceAfterLinuxLiveGB (Free : 0GB )")
-			Return 0
-		EndIf
-	EndIf
-	#ce
 	$space=Round(SpaceAfterLinuxLiveMB($disk)/1024,1)
-	SendReport("End-SpaceAfterLinuxLiveGB (Free : "&$space&"GB )")
 	Return $space
 EndFunc   ;==>SpaceAfterLinuxLiveGB
 

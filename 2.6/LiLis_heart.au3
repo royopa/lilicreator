@@ -720,18 +720,6 @@ Func Install_boot_sectors($drive_letter,$release_in_list,$hide_it)
 	$features=ReleaseGetSupportedFeatures($release_in_list)
 	if StringInStr($features,"grub") > 0 OR NOT isSyslinuxCfgPresent($drive_letter) Then
 		UpdateLog("Variant is using GRUB loader")
-		#cs
-		 ----------------- Old GRUB Mode, abandoned because the other way is easier and works better
-		Security : does not install MBR sectors if on C: OR first physical disk OR if there is an error
-		$physical_disk_number=GiveMePhysicalDisk($drive_letter)
-
-		if $physical_disk_number <> "ERROR" AND StringIsInt($physical_disk_number) AND $physical_disk_number >0 AND $physical_disk_number <> GiveMePhysicalDisk("C:") Then
-			RunWait3('"' & @ScriptDir & '\tools\grubinst.exe" -v --skip-mbr-test (hd'& $physical_disk_number&')', @ScriptDir, @SW_HIDE)
-			FileCopy2(@ScriptDir & '\tools\grldr',$drive_letter & "\grldr")
-		Else
-			UpdateStatus("Error while trying to find physical disk number")
-		EndIf
-		#ce
 
 		; Syslinux will chainload GRUB loader
 		DirCreate($drive_letter &"\syslinux")
@@ -744,7 +732,8 @@ Func Install_boot_sectors($drive_letter,$release_in_list,$hide_it)
 	EndIf
 
 	; Installing the syslinux boot sectors
-	RunWait3('"' & @ScriptDir & '\tools\syslinux.exe" -maf -d ' & $drive_letter & '\syslinux ' & $drive_letter, @ScriptDir, @SW_HIDE)
+	InstallSyslinux($drive_letter)
+	;RunWait3('"' & @ScriptDir & '\tools\syslinux.exe" -maf -d ' & $drive_letter & '\syslinux ' & $drive_letter, @ScriptDir, @SW_HIDE)
 
 	If ( $hide_it <> $GUI_CHECKED) Then ShowFile($drive_letter & '\ldlinux.sys')
 	SendReport("End-Install_boot_sectors")

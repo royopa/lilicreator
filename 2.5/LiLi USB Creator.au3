@@ -1,6 +1,7 @@
 #NoTrayIcon
 #RequireAdmin
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
+#AutoIt3Wrapper_Version=Beta
 #AutoIt3Wrapper_icon=tools\img\lili.ico
 #AutoIt3Wrapper_Compression=3
 #AutoIt3Wrapper_UseUpx=n
@@ -12,7 +13,6 @@
 #AutoIt3Wrapper_Res_SaveSource=y
 #AutoIt3Wrapper_Res_Field=AutoIt Version|%AutoItVer%
 #AutoIt3Wrapper_Res_Field=Site|http://www.linuxliveusb.com
-#AutoIt3Wrapper_Add_Constants=n
 #AutoIt3Wrapper_AU3Check_Parameters=-w 4
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 ; Author           : Thibaut Lauzière (Slÿm)
