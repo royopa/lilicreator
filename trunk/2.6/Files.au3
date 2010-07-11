@@ -31,6 +31,11 @@ Func FileDelete2($arg1)
 EndFunc   ;==>FileDelete2
 
 Func HideFilesInDir($list_of_files)
+	SendReport("Start-HideFilesInDir")
+	if (Ubound($list_of_files)=0) Then
+		SendReport("End-HideFilesInDir : list of files is not an array !")
+		return "ERROR"
+	EndIf
 	For $file In $list_of_files
 		HideFile($selected_drive & "\" & $file)
 	Next
@@ -155,7 +160,11 @@ Func SmartCleanPreviousInstall($drive_letter)
 	SendReport("Start-AutoCleanPreviousInstall for drive "&$drive_letter)
 	Local $array,$i
 	if FileExists($drive_letter&"\"&$autoclean_settings) Then
+		$installed_linux=IniRead($drive_letter&"\"&$autoclean_settings,"General","Installed_Linux","NotFound")
+		$linux_codename=IniRead($drive_letter&"\"&$autoclean_settings,"General","Installed_Linux_Codename","NotFound")
+		$install_size=GetPreviousInstallSizeMB($drive_letter)
 		$array=IniReadSection($drive_letter&"\"&$autoclean_settings,"Files")
+		SendReport("Found a previous install of "&$install_size&"MB to SmartClean : "&$installed_linux&"("&$linux_codename&")")
 		SendReport("Found "&(Ubound($array)-1)&" files to delete")
 		if Ubound($array) > 1 Then
 			for $i=1 To Ubound($array)-1
@@ -185,23 +194,12 @@ EndFunc
 
 Func InitializeFilesInSource($path)
 	If isDir($path) == 1 Then
-		InitializeFilesInCD($path)
+		return InitializeFilesInCD($path)
 	Else
-		InitializeFilesInISO($path)
+		return InitializeFilesInISO($path)
 	EndIf
 EndFunc   ;==>InitializeFilesInSource
 
-; Create a list of files in ISO
-Func InitializeFilesInISO($iso_to_list)
-	SendReport("Start-InitializeFilesInISO ( " & $iso_to_list &")")
-	If ProcessExists("7z.exe") > 0 Then ProcessClose("7z.exe")
-	FileDelete(@ScriptDir & "\tools\filelist.txt")
-	$cmd=@ComSpec & " /c " & '7z.exe' & ' l -slt "' & $iso_to_list & '" > filelist.txt'
-	$foo = RunWait($cmd, @ScriptDir & "\tools\", @SW_HIDE)
-	SendReport("IN-InitializeFilesInISO : command executed -> " &@CRLF& @ComSpec & " /c " & '7z.exe' & ' l -slt "' & $iso_to_list & '" > filelist.txt')
-	AnalyzeFileList()
-	SendReport("End-InitializeFilesInISO")
-EndFunc   ;==>InitializeFilesInISO
 
 ; Analyze the listfile and only select files and folders at the root (will be used to clean previous installs and hide the newly created)
 Func AnalyzeFileList()

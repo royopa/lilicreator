@@ -706,13 +706,9 @@ EndFunc   ;==>GUI_Persistence_Input
 
 Func GUI_Format_Key()
 	SendReport("Start-GUI_Format_Key")
-	If GUICtrlRead($formater) == $GUI_CHECKED Then
-		GUICtrlSetData($label_max, SpaceAfterLinuxLiveMB($selected_drive) & " " & Translate("MB"))
-		GUICtrlSetLimit($slider, SpaceAfterLinuxLiveMB($selected_drive) / 10, 0)
-	Else
-		GUICtrlSetData($label_max, SpaceAfterLinuxLiveMB($selected_drive) & " " & Translate("MB"))
-		GUICtrlSetLimit($slider, SpaceAfterLinuxLiveMB($selected_drive) / 10, 0)
-	EndIf
+
+	GUICtrlSetData($label_max, SpaceAfterLinuxLiveMB($selected_drive) & " " & Translate("MB"))
+	GUICtrlSetLimit($slider, SpaceAfterLinuxLiveMB($selected_drive) / 10, 0)
 
 	If ((StringInStr(DriveGetFileSystem($selected_drive), "FAT") >= 1 Or GUICtrlRead($formater) == $GUI_CHECKED) And SpaceAfterLinuxLiveMB($selected_drive) > 0) Then
 		; State is OK ( FAT32 or FAT format and 700MB+ free)
@@ -737,8 +733,12 @@ Func GUI_Format_Key()
 	SendReport("End-GUI_Format_Key")
 EndFunc   ;==>GUI_Format_Key
 
-Func GUI_Launch_Creation()
+Func GUI_Check_VirtualBox()
+	GUI_Format_Key()
+EndFunc   ;==>GUI_Format_Key
 
+Func GUI_Launch_Creation()
+	Local $return=""
 	; to avoid to create the key twice in a row
 	if $already_create_a_key >0 Then
 		$return = MsgBox(33,Translate("Please read"),Translate("You have already created a key")&"."&@CRLF&Translate("Are you sure that you want to recreate one")&" ?")
@@ -782,7 +782,7 @@ Func GUI_Launch_Creation()
 
 		; Cleaning old installs only if needed
 		If $file_set_mode <> "img" Then
-			InitializeFilesInSource($file_set)
+			if InitializeFilesInSource($file_set)=-1 Then Return -1
 			If GUICtrlRead($formater) <> $GUI_CHECKED Then Clean_old_installs($selected_drive, $release_number)
 		EndIf
 
@@ -838,9 +838,11 @@ Func GUI_Launch_Creation()
 		If GUICtrlRead($virtualbox) == $GUI_CHECKED And $virtualbox_check >= 1 Then Final_check()
 
 		Sleep(1000)
-
-		ShellExecute("http://www.linuxliveusb.com/using-lili.html", "", "", "", 7)
-		If isBeta() Then Ask_For_Feedback()
+		; Don't want it to show when using test builds
+		if ReadSetting("General","unique_ID")<>"SVN" Then
+			ShellExecute("http://www.linuxliveusb.com/using-lili.html", "", "", "", 7)
+			If isBeta() Then Ask_For_Feedback()
+		EndIf
 	Else
 		UpdateStatus("Please validate step 1 to 3")
 	EndIf
