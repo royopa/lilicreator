@@ -551,6 +551,7 @@ If (FileExists (@ScriptDir&"\app32\virtualbox.exe") OR FileExists (@ScriptDir&"\
       ProcessWaitClose ("VBoxSVC.exe")
 
 	  ; LinuxLive modifications :  Intelligent waiting while trying to kill VBoxSVC.exe
+	  EnvSet("VBOX_USER_HOME")
 	  $timer=0
 	  $PID = ProcessExists ("VBoxSVC.exe")
 
