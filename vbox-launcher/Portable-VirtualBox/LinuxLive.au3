@@ -12,13 +12,24 @@ CheckIfInstalled()
 
 ; Check if virtualbox is installed or runned
 Func CheckIfInstalled()
+
 	$version_new = RegRead("HKEY_LOCAL_MACHINE\SOFTWARE\Oracle\VirtualBox","Version")
 	$version_old = RegRead("HKEY_LOCAL_MACHINE\SOFTWARE\Sun\VirtualBox","Version")
 	$version=$version_old&$version_new
 	If $version <> "" Then
-		MsgBox(16, "Found an installed VirtualBox", "Please uninstall VirtualBox "&$version&" in order to use the portable version.")
+		;MsgBox(16, "Found an installed VirtualBox", "Please uninstall VirtualBox "&$version&" in order to use the portable version.")
+		$iMsgBoxAnswer=MsgBox(65, "Found an installed VirtualBox", "This is a beta feature."&@CRLF&"LinuxLive USB will try to run in your non-portable VirtualBox."&@CRLF&"Click OK to continue or Cancel to abandon.")
+		Select
+			Case $iMsgBoxAnswer = 2 ;Cancel
+				Exit
+		EndSelect
+		PrepareForLinuxLive()
+		$install_dir=RegRead("HKEY_LOCAL_MACHINE\SOFTWARE\Oracle\VirtualBox","InstallDir")
+		EnvSet("VBOX_USER_HOME",@ScriptDir&"\data\.VirtualBox")
+		Run($install_dir&"VirtualBox.exe")
 		exit
 	EndIf
+	EnvSet("VBOX_USER_HOME",@ScriptDir&"\data\.VirtualBox")
 	ProcessClose ("VirtualBox.exe")
 	ProcessClose ("VBoxManage.exe")
 	ProcessClose ("VBoxSVC.exe")
