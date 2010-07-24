@@ -28,7 +28,7 @@
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ; Global constants
-Global Const $software_version = "2.6 Beta"
+Global Const $software_version = "2.6 Beta2"
 Global $lang_folder = @ScriptDir & "\tools\languages\"
 Global $lang_ini
 Global Const $settings_ini = @ScriptDir & "\tools\settings\settings.ini"

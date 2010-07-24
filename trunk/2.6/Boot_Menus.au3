@@ -236,7 +236,14 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 	; For official Ubuntu variants and most others, only text.cfg need to be modified
 	$boot_text = Ubuntu_BootMenu($initrd_file,AutomaticPreseed($selected_drive,$ubuntu_variant))
 	UpdateLog("Creating text.cfg file for Ubuntu variants :" & @CRLF & $boot_text)
-	$file = FileOpen($selected_drive & "\syslinux\text.cfg", 2)
+
+	If GenericVersionCode($distrib_version) >= 1010 Then
+		$text_file="txt.cfg"
+	Else
+		$text_file="text.cfg"
+	EndIf
+
+	$file = FileOpen($selected_drive & "\syslinux\"&$text_file, 2)
 	FileWrite($file, $boot_text)
 	FileClose($file)
 	SendReport("End-Ubuntu_WriteTextCFG")
