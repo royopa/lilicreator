@@ -144,6 +144,9 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "moblin-remix") Then
 				; Ubuntu moblin remix
 				$release_number = _ArraySearch($codenames_list, "moblin-remix-last")
+			Elseif ( StringInStr($shortname, "maverick") ) OR StringInStr($shortname, "10.10") Then
+				; Ubuntu Maverick 10.10
+				$release_number = _ArraySearch($codenames_list, "ubuntu10.10-last")
 			ElseIf StringInStr($shortname, "grml") Then
 				; Grml
 				$release_number = _ArraySearch($codenames_list, "grml-last")
@@ -177,9 +180,9 @@ Func Check_source_integrity($linux_live_file)
 				else
 					$release_number = _ArraySearch($codenames_list, "sidux-kdelite-last")
 				EndIf
-			ElseIf StringInStr($shortname, "android") Then
+			ElseIf StringInStr($shortname, "android-x86") Then
 				; Android x86
-				$release_number = _ArraySearch($codenames_list, "android-last")
+				$release_number = _ArraySearch($codenames_list, "androidx86-last")
 			ElseIf StringInStr($shortname, "trisquel") Then
 				; Trisquel (Ubuntu)
 				$release_number = _ArraySearch($codenames_list, "trisquel-last")
@@ -205,7 +208,11 @@ Func Check_source_integrity($linux_live_file)
 				$release_number = _ArraySearch($codenames_list, "sugar-last")
 			ElseIf StringInStr($shortname, "peppermint") Then
 				; PepperMint
-				$release_number = _ArraySearch($codenames_list, "peppermint-one-last")
+				if StringInStr($shortname, "ice") Then
+					$release_number = _ArraySearch($codenames_list, "peppermint-ice-last")
+				Else
+					$release_number = _ArraySearch($codenames_list, "peppermint-one-last")
+				EndIf
 			ElseIf StringInStr($shortname, "mint") Then
 				; Mint variants
 				if StringInStr($shortname, "KDE") Then
@@ -248,7 +255,6 @@ Func Check_source_integrity($linux_live_file)
 				; Parted Magic
 				$release_number = _ArraySearch($codenames_list, "pmagic-last")
 			ElseIf StringInStr($shortname, "pclinuxos") Then
-
 				; PCLinuxOS (default to KDE)
 				if StringInStr($shortname, "e17") Then
 					$release_number = _ArraySearch($codenames_list, "pclinuxose17-last")
@@ -278,7 +284,17 @@ Func Check_source_integrity($linux_live_file)
 				$release_number = _ArraySearch($codenames_list, "crunchbangstd-last")
 			ElseIf StringInStr($shortname, "sabayon") Then
 				; Sabayon Linux
-				$release_number = _ArraySearch($codenames_list, "sabayonG-last")
+				if StringInStr($shortname, "_K") OR StringInStr($shortname, "KDE") Then
+					$release_number = _ArraySearch($codenames_list, "sabayonK-last")
+				elseif StringInStr($shortname, "_G") OR StringInStr($shortname, "Gnome") Then
+					$release_number = _ArraySearch($codenames_list, "sabayonG-last")
+				elseif StringInStr($shortname, "LXDE") Then
+					$release_number = _ArraySearch($codenames_list, "sabayonL-last")
+				elseif StringInStr($shortname, "Xfce") Then
+					$release_number = _ArraySearch($codenames_list, "sabayonX-last")
+				else
+					$release_number = _ArraySearch($codenames_list, "sabayonK-last")
+				EndIf
 			ElseIf StringInStr($shortname, "SystemRescueCd") Then
 				; System Rescue CD
 				$release_number = _ArraySearch($codenames_list, "systemrescue-last")

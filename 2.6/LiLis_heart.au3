@@ -731,8 +731,12 @@ Func Install_boot_sectors($drive_letter,$release_in_list,$hide_it)
 		EndIf
 	EndIf
 
-	; Installing the syslinux boot sectors
-	InstallSyslinux($drive_letter)
+	; Installing the syslinux boot sectors using Syslinux 4 if feature is set.
+	if StringInStr($features,"syslinux4") > 0 Then
+		InstallSyslinux($drive_letter,4)
+	Else
+		InstallSyslinux($drive_letter,3)
+	EndIf
 	;RunWait3('"' & @ScriptDir & '\tools\syslinux.exe" -maf -d ' & $drive_letter & '\syslinux ' & $drive_letter, @ScriptDir, @SW_HIDE)
 
 	If ( $hide_it <> $GUI_CHECKED) Then ShowFile($drive_letter & '\ldlinux.sys')

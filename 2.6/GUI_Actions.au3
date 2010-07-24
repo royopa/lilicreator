@@ -217,10 +217,15 @@ Func GUI_Choose_ISO()
 	SendReport("Start-GUI_Choose_ISO")
 	$source_file = FileOpenDialog(Translate("Please choose an ISO image of LinuxLive CD"), "", "ISO / IMG / ZIP (*.iso;*.img;*.zip)", 1)
 	If @error Then
-		SendReport("IN-ISO_AREA (no iso)")
-		MsgBox(4096, "", Translate("No file selected"))
-		$file_set = 0;
-		Step2_Check("bad")
+		if IsString($file_set) Then
+			Return ""
+		Else
+			SendReport("IN-ISO_AREA (no iso)")
+			MsgBox(4096, "", Translate("No file selected"))
+			$file_set = 0;
+			Step2_Check("bad")
+			GUI_Show_Step2_Default_Menu()
+		EndIf
 	Else
 		$file_set = $source_file
 		Check_source_integrity($file_set)
