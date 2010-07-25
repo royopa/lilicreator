@@ -17,7 +17,7 @@ Func Format_FAT32($drive_letter)
 	if $drive_size<32 AND NOT ReadSetting( "Advanced", "force_3rdparty_format") = "yes" Then
 		UpdateLog("Drive is smaller than 32GB ("&$drive_size&"GB)-> LiLi will use the Windows Format utility")
 		; default Method, will force work even when some applications are locking the drive
-		RunWait3('cmd /c format /Q /X /y /V:MyLinuxLive /FS:FAT32 ' & $drive_letter, @ScriptDir, @SW_HIDE)
+		RunWait3('cmd /c format /Q /X /y /V:MyLinuxLive /FS:FAT32 ' & $drive_letter)
 	Else
 		UpdateLog("Drive is bigger than 32GB ("&$drive_size&"GB) or force_3rdparty_format=yes -> LiLi will use the Windows Format utility")
 		; Alternative method using fat32format for filesystems bigger than 32GB
@@ -191,16 +191,16 @@ Func Download_virtualBox()
 				If FileExists(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename) And $virtualbox_size > 0 And $virtualbox_size = FileGetSize(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename) Then
 					; Already have last version, no download needed
 					UpdateStatus("VirtualBox already downloaded")
-					Sleep(1000)
+					Sleep(700)
 					$check_vbox = 2
 				ElseIf FileExists(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename) And $virtualbox_size > 0 And $virtualbox_size <> FileGetSize(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename) Then
 					; A new version is available, downloading it
 					UpdateStatus("A new version of VirtualBox is available")
-					Sleep(1000)
+					Sleep(700)
 					UpdateStatus("This new version will be downloaded")
-					Sleep(1000)
+					Sleep(700)
 					UpdateStatus("Downloading VirtualBox as a background task")
-					Sleep(1000)
+					Sleep(700)
 					$current_download = InetGet($VirtualBoxUrl, @ScriptDir & "\tools\" & $downloaded_virtualbox_filename, 1, 1)
 					If InetGetInfo($current_download, 4)=0 Then
 						UpdateStatus("Download started succesfully")
@@ -789,14 +789,37 @@ EndFunc
 
 Func Uncompress_virtualbox_on_key($drive_letter)
 	SendReport("Start-Uncompress_virtualbox_on_key")
+	Local $downloaded_version,$installed_version
 
-	; Cleaning previous install of VBox
-	UpdateStatus("Cleaning previous VirtualBox install")
-	DirRemove2($drive_letter & "\VirtualBox\", 1)
+	if FileExists($drive_letter&"\VirtualBox\") Then
+
+		; Portable-VirtualBox already installed, checking if older
+		DirRemove(@ScriptDir&"\tools\VirtualBox\Portable-VirtualBox",1)
+		RunWait3('"' & @ScriptDir & '\tools\7z.exe" x -y "' & @ScriptDir & "\tools\" & $downloaded_virtualbox_filename & '" VirtualBox\Portable-VirtualBox\linuxlive\settings.ini',@ScriptDir & "\tools\")
+
+		if FileExists(@ScriptDir&"\tools\VirtualBox\Portable-VirtualBox\linuxlive\settings.ini") Then
+			$downloaded_version=IniRead(@ScriptDir&"\tools\VirtualBox\Portable-VirtualBox\linuxlive\settings.ini","General","pack_version","3.0.0.0")
+			$installed_version=IniRead($drive_letter&"\VirtualBox\Portable-VirtualBox\linuxlive\settings.ini","General","pack_version","3.0.0.0")
+			SendReport("IN-Uncompress_virtualbox_on_key (downloaded pack="&$downloaded_version&" - installed pack="&$installed_version&")")
+			if GenericVersionCode($downloaded_version)<=GenericVersionCode($installed_version) Then
+				SendReport("End-Uncompress_virtualbox_on_key (Pack is up to date)")
+				Return "1"
+			Else
+				SendReport("IN-Uncompress_virtualbox_on_key (Pack needs to be updated)")
+			EndIf
+		Else
+			SendReport("IN-Uncompress_virtualbox_on_key (Warning : settings.ini not found)")
+		EndIf
+
+		; Cleaning previous install of VBox
+		UpdateStatus("Updating Portable-VirtualBox pack")
+		DirRemove2($drive_letter & "\VirtualBox\", 1)
+
+	EndIf
 
 	; Unzipping to the key
 	UpdateStatus(Translate("Extracting VirtualBox on key") & " ( 4" & Translate("min") & " )")
-	Run7zip2('"' & @ScriptDir & '\tools\7z.exe" x "' & @ScriptDir & "\tools\" & $downloaded_virtualbox_filename & '" -r -aoa -o' & $drive_letter, 140)
+	Run7zip2('"' & @ScriptDir & '\tools\7z.exe" x "' & @ScriptDir & "\tools\" & $downloaded_virtualbox_filename & '" -r -aoa -y -o' & $drive_letter, 140)
 
 	; maybe check after ?
 	SendReport("End-Uncompress_virtualbox_on_key")
@@ -886,6 +909,7 @@ Func CreateUninstaller($drive_letter,$release_in_list)
 	AddToSmartClean($drive_letter,"autorun.inf.orig")
 	AddToSmartClean($drive_letter,"ldlinux.sys")
 	AddToSmartClean($drive_letter,"syslinux")
+	AddToSmartClean($drive_letter,"syslinux.cfg")
 	AddToSmartClean($drive_letter,"casper-rw")
 	if ReleaseGetVariant($release_in_list)="pmagic" Then
 		AddToSmartClean($drive_letter,"pmagic")
