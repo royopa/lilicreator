@@ -151,7 +151,6 @@ Func Download_virtualBox()
 				$VirtualBoxUrl1 = ReadSetting("VirtualBox", "portable_virtualbox_mirror1")
 				$VirtualBoxUrl2 = ReadSetting("VirtualBox", "portable_virtualbox_mirror2")
 
-
 				; Testing download mirrors
 				$virtualbox_size1 = InetGetSize($VirtualBoxUrl1)
 				$virtualbox_size2 = InetGetSize($VirtualBoxUrl2)
