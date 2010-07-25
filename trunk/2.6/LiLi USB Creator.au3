@@ -298,6 +298,11 @@ GUISetState(@SW_SHOW, $GUI)
 
 $CONTROL_GUI = GUICreate("LinuxLive USB Creator", 450, 750, 5,7, $WS_POPUP, BitOR($WS_EX_LAYERED, $WS_EX_MDICHILD), $GUI)
 
+HotKeySet("{UP}", "GUI_MoveUp")
+HotKeySet("{DOWN}", "GUI_MoveDown")
+HotKeySet("{LEFT}", "GUI_MoveLeft")
+HotKeySet("{RIGHT}", "GUI_MoveRight")
+
 ; Offset applied on every items
 $offsetx0 = 27
 $offsety0 = 42
@@ -499,6 +504,11 @@ GUISetState($GUI_SHOW, $CONTROL_GUI)
 
 ; Starting to check for updates in the secondary LiLi's process
 SendReport("check_for_updates")
+
+if @DesktopHeight<=600 then MsgBox(64,"Netbook screen detected","Your screen vertical resolution is less than 600 pixels." & @CRLF & "Please use the arrow keys (up and down) of your keyboard to move the interface.")
+
+
+
 
 Func MoveGUI($hW)
 	_SendMessage($GUI, $WM_SYSCOMMAND, 0xF012, 0)

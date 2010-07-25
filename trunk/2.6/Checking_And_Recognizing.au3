@@ -331,6 +331,9 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "archlinux") Then
 				; Arch Linux
 				$release_number = _ArraySearch($codenames_list, "archlinux-last")
+			ElseIf StringInStr($shortname, "redobackup") Then
+				; Redo Backup
+				$release_number = _ArraySearch($codenames_list, "redobackup-last")
 			ElseIf StringInStr($shortname, "livehacking") Then
 				; Live Hacking CD
 				if StringInStr($shortname, "mini") Then
