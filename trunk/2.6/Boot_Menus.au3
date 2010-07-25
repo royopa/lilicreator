@@ -5,37 +5,37 @@
 Func GetKbdCode()
 	SendReport("Start-GetKbdCode")
 	Select
-		Case StringInStr("040c,080c,140c,180c", @OSLang)
+		Case StringInStr("040c,080c,140c,180c", @MUILang)
 			; FR
 			UpdateLog(Translate("Detecting keyboard layout") & " : " & Translate("French (France)"))
 			SendReport("End-GetKbdCode")
 			Return "locale=fr_FR bootkbd=fr-latin1 console-setup/layoutcode=fr console-setup/variantcode=nodeadkeys "
 
-		Case StringInStr("0c0c", @OSLang)
+		Case StringInStr("0c0c", @MUILang)
 			; CA
 			UpdateLog(Translate("Detecting keyboard layout") & " : " & Translate("Français (Canada)"))
 			SendReport("End-GetKbdCode")
 			Return "locale=fr_CA bootkbd=fr-latin1 console-setup/layoutcode=ca console-setup/variantcode=nodeadkeys "
 
-		Case StringInStr("100c", @OSLang)
+		Case StringInStr("100c", @MUILang)
 			; Suisse FR
 			UpdateLog(Translate("Detecting keyboard layout") & " : " & Translate("French (Swiss)"))
 			SendReport("End-GetKbdCode")
 			Return "locale=fr_CH bootkbd=fr-latin1 console-setup/layoutcode=ch console-setup/variantcode=fr "
 
-		Case StringInStr("0407,0807,0c07,1007,1407", @OSLang)
+		Case StringInStr("0407,0807,0c07,1007,1407", @MUILang)
 			; German & dutch
 			UpdateLog(Translate("Detecting keyboard layout") & " : " & Translate("Dutch"))
 			SendReport("End-GetKbdCode")
 			Return "locale=de_DE bootkbd=de console-setup/layoutcode=de console-setup/variantcode=nodeadkeys "
 
-		Case StringInStr("0816", @OSLang)
+		Case StringInStr("0816", @MUILang)
 			; Portugais
 			UpdateLog(Translate("Detecting keyboard layout") & " : " & Translate("Portuguese"))
 			SendReport("End-GetKbdCode")
 			Return "locale=pt_BR bootkbd=qwerty/br-abnt2 console-setup/layoutcode=br console-setup/variantcode=nodeadkeys "
 
-		Case StringInStr("0410,0810", @OSLang)
+		Case StringInStr("0410,0810", @MUILang)
 			; Italien
 			UpdateLog(Translate("Detecting keyboard layout") & " : " & Translate("Italian"))
 			SendReport("End-GetKbdCode")

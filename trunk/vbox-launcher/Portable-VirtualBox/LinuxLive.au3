@@ -12,11 +12,13 @@ CheckIfInstalled()
 
 ; Check if virtualbox is installed or runned
 Func CheckIfInstalled()
+	if @OSArch="X64" Then	$add="64"
+	Else 					$add=""
 
-	$version_new = RegRead("HKEY_LOCAL_MACHINE\SOFTWARE\Oracle\VirtualBox","Version")
-	$version_old = RegRead("HKEY_LOCAL_MACHINE\SOFTWARE\Sun\VirtualBox","Version")
+	$version_new = RegRead("HKLM"&$add&"\SOFTWARE\Oracle\VirtualBox","Version")
+	$version_old = RegRead("HKLM"&$add&"\SOFTWARE\Sun\VirtualBox","Version")
 	$version=$version_old&$version_new
-	If $version <> "" Then
+	If $version <> "" AND IniRead($settings_ini,"Others","force_portable")<>"yes" Then
 		;MsgBox(16, "Found an installed VirtualBox", "Please uninstall VirtualBox "&$version&" in order to use the portable version.")
 		$iMsgBoxAnswer=MsgBox(65, "Found an installed VirtualBox", "This is a beta feature."&@CRLF&"LinuxLive USB will try to run in your non-portable VirtualBox."&@CRLF&"Click OK to continue or Cancel to abandon.")
 		Select
@@ -24,9 +26,16 @@ Func CheckIfInstalled()
 				Exit
 		EndSelect
 		PrepareForLinuxLive()
-		$install_dir=RegRead("HKEY_LOCAL_MACHINE\SOFTWARE\Oracle\VirtualBox","InstallDir")
 		EnvSet("VBOX_USER_HOME",@ScriptDir&"\data\.VirtualBox")
-		Run($install_dir&"VirtualBox.exe")
+		$nonportable_install_dir=RegRead("HKLM"&$add&"\SOFTWARE\Oracle\VirtualBox","InstallDir")
+		if $CmdLine[0] = 1 Then
+			Run('cmd /c ""'&$nonportable_install_dir&'VBoxManage.exe" startvm "'&$CmdLine[1]&'""',@ScriptDir,@SW_HIDE)
+		Else
+			Run($nonportable_install_dir&"VirtualBox.exe")
+		EndIf
+
+
+
 		exit
 	EndIf
 	EnvSet("VBOX_USER_HOME",@ScriptDir&"\data\.VirtualBox")
@@ -40,8 +49,8 @@ Func PrepareForLinuxLive()
 	$oMyError = ObjEvent("AutoIt.Error", "MyErrFunc") ; Install a custom error handler
 
 	; preparing for logging
-	$logfile = @ScriptDir & "\linuxlive-settings\launcher.log"
-	If DirGetSize(@ScriptDir & "\linuxlive-settings\") == -1 Then DirCreate(@ScriptDir & "\linuxlive-settings\")
+	$logfile = @ScriptDir & "\linuxlive\launcher.log"
+	If DirGetSize(@ScriptDir & "\linuxlive\") == -1 Then DirCreate(@ScriptDir & "\linuxlive\")
 	If FileExists($logfile) Then FileDelete($logfile)
 
 	$vmdkfile = @ScriptDir & "\data\.VirtualBox\HardDisks\LinuxLive.vmdk"
@@ -67,7 +76,7 @@ Func PrepareForLinuxLive()
 		ThreeSecLegalNotice()
 	Else
 		SplashOff()
-		MsgBox(16, "WARNING", "There was a problem recreating Linux Live virtual disk." & @CRLF & "Please send log file (Portable-VirtualBox\linuxlive-settings\launcher.log) to vbox-debug@linuxliveusb.com")
+		MsgBox(16, "WARNING", "There was a problem recreating Linux Live virtual disk." & @CRLF & "Please send log file (Portable-VirtualBox\linuxlive\launcher.log) to vbox-debug@linuxliveusb.com")
 	EndIf
 EndFunc
 
@@ -253,6 +262,7 @@ Func ChangeUUID()
 EndFunc   ;==>ChangeUUID
 
 Func RelativePaths()
+	$nonportable_install_dir=RegRead("HKEY_LOCAL_MACHINE\SOFTWARE\Oracle\VirtualBox","InstallDir")
 	If FileExists(@ScriptDir & "\data\.VirtualBox\VirtualBox.xml") Then
 		$file = FileOpen(@ScriptDir & "\data\.VirtualBox\VirtualBox.xml", 128)
 		If $file <> -1 Then
@@ -261,6 +271,9 @@ Func RelativePaths()
 			UpdateLog(@CRLF&"--------------- before relative paths ----------------"&@CRLF&$vbox_config&@CRLF&"-----------------------------------------------------")
 			$new_vbox_config = StringRegExpReplace($vbox_config, '(?i)location="(.*?)Portable-VirtualBox\\', 'location="' & StringReplace(@ScriptDir,'\','\\') & '\\Portable-VirtualBox\\')
 			$new_vbox_config = StringRegExpReplace($new_vbox_config, '(?i)src="(.*?)Portable-VirtualBox\\', 'src="' & StringReplace(@ScriptDir,'\','\\') & '\\Portable-VirtualBox\\')
+			if NOT $nonportable_install_dir = "" Then
+				$new_vbox_config = StringRegExpReplace($new_vbox_config,  '(?i)location="(.*?)Additions.iso', 'location="' & StringReplace($nonportable_install_dir,'\','\\') & 'VBoxGuestAdditions.iso')
+			EndIf
 			$file = FileOpen(@ScriptDir & "\data\.VirtualBox\VirtualBox.xml", 2)
 			If $file <> -1 Then
 				FileWrite($file, $new_vbox_config)

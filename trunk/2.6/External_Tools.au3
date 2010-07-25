@@ -35,7 +35,7 @@ Func InitializeFilesInISO($iso_to_list)
 
 	FileDelete(@ScriptDir & "\tools\filelist.txt")
 	;$cmd='7z.exe' & ' l -slt "' & $iso_to_list
-	$cmd='"' & @ScriptDir & '\tools\7z.exe" l -slt "' & $iso_to_list & '"'
+	$cmd='"' & @ScriptDir & '\tools\7z.exe" l -y -slt "' & $iso_to_list & '"'
 	SendReport("IN-InitializeFilesInISO : executing command -> " &@CRLF& $cmd)
 	If ProcessExists("7z.exe") > 0 Then ProcessClose("7z.exe")
 	$output=_RunReadStd($cmd)
@@ -75,7 +75,7 @@ EndFunc   ;==>InitializeFilesInISO
 ; Install Syslinux boot sectors
 Func InstallSyslinux($drive_letter,$version=3)
 	Local $line="",$error="",$executable="syslinux.exe"
-	SendReport("Start-InstallSyslinux on " & $drive_letter &", version ="&$version)
+	SendReport("Start-InstallSyslinux on " & $drive_letter &" (version "&$version&")")
 
 	if $version=4 Then
 		$executable="syslinux4.exe"
@@ -169,21 +169,10 @@ Func EXT2_Format_File($persistence_file)
 	SendReport("End-EXT2_Format_File")
 EndFunc   ;==>EXT2_Format_File
 
-Func RunWait3($soft, $arg1, $arg2)
+Func RunWait3($soft, $workingdir=@ScriptDir, $flag=@SW_HIDE)
 	SendReport("Start-RunWait3 ( " & $soft & " )")
-	Local $lines="",$errors=""
-	UpdateLog($soft)
-	$foo = Run($soft, @ScriptDir, @SW_HIDE, $STDOUT_CHILD + $STDERR_CHILD)
-	While 1
-		$lines &= StdoutRead($foo)
-		If @error Then ExitLoop
-	WEnd
-	UpdateLog($lines)
-	While 1
-		$errors &= StderrRead($foo)
-		If @error Then ExitLoop
-	WEnd
-	UpdateLog($errors)
+	$output = _RunReadStd($soft,0,$workingdir,$flag)
+	SendReport("Output : "&$output[1]&@CRLF&"Return code : "&$output[0]&@CRLF&"Error : "&$output[2])
 	SendReport("End-RunWait3")
 EndFunc   ;==>RunWait3
 

@@ -554,6 +554,7 @@ If (FileExists (@ScriptDir&"\app32\virtualbox.exe") OR FileExists (@ScriptDir&"\
 	  EnvSet("VBOX_USER_HOME")
 	  $timer=0
 	  $PID = ProcessExists ("VBoxSVC.exe")
+	  If $PID Then ProcessClose ($PID)
 
 	  While $timer<10000 AND $PID
 		$PID = ProcessExists ("VBoxSVC.exe")

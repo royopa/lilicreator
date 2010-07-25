@@ -30,9 +30,10 @@ Func LogSystemConfig()
 	$line &= @CRLF & "OS Version : " & $os_version
 	$line &= @CRLF & "OS Build : " & @OSBuild
 	$line &= @CRLF & "OS Service Pack : " & @OSServicePack
+	$line &= @CRLF & "OS Lang : " & HumanOSLang(@OSLang) & " ("& @OSLang&")"
 	$line &= @CRLF & "Architecture : " & @OSArch
 	$line &= @CRLF & "Memory : " & Round($mem[1] / 1024) & "MB  ( with " & (100 - $mem[0]) & "% free = " & Round($mem[2] / 1024) & "MB )"
-	$line &= @CRLF & "Language : " & HumanOSLang(@OSLang) & " ("& @OSLang&")"
+	$line &= @CRLF & "Language : " & HumanOSLang(@MUILang) & " ("& @MUILang&")"
 	$line &= @CRLF & "Keyboard : " & @KBLayout
 	$line &= @CRLF & "Resolution : " & @DesktopWidth & "x" & @DesktopHeight
 	$line &= @CRLF & "Proxy settings : " & ProxySettingsReport()
