@@ -6,15 +6,19 @@
 #AutoIt3Wrapper_UseUpx=n
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.6.88.40
+#AutoIt3Wrapper_Res_Fileversion=2.6.88.41
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_SaveSource=y
 #AutoIt3Wrapper_Res_Field=AutoIt Version|%AutoItVer%
 #AutoIt3Wrapper_Res_Field=Site|http://www.linuxliveusb.com
 #AutoIt3Wrapper_AU3Check_Parameters=-w 4
-#EndRegion
-;**** Directives created by AutoIt3Wrapper_GUI ****
+#EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
+
+; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+; ///////////////////////////////// About this software                           ///////////////////////////////////////////////////////////////////////////////
+; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 ; Author           : Thibaut Lauzière (Slÿm)
 ; Author's Website : www.slym.fr
 ; e-Mail           : contact@linuxliveusb.com
@@ -174,7 +178,7 @@ EndIf
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////// Includes     															  ///////////////////////////////////////////////////
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+#include-once
 ; AutoIT native includes
 #include <GuiConstants.au3>
 #include <GuiConstantsEx.au3>
@@ -218,6 +222,8 @@ EndIf
 #include <LiLis_heart.au3>
 #include <GUI_Actions.au3>
 #include <Options_Menu.au3>
+
+SplashImageOn("LiLi Splash Screen", @ScriptDir & "\tools\img\logo.jpg",344, 107, -1, -1, 1)
 
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////// Proxy settings                                                            ///////////////////////////////////////////////////
@@ -294,7 +300,6 @@ GUIRegisterMsg($WM_LBUTTONDOWN, "moveGUI")
 
 SetBitmap($GUI, $PNG_GUI, 255)
 GUIRegisterMsg($WM_NCHITTEST, "WM_NCHITTEST")
-GUISetState(@SW_SHOW, $GUI)
 
 $CONTROL_GUI = GUICreate("LinuxLive USB Creator", 450, 750, 5,7, $WS_POPUP, BitOR($WS_EX_LAYERED, $WS_EX_MDICHILD), $GUI)
 
@@ -347,16 +352,12 @@ GUICtrlSetOnEvent(-1, "GUI_Help_Step3")
 $HELP_STEP4_AREA = GUICtrlCreateLabel("", 335 + $offsetx0, 451 + $offsety0, 20, 20)
 GUICtrlSetCursor(-1, 0)
 GUICtrlSetOnEvent(-1, "GUI_Help_Step4")
-$HELP_STEP5_AREA = GUICtrlCreateLabel("", 335 + $offsetx0, 565 + $offsety0, 20, 20)
-GUICtrlSetCursor(-1, 0)
-GUICtrlSetOnEvent(-1, "GUI_Help_Step5")
+;$HELP_STEP5_AREA = GUICtrlCreateLabel("", 335 + $offsetx0, 565 + $offsety0, 20, 20)
+;GUICtrlSetCursor(-1, 0)
+;GUICtrlSetOnEvent(-1, "GUI_Help_Step5")
 
 GUISetBkColor(0x121314)
 _WinAPI_SetLayeredWindowAttributes($CONTROL_GUI, 0x121314)
-
-
-GUISetState(@SW_SHOW, $CONTROL_GUI)
-
 
 $ZEROGraphic = _GDIPlus_GraphicsCreateFromHWND($CONTROL_GUI)
 
@@ -372,7 +373,7 @@ $HELP_STEP1 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 
 $HELP_STEP2 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335 + $offsetx0, 201 + $offsety0, 20, 20)
 $HELP_STEP3 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335 + $offsetx0, 339 + $offsety0, 20, 20)
 $HELP_STEP4 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335 + $offsetx0, 451 + $offsety0, 20, 20)
-$HELP_STEP5 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335 + $offsetx0, 565 + $offsety0, 20, 20)
+;$HELP_STEP5 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335 + $offsetx0, 565 + $offsety0, 20, 20)
 
 ; Put the state for the first 3 steps
 Step1_Check("bad")
@@ -381,8 +382,10 @@ Step3_Check("bad")
 
 SendReport("Creating GUI (buttons)")
 
-; Text for step 2
+; Hovering Buttons
+AdlibRegister("Control_Hover", 150)
 
+; Text for step 2
 GUICtrlCreateLabel(Translate("STEP 2 : CHOOSE A SOURCE"), 28 + $offsetx0, 204 + $offsety0, 400, 30)
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
@@ -472,11 +475,14 @@ GUICtrlSetColor(-1, 0xFFFFFF)
 
 
 ; Text and controls for step 5
-
-GUICtrlCreateLabel(Translate("STEP 5 : CREATE"), 28 + $offsetx0, 371 + $offsety4 + $offsety0, 400, 30)
+GUICtrlCreateLabel(Translate("STEP 5 : CREATE"), 28 + $offsetx0, 371 + $offsety4 + $offsety0, 250, 30)
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
 GUICtrlSetFont(-1, 10, 400, 0, "Tahoma")
+
+GUICtrlCreateButton(StringUpper(Translate("Options")), 240+28 + $offsetx0, 369 + $offsety4 + $offsety0, 80, 20)
+GUICtrlSetFont(-1, 10, 400, 0, "Tahoma")
+GUICtrlSetOnEvent(-1, "GUI_Help_Step5")
 
 $label_step5_status = GUICtrlCreateLabel("<- " & Translate("Click the lightning icon to start the installation"), 50 + $offsetx4 + $offsetx0, 410 + $offsety4 + $offsety0, 300, 60)
 GUICtrlSetFont($label_step5_status, 9, 800, 0, "Arial")
@@ -495,9 +501,6 @@ SendReport(LogSystemConfig())
 
 $prefetched_linux_list = Print_For_ComboBox()
 
-; Hovering Buttons
-AdlibRegister("Control_Hover", 150)
-
 GUIRegisterMsg($WM_PAINT, "DrawAll")
 WinActivate($for_winactivate)
 GUISetState($GUI_SHOW, $CONTROL_GUI)
@@ -505,15 +508,13 @@ GUISetState($GUI_SHOW, $CONTROL_GUI)
 ; Starting to check for updates in the secondary LiLi's process
 SendReport("check_for_updates")
 
-if @DesktopHeight<=600 then MsgBox(64,"Netbook screen detected","Your screen vertical resolution is less than 600 pixels." & @CRLF & "Please use the arrow keys (up and down) of your keyboard to move the interface.")
+SplashOff()
+GUISetState(@SW_SHOW, $GUI)
+GUISetState(@SW_SHOW, $CONTROL_GUI)
 
+Sleep(300)
 
-
-
-Func MoveGUI($hW)
-	_SendMessage($GUI, $WM_SYSCOMMAND, 0xF012, 0)
-	ControlFocus("LinuxLive USB Creator", "", $REFRESH_AREA)
-EndFunc   ;==>MoveGUI
+if @DesktopHeight<=600 then MsgBox(64,Translate("Netbook screen detected"),Translate("Your screen vertical resolution is less than 600 pixels")&"."& @CRLF & Translate("Please use the arrow keys (up and down) of your keyboard to move the interface")&".")
 
 ; Main part
 While 1
@@ -522,9 +523,14 @@ While 1
 		GUICtrlSetData($combo, GUICtrlRead($combo))
 		$combo_updated = 1
 	EndIf
-	Sleep(5000)
-	DrawAll()
+	Sleep(10)
+	;DrawAll()
 WEnd
+
+Func MoveGUI($hW)
+	_SendMessage($GUI, $WM_SYSCOMMAND, 0xF012, 0)
+	ControlFocus("LinuxLive USB Creator", "", $REFRESH_AREA)
+EndFunc   ;==>MoveGUI
 
 Func DrawAll()
 	_WinAPI_RedrawWindow($CONTROL_GUI, 0, 0, $RDW_UPDATENOW)
@@ -544,7 +550,7 @@ Func DrawAll()
 	$HELP_STEP2 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335 + $offsetx0, 201 + $offsety0, 20, 20)
 	$HELP_STEP3 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335 + $offsetx0, 339 + $offsety0, 20, 20)
 	$HELP_STEP4 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335 + $offsetx0, 451 + $offsety0, 20, 20)
-	$HELP_STEP5 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335 + $offsetx0, 565 + $offsety0, 20, 20)
+	;$HELP_STEP5 = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $HELP, 0, 0, 20, 20, 335 + $offsetx0, 565 + $offsety0, 20, 20)
 	Redraw_Traffic_Lights()
 	_WinAPI_RedrawWindow($CONTROL_GUI, 0, 0, $RDW_VALIDATE) ; then force no-redraw of GUI
 	Return $GUI_RUNDEFMSG
@@ -583,7 +589,6 @@ Func Control_Hover()
 	Global $previous_hovered_control
 	Local $CursorCtrl
 	If WinActive("LinuxLive USB Creator") Or WinActive("LiLi USB Creator") Then
-
 		$CursorCtrl = GUIGetCursorInfo()
 		If Not @error Then
 			Switch $previous_hovered_control
@@ -626,17 +631,18 @@ Func Control_Hover()
 			$previous_hovered_control = $CursorCtrl[4]
 		EndIf
 	EndIf
-	_Paint_Bars_Procedure2()
+	if Ubound($_Progress_Bars)>1 Then _Paint_Bars_Procedure2()
 EndFunc   ;==>Control_Hover
 
 
 ; Received a message from the secondary lili's process
 Func ReceiveFromSecondary($message)
-
+	SendReport("Start-ReceiveFromSecondary : "&$message)
 	; Compatibility list has been updated => force reloading
 	If $message ="compatibility_updated" Then
 		; initialize list of compatible releases (load the compatibility_list.ini)
 		Get_Compatibility_List()
 		$prefetched_linux_list = Print_For_ComboBox()
 	EndIf
+	SendReport("End-ReceiveFromSecondary")
 EndFunc

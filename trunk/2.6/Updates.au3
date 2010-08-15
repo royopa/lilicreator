@@ -115,7 +115,7 @@ Func VersionCode($version)
 	Else
 		$version_number &= "8"
 	EndIf
-	Return $version_number
+	Return Int($version_number)
 EndFunc   ;==>VersionCode
 
 Func isBeta()
@@ -129,11 +129,11 @@ EndFunc   ;==>isBeta
 ; Return the last number of compatibility list version
 Func VersionCodeForCompatList($version)
 	$parse_version = StringSplit($version, ".")
-	Return $parse_version[Ubound($parse_version)-1]
+	Return Int($parse_version[Ubound($parse_version)-1])
 EndFunc   ;==>VersionCode
 
 
 ; Return a generic version code for some Linuxes (Ubuntu mostly)
 Func GenericVersionCode($version)
-	Return StringReplace($version,".","")
+	Return Int(StringReplace($version,".",""))
 EndFunc

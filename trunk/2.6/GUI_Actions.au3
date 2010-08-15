@@ -251,18 +251,35 @@ Func GUI_Choose_CD()
 		Step2_Check("bad")
 		$file_set = 0;
 	Else
-		Disable_Persistent_Mode()
 		SendReport("IN-CD_AREA (CD selected :" & $folder_file & ")")
 		$file_set = $folder_file;
 		$file_set_mode = "folder"
+
+		; If user already select to force some install parameters
+		If ReadSetting("Install_Parameters","automatic_recognition")<>"yes" Then
+			$forced_description=ReadSetting("Install_Parameters","use_same_parameter_as")
+			$release_number = FindReleaseFromDescription($forced_description)
+			if $release_number <> -1 Then
+				Step2_Check("good")
+				$step2_display_menu = 1
+				GUI_Hide_Step2_Default_Menu()
+				GUI_Show_Back_Button()
+				Sleep(100)
+				GUI_Show_Check_status(Translate("Verifying") & " OK"&@CRLF& Translate("This version is compatible and its integrity was checked")&@CRLF&Translate("Recognized Linux")&" : "&@CRLF& @CRLF & @TAB &ReleaseGetDescription($release_number))
+				Check_If_Default_Should_Be_Used($release_number)
+			EndIf
+			SendReport("IN-GUI_Choose_CD (forced install parameters to : "&$forced_description&" - Release # :"&$release_number&")")
+			Return ""
+		EndIf
+
+		Disable_Persistent_Mode()
+
 		;Check_folder_integrity($folder_file)
 
 		; Used to avoid redrawing the old elements of Step 2 (ISO, CD and download)
 		$step2_display_menu = 1
 		GUI_Hide_Step2_Default_Menu()
-
 		GUI_Show_Back_Button()
-
 		$temp_index = _ArraySearch($compatible_filename, "regular_linux.iso")
 		$release_number = $temp_index
 		GUI_Show_Check_status(Translate("This Linux is not in the compatibility list")& "." & @CRLF &Translate("However, LinuxLive USB Creator will try to use same install parameters as for") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
@@ -844,10 +861,15 @@ Func GUI_Launch_Creation()
 
 		Sleep(1000)
 		; Don't want it to show when using test builds
-		if ReadSetting("General","unique_ID")<>"SVN" Then
+		if ReadSetting("General","unique_ID")<>"SVN" OR ReadSetting("Advanced","skip_finalhelp")="no" Then
 			ShellExecute("http://www.linuxliveusb.com/using-lili.html", "", "", "", 7)
-			If isBeta() Then Ask_For_Feedback()
 		EndIf
+
+		; If beta version, asking for feedback
+		If isBeta() AND ReadSetting("Advanced","skip_feedback_for_beta")="no" Then
+			Ask_For_Feedback()
+		EndIf
+
 	Else
 		UpdateStatus("Please validate step 1 to 3")
 	EndIf
@@ -856,7 +878,7 @@ EndFunc   ;==>GUI_Launch_Creation
 
 
 Func Ask_For_Feedback()
-	$return = MsgBox(65, "Help me to improve LiLi", "This is a Beta or RC version, click OK to leave a feedback or click Cancel to close this window")
+	$return = MsgBox(65, Translate("Help me to improve LiLi"), Translate("This is a Beta or Release Candidate version")&"."&@CRLF&Translate("Click OK to leave a feedback or click Cancel to close this window"))
 	If $return = 1 Then ShellExecute("http://www.linuxliveusb.com/feedback/?version="&$software_version, "", "", "", 7)
 EndFunc   ;==>Ask_For_Feedback
 

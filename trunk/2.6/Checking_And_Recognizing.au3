@@ -14,7 +14,7 @@ Func Check_source_integrity($linux_live_file)
 	GUICtrlSetState($label_step2_status,$GUI_HIDE)
 	$cleaner = GUICtrlCreateLabel("", 38 + $offsetx0, 238 + $offsety0, 300, 90)
 	GUICtrlSetState($cleaner, $GUI_SHOW)
-	GUICtrlSetState($cleaner,$GUI_HIDE)
+	GUICtrlDelete($cleaner)
 
 	$shortname = path_to_name($linux_live_file)
 	SendReport("distrib-" & $shortname)
@@ -49,6 +49,19 @@ Func Check_source_integrity($linux_live_file)
 		$file_set_mode = "iso"
 	EndIf
 
+	; If user already select to force some install parameters
+	If ReadSetting("Install_Parameters","automatic_recognition")<>"yes" Then
+		$forced_description=ReadSetting("Install_Parameters","use_same_parameter_as")
+		$release_number = FindReleaseFromDescription($forced_description)
+		if $release_number <> -1 Then
+			Step2_Check("good")
+			Sleep(100)
+			GUI_Show_Check_status(Translate("Verifying") & " OK"&@CRLF& Translate("This version is compatible and its integrity was checked")&@CRLF&Translate("Recognized Linux")&" : "&@CRLF& @CRLF & @TAB &ReleaseGetDescription($release_number))
+			Check_If_Default_Should_Be_Used($release_number)
+		EndIf
+		SendReport("IN-Check_source_integrity (forced install parameters to : "&$forced_description&" - Release # :"&$release_number&")")
+		Return ""
+	EndIf
 
 	; No check if it's an img file or if the user do not want to
 	If ReadSetting( "Advanced", "skip_recognition") == "yes" Or get_extension($linux_live_file) = "img" Then
@@ -59,7 +72,6 @@ Func Check_source_integrity($linux_live_file)
 		SendReport("IN-Check_source_integrity (skipping recognition, using default mode)")
 		Return ""
 	EndIf
-
 
 	SendReport("Start-Check_source_integrity-1")
 	If Check_if_version_non_grata($shortname) Then Return ""
