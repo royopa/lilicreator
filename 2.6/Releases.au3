@@ -134,7 +134,7 @@ EndFunc
 
 Func FindReleaseFromDescription($description)
 	Global $releases
-	Local $found
+	Local $found=-1
 	$sections = IniReadSectionNames($compatibility_ini)
 	For $i=1 to $sections[0]
 		If ReleaseGetDescription($i) = $description Then $found = $i

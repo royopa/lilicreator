@@ -66,9 +66,6 @@ Check_for_compatibility_list_updates()
 
 OnAutoItExitRegister( "CallBack_Exit" )
 
-
-
-
 _OnAutoItError()
 
 ;#=#Function#===============================================================#

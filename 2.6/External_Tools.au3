@@ -142,7 +142,7 @@ EndFunc   ;==>Create_Empty_File
 Func EXT2_Format_File($persistence_file)
 	Local $line,$line_temp,$errors=""
 	If ProcessExists("mke2fs.exe") > 0 Then ProcessClose("mke2fs.exe")
-	$cmd = @ScriptDir & '\tools\mke2fs.exe -b 1024 ' & $persistence_file
+	$cmd = @ScriptDir & '\tools\mke2fs.exe ' & $persistence_file
 	SendReport("Start-EXT2_Format_File ( " & $cmd & " )")
 	UpdateLog($cmd)
 	$foo = Run($cmd, @ScriptDir, @SW_HIDE, $STDERR_CHILD + $STDOUT_CHILD + $STDIN_CHILD)

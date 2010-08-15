@@ -179,10 +179,10 @@ Func GUI_Show_Check_status($status)
 	;GUI_Hide_Step2_Download_Menu()
 	$cleaner = GUICtrlCreateLabel("", 38 + $offsetx0, 238 + $offsety0, 300, 90)
 	GUICtrlSetState($cleaner, $GUI_SHOW)
-	GUICtrlSetState($cleaner,$GUI_HIDE)
+	GUICtrlDelete($cleaner)
 
-	GUICtrlSetState($label_step2_status,$GUI_HIDE)
-
+	;GUICtrlSetState($label_step2_status,$GUI_HIDE)
+	GUICtrlDelete($label_step2_status)
 	$label_step2_status2 = GUICtrlCreateLabel("", 38 + $offsetx0, 235 + $offsety0, 300, 80)
 	GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 	GUICtrlSetColor(-1, 0xFFFFFF)

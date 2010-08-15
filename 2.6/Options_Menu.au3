@@ -6,31 +6,42 @@ Global $proxy_modes[3],$proxy_status,$available_languages[50]
 
 Global $check_for_updates,$stable_only,$all_release,$hTreeView,$treeview_items
 
+Global $automatic_recognition,$force_install_parameters,$combo_use_setting
 
 Func GUI_Options_Menu()
-	;WinSetState($CONTROL_GUI, "", @SW_DISABLE)
 
-	Opt("GUIOnEventMode", 0)
-	$main_menu = GUICreate("Options", 401, 436, -1, -1,-1, -1,$CONTROL_GUI)
+	Sleep(100)
+	$main_menu = GUICreate(Translate("Options"), 401, 436, -1, -1,-1, -1,$CONTROL_GUI)
+	$ok_button = GUICtrlCreateButton(Translate("OK"), 304, 408, 81, 23)
 	$Tabs = GUICtrlCreateTab(8, 8, 385, 393)
 	GUICtrlSetResizing(-1, $GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
-	$tab_general = GUICtrlCreateTabItem("General")
+	$tab_general = GUICtrlCreateTabItem(Translate("General"))
 	$logo = GUICtrlCreatePic(@ScriptDir & "\tools\img\logo.jpg", 32, 45, 344, 107)
 	$version = GUICtrlCreateLabel("LiLi : "&$software_version, 88, 196, 250, 25)
 	GUICtrlSetFont($version, 14)
 	$compat_version = GUICtrlCreateLabel("Compatibility List : "&IniRead($compatibility_ini, "Compatibility_List", "Version","none"), 88, 231, 250, 25)
 	GUICtrlSetFont($compat_version, 14)
-	$group_version = GUICtrlCreateGroup("Versions", 56, 160, 307, 123)
+	$group_version = GUICtrlCreateGroup(Translate("Versions"), 56, 160, 307, 123)
 	GUICtrlCreateGroup("", -99, -99, 1, 1)
-	$donate = GUICtrlCreateButton("Make a donation", 32, 319, 153, 33, $WS_GROUP)
-	$contact = GUICtrlCreateButton("Contact me", 212, 319, 153, 33, $WS_GROUP)
-	$copyright = GUICtrlCreateLabel("CopyLeft by Thibaut Lauzière - ",  84, 380, 150, 17)
-	$licence=GUICtrlCreateLabel("GPL v3 License", 232, 379, 360, 17)
+	$donate = GUICtrlCreateButton(Translate("Make a donation"), 32, 319, 153, 33, $WS_GROUP)
+	$contact = GUICtrlCreateButton(Translate("Contact me"), 212, 319, 153, 33, $WS_GROUP)
+	$copyright = GUICtrlCreateLabel(Translate("CopyLeft by")&" Thibaut Lauzière - ",  84, 380, 150, 17)
+	$licence=GUICtrlCreateLabel(Translate("GPL v3 License"), 232, 379, 360, 17)
 	GUICtrlSetFont(-1,-1,-1,4)
 	GUICtrlSetColor(-1,0x0000cc)
 	GUICtrlSetCursor(-1,0)
 
-	$tab_language = GUICtrlCreateTabItem("Language")
+	$tab_options = GUICtrlCreateTabItem(Translate("Options"))
+
+	$Group3 = GUICtrlCreateGroup(Translate("Install parameters"), 24, 48, 353, 129)
+
+	$automatic_recognition = GUICtrlCreateRadio(Translate("Use LiLi automatic recognition")&" ("&Translate("highly recommended")&")", 64, 72, 265, 17)
+	$force_install_parameters = GUICtrlCreateRadio(Translate("Force using same parameters as")&" :", 64, 104, 265, 17)
+	$combo_use_setting = GUICtrlCreateCombo(">> " & Translate("Select a Linux"), 88, 136, 250, -1, BitOR($CBS_DROPDOWNLIST, $WS_VSCROLL))
+	GUICtrlSetData($combo_use_setting, $prefetched_linux_list)
+	UpdateRecognition()
+
+	$tab_language = GUICtrlCreateTabItem(Translate("Language"))
 	$language_list = GUICtrlCreateList("English", 80, 136, 180, 200,$WS_BORDER+$WS_VSCROLL)
 	GUICtrlSetData(-1, Available_Languages())
 
@@ -41,26 +52,26 @@ Func GUI_Options_Menu()
 		_GUICtrlListBox_SelectString($language_list,$forced_lang)
 	EndIf
 
-	$label_languages = GUICtrlCreateLabel("Available languages", 32, 88, 323, 25)
+	$label_languages = GUICtrlCreateLabel(Translate("Available languages"), 32, 88, 323, 25)
 	GUICtrlSetFont($label_languages, 14)
 
 
-	$tab_proxy = GUICtrlCreateTabItem("Proxy")
+	$tab_proxy = GUICtrlCreateTabItem(Translate("Proxy"))
 
 
-	$group_proxy_settings = GUICtrlCreateGroup("Proxy settings", 24, 46, 353, 260)
+	$group_proxy_settings = GUICtrlCreateGroup(Translate("Proxy settings"), 24, 46, 353, 260)
 	GUICtrlSetFont(-1, 10)
 	;$prox = GUICtrlCreateCheckbox("Check for updates", 56, 70, 297, 17)
 
-	$no_proxy = GUICtrlCreateRadio("No proxy", 46, 70, 297, 17)
+	$no_proxy = GUICtrlCreateRadio(Translate("No proxy"), 46, 70, 297, 17)
 
-	$text_for_system="Use system settings"
+	$text_for_system=Translate("Use system settings")
 	$current_proxy=RegRead("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings", "ProxyServer")
 	if $current_proxy<>"" AND RegRead("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Internet Settings", "ProxyEnable")=1 Then
 		$text_for_system&=" ("&$current_proxy&")"
 	EndIf
 	$system_proxy = GUICtrlCreateRadio($text_for_system, 46, 100, 297, 17)
-	$custom_proxy = GUICtrlCreateRadio("Use custom settings", 46, 130, 297, 17)
+	$custom_proxy = GUICtrlCreateRadio(Translate("Use custom settings"), 46, 130, 297, 17)
 
 	$proxy_modes[0]=$system_proxy
 	$proxy_modes[1]=$no_proxy
@@ -68,27 +79,27 @@ Func GUI_Options_Menu()
 
 	GUICtrlSetState($proxy_modes[ReadSetting("Proxy", "proxy_mode")],$GUI_CHECKED)
 
-	$label_proxy_url = GUICtrlCreateLabel("Proxy URL", 85, 170, 87, 21, $WS_GROUP)
+	$label_proxy_url = GUICtrlCreateLabel(Translate("Proxy URL"), 85, 170, 87, 21, $WS_GROUP)
 
 	$proxy_url_input = GUICtrlCreateInput(ReadSetting( "Proxy", "proxy_url"), 150, 170, 217, 22, $WS_GROUP)
 
-	$label_proxy_port = GUICtrlCreateLabel("Port", 85, 203, 71, 21, $WS_GROUP)
+	$label_proxy_port = GUICtrlCreateLabel(Translate("Port"), 85, 203, 71, 21, $WS_GROUP)
 
 	$proxy_port_input = GUICtrlCreateInput(ReadSetting( "Proxy", "proxy_port"), 150, 203, 49, 22, $WS_GROUP+$ES_NUMBER)
 
-	$label_proxy_user = GUICtrlCreateLabel("Username", 85, 233, 84, 21, $WS_GROUP)
+	$label_proxy_user = GUICtrlCreateLabel(Translate("Username"), 85, 233, 84, 21, $WS_GROUP)
 
 	$proxy_username_input = GUICtrlCreateInput(ReadSetting( "Proxy", "proxy_username"), 150, 233, 160, 22, $WS_GROUP)
 
-	$label_proxy_password = GUICtrlCreateLabel("Password", 85, 269, 82, 21, $WS_GROUP)
+	$label_proxy_password = GUICtrlCreateLabel(Translate("Password"), 85, 269, 82, 21, $WS_GROUP)
 
 	$proxy_password_input = GUICtrlCreateInput(ReadSetting( "Proxy", "proxy_password"), 150, 269, 160, 22, $WS_GROUP+$ES_PASSWORD)
 
 
-	$group_status = GUICtrlCreateGroup("Status", 22, 323, 353, 65)
+	$group_status = GUICtrlCreateGroup(Translate("Status"), 22, 323, 353, 65)
 	GUICtrlSetFont(-1, 10)
-	$test_proxy = GUICtrlCreateButton("Test settings", 204, 348, 161, 25, $WS_GROUP)
-	$proxy_status = GUICtrlCreateLabel("Not tested yet", 32, 351, 164, 26,$WS_GROUP)
+	$test_proxy = GUICtrlCreateButton(Translate("Test settings"), 204, 348, 161, 25, $WS_GROUP)
+	$proxy_status = GUICtrlCreateLabel(Translate("Not tested yet"), 32, 351, 164, 26,$WS_GROUP)
 	GUICtrlSetColor($proxy_status,0x007f00)
 	GUICtrlSetFont($proxy_status, 12)
 
@@ -115,17 +126,17 @@ Func GUI_Options_Menu()
 	$test_proxy = GUICtrlCreateButton("Test settings", 120, 264, 161, 25)
 	#ce
 
-	$tab_updates = GUICtrlCreateTabItem("Updates")
-	$check_for_updates = GUICtrlCreateCheckbox("Check for updates", 56, 70, 297, 17)
+	$tab_updates = GUICtrlCreateTabItem(Translate("Update"))
+	$check_for_updates = GUICtrlCreateCheckbox(Translate("Check for updates"), 56, 70, 297, 17)
 	GUICtrlSetFont($check_for_updates, 12)
-	$stable_only = GUICtrlCreateRadio("Stable releases only", 87, 115, 180, 17)
-	$all_release = GUICtrlCreateRadio("Stable and beta releases", 88, 146, 180, 17)
+	$stable_only = GUICtrlCreateRadio(Translate("Stable releases only"), 87, 115, 180, 17)
+	$all_release = GUICtrlCreateRadio(Translate("Stable and beta releases"), 88, 146, 180, 17)
 	$group_updates = GUICtrlCreateGroup("", 72, 96, 220, 89)
 	InitUpdateTab()
 
 
-	$tab_options = GUICtrlCreateTabItem("Settings")
-	$label_warning = GUICtrlCreateLabel("Do not modify these options unless you know what you are doing !",30, 43, 320, 30)
+	$tab_options = GUICtrlCreateTabItem(Translate("Advanced"))
+	$label_warning = GUICtrlCreateLabel(Translate("Do not modify these options unless you know what you are doing")&" !",30, 43, 320, 30)
 	GUICtrlSetColor($label_warning,0xAA0000)
 	;Display_Options()
 	;-------------------------
@@ -145,12 +156,10 @@ Func GUI_Options_Menu()
 	;$tab_credits = GUICtrlCreateTabItem("Credits")
 	;GUICtrlCreateTabItem("")
 
-	$ok_button = GUICtrlCreateButton("OK", 304, 408, 81, 23, $WS_GROUP)
-
-
-	GUISetState(@SW_SHOW, $main_menu)
 	Check_Internet_Status()
-
+	Opt("GUIOnEventMode", 0)
+	Sleep(100)
+	GUISetState(@SW_SHOW, $main_menu)
 
 	#EndRegion ### END Koda GUI section ###
 
@@ -159,21 +168,19 @@ Func GUI_Options_Menu()
 		Switch $nMsg
 			Case $GUI_EVENT_CLOSE
 				WriteAdvancedSettings()
-				GUIDelete($main_menu)
-				ControlFocus("LinuxLive USB Creator", "", $REFRESH_AREA)
-				;GUIRegisterMsg($WM_PAINT, "DrawAll")
-				;WinActivate($for_winactivate)
-				;GuiSetState($GUI_SHOW,$CONTROL_GUI)
 				Opt("GUIOnEventMode", 1)
+				GUIDelete($main_menu)
+				Sleep(100)
+				GUISwitch($CONTROL_GUI)
+				ControlFocus("LinuxLive USB Creator", "", $REFRESH_AREA)
 				Return ""
 			Case $ok_button
 				WriteAdvancedSettings()
-				GUIDelete($main_menu)
-				ControlFocus("LinuxLive USB Creator", "", $REFRESH_AREA)
-				;GUIRegisterMsg($WM_PAINT, "DrawAll")
-				;WinActivate($for_winactivate)
-				;GuiSetState($GUI_SHOW,$CONTROL_GUI)
 				Opt("GUIOnEventMode", 1)
+				GUIDelete($main_menu)
+				Sleep(100)
+				GUISwitch($CONTROL_GUI)
+				ControlFocus("LinuxLive USB Creator", "", $REFRESH_AREA)
 				Return ""
 			Case $language_list
 				$language_selected=GUICtrlRead($language_list)
@@ -256,9 +263,43 @@ Func GUI_Options_Menu()
 				EndIf
 				Check_Internet_Status()
 
-		EndSwitch
-	WEnd
+			Case $automatic_recognition
+				WriteSetting("Install_Parameters","automatic_recognition","yes")
+				UpdateRecognition()
+			Case $force_install_parameters
+				WriteSetting("Install_Parameters","automatic_recognition","no")
+				UpdateRecognition()
+			Case $combo_use_setting
+				$forced_linux_selected=GUICtrlRead($combo_use_setting)
+				If StringInStr($forced_linux_selected, ">>") = 0 Then
+					WriteSetting("Install_Parameters","use_same_parameter_as",$forced_linux_selected)
+					UpdateRecognition()
+				Else
+					WriteSetting("Install_Parameters","use_same_parameter_as","")
+					MsgBox(48, Translate("Please read"), Translate("Please select a linux to continue"))
+				EndIf
 
+		EndSwitch
+		Sleep(10)
+	WEnd
+	GUIDelete($main_menu)
+EndFunc
+
+Func UpdateRecognition()
+
+	If ReadSetting("Install_Parameters","automatic_recognition")<>"no" Then
+		GUICtrlSetState($automatic_recognition,$GUI_CHECKED)
+		GUICtrlSetState($combo_use_setting,$GUI_DISABLE)
+	Else
+		GUICtrlSetState($force_install_parameters,$GUI_CHECKED)
+		GUICtrlSetState($combo_use_setting,$GUI_ENABLE)
+	EndIf
+
+	if ReadSetting("Install_Parameters","use_same_parameter_as") Then
+		GUICtrlSetData($combo_use_setting,ReadSetting("Install_Parameters","use_same_parameter_as"))
+	Else
+		GUICtrlSetData($combo_use_setting,">> " & Translate("Select a Linux"))
+	EndIf
 EndFunc
 
 Func WriteAdvancedSettings()
