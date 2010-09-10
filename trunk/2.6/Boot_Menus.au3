@@ -3,66 +3,84 @@
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Func GetKbdCode()
-	SendReport("Start-GetKbdCode")
+	Local $use_source,$return
+	If StringRight(@KBLayout,4) <> "0000" Then
+		$use_source=StringRight(@KBLayout,4)
+	Elseif @MUILang <> "0000" Then
+		$use_source=@MUILang
+	Else
+		$use_source=@OSLang
+	EndIf
 	Select
-		Case StringInStr("040c,080c,140c,180c", @MUILang)
+		Case StringInStr("040c,080c,140c,180c", $use_source)
 			; FR
-			UpdateLog(Translate("Detecting keyboard layout") & " : " & Translate("French (France)"))
-			SendReport("End-GetKbdCode")
-			Return "locale=fr_FR bootkbd=fr-latin1 console-setup/layoutcode=fr console-setup/variantcode=nodeadkeys "
-
-		Case StringInStr("0c0c", @MUILang)
+			$for_status = Translate("French (France)")
+			$return = "bootkbd=fr-latin1 console-setup/layoutcode=fr console-setup/variantcode=nodeadkeys "
+		Case StringInStr("0c0c", $use_source)
 			; CA
-			UpdateLog(Translate("Detecting keyboard layout") & " : " & Translate("Français (Canada)"))
-			SendReport("End-GetKbdCode")
-			Return "locale=fr_CA bootkbd=fr-latin1 console-setup/layoutcode=ca console-setup/variantcode=nodeadkeys "
-
-		Case StringInStr("100c", @MUILang)
+			$for_status = Translate("Français (Canada)")
+			$return = "bootkbd=fr-latin1 console-setup/layoutcode=ca console-setup/variantcode=nodeadkeys "
+		Case StringInStr("100c", $use_source)
 			; Suisse FR
-			UpdateLog(Translate("Detecting keyboard layout") & " : " & Translate("French (Swiss)"))
-			SendReport("End-GetKbdCode")
-			Return "locale=fr_CH bootkbd=fr-latin1 console-setup/layoutcode=ch console-setup/variantcode=fr "
-
-		Case StringInStr("0407,0807,0c07,1007,1407", @MUILang)
+			$for_status =  Translate("French (Swiss)")
+			$return = "bootkbd=fr-latin1 console-setup/layoutcode=ch console-setup/variantcode=fr "
+		Case StringInStr("0407,0807,0c07,1007,1407", $use_source)
 			; German & dutch
-			UpdateLog(Translate("Detecting keyboard layout") & " : " & Translate("Dutch"))
-			SendReport("End-GetKbdCode")
-			Return "locale=de_DE bootkbd=de console-setup/layoutcode=de console-setup/variantcode=nodeadkeys "
-
-		Case StringInStr("0816", @MUILang)
+			$for_status =  Translate("Dutch")
+			$return = "bootkbd=de console-setup/layoutcode=de console-setup/variantcode=nodeadkeys "
+		Case StringInStr("0816", $use_source)
 			; Portugais
-			UpdateLog(Translate("Detecting keyboard layout") & " : " & Translate("Portuguese"))
-			SendReport("End-GetKbdCode")
-			Return "locale=pt_BR bootkbd=qwerty/br-abnt2 console-setup/layoutcode=br console-setup/variantcode=nodeadkeys "
-
-		Case StringInStr("0410,0810", @MUILang)
+			$for_status =  Translate("Portuguese")
+			$return =  "bootkbd=qwerty/br-abnt2 console-setup/layoutcode=br console-setup/variantcode=nodeadkeys "
+		Case StringInStr("0410,0810", $use_source)
 			; Italien
-			UpdateLog(Translate("Detecting keyboard layout") & " : " & Translate("Italian"))
-			SendReport("End-GetKbdCode")
-			Return "locale=it_IT bootkbd=it console-setup/layoutcode=it console-setup/variantcode=nodeadkeys "
+			$for_status = Translate("Italian")
+			 $return = "bootkbd=it console-setup/layoutcode=it console-setup/variantcode=nodeadkeys "
 		Case Else
 			; US
-			UpdateLog(Translate("Detecting keyboard layout") & " : " & Translate("US or other (qwerty)"))
-			SendReport("End-GetKbdCode")
-			Return "locale=us_us bootkbd=us console-setup/layoutcode=en_US console-setup/variantcode=nodeadkeys "
+			$for_status =  Translate("US or other (qwerty)")
+			$return =  "bootkbd=us console-setup/layoutcode=en_US console-setup/variantcode=nodeadkeys "
 	EndSelect
-
+	UpdateLog(Translate("Detecting keyboard layout") & " : " &$for_status&" (code="&$use_source&")")
+	Return $return
 EndFunc   ;==>GetKbdCode
 
 
-Func Get_Disk_UUID($drive_letter)
-	SendReport("Start-Get_Disk_UUID ( Drive : " & $drive_letter & " )")
-	Local $uuid = "EEEE-EEEE"
-	Dim $oWMIService = ObjGet("winmgmts:{impersonationLevel=impersonate}!\\.\root\cimv2")
-	$o_ColListOfProcesses = $oWMIService.ExecQuery("SELECT * FROM Win32_LogicalDisk WHERE Name = '" & $drive_letter & "'")
-	For $o_ObjProcess In $o_ColListOfProcesses
-		$uuid = $o_ObjProcess.VolumeSerialNumber
-	Next
-	$result=StringTrimRight($uuid, 4) & "-" & StringTrimLeft($uuid, 4)
-	SendReport("End-Get_Disk_UUID : UUID is "&$result)
-	Return $result
-EndFunc   ;==>Get_Disk_UUID
+Func GetLangCode()
+	Local $use_source
+	If @MUILang <> "0000" Then
+		$use_source=@MUILang
+	Else
+		$use_source=@OSLang
+	EndIf
 
+	Select
+		Case StringInStr("040c,080c,140c,180c", $use_source)
+			; FR
+			$lang_code = "fr_FR"
+		Case StringInStr("0c0c", $use_source)
+			; CA
+			$lang_code = "fr_CA"
+		Case StringInStr("100c", $use_source)
+			; Suisse FR
+			$lang_code = "fr_FR"
+		Case StringInStr("0407,0807,0c07,1007,1407", $use_source)
+			; German & dutch
+			$lang_code = "de_DE"
+		Case StringInStr("0816", $use_source)
+			; Portugais
+			$lang_code = "pt_BR"
+		Case StringInStr("0410,0810", $use_source)
+			; Italien
+			$lang_code= "it_IT"
+		Case Else
+			; US
+			$lang_code= "us_us"
+	EndSelect
+	$full_return="locale="&$lang_code&" "
+	SendReport("Generated Lang Code : "&$full_return&" (code="&$use_source&")")
+	Return $lang_code
+EndFunc   ;==>GetLang
 
 Func TinyCore_WriteTextCFG($selected_drive)
 	SendReport("Start-TinyCore_WriteTextCFG ( Drive : " & $selected_drive & " )")
@@ -233,6 +251,22 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 		Return 1
 	EndIf
 
+
+	if $ubuntu_variant = "uberstudent" Then
+		$boot_text= @LF &"default vesamenu.c32" _
+		& @LF &"prompt 0" _
+		& @LF &"timeout 300" _
+		& @LF &"menu title UberStudent" _
+		& @LF &"menu background splash.png" _
+		& @LF &"menu color title 1;37;44 #c0ffffff #00000000 std"&Ubuntu_BootMenu($initrd_file,"custom")
+		UpdateLog("Creating syslinux.cfg file for "&$ubuntu_variant&" :" & @CRLF & $boot_text)
+		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
+		FileWrite($file, $boot_text)
+		FileClose($file)
+		SendReport("End-Ubuntu_WriteTextCFG")
+		Return 1
+	EndIf
+
 	; For official Ubuntu variants and most others, only text.cfg need to be modified
 	$boot_text = Ubuntu_BootMenu($initrd_file,AutomaticPreseed($selected_drive,$ubuntu_variant))
 	UpdateLog("Creating text.cfg file for Ubuntu variants :" & @CRLF & $boot_text)
@@ -264,7 +298,7 @@ Func AutomaticPreseed($selected_drive,$preseed_variant)
 
 		Local $preseed="",$found_preseed = _StringBetween($content, 'seed/', '.seed')
 		if NOT @error Then
-			if UBound($found_preseed) > 0 Then
+			if IsArray($found_preseed) AND UBound($found_preseed) > 0 Then
 				SendReport("IN-AutomaticPreseed -> automatic search found preseed : "&$found_preseed[0])
 				Return $found_preseed[0]
 			EndIf
@@ -281,23 +315,24 @@ EndFunc
 Func Ubuntu_BootMenu($initrd_file,$seed_name)
 	Local $kbd_code,$boot_text=""
 	$kbd_code = GetKbdCode()
+	$lang_code = GetLangCode()
 	If FileExists($selected_drive&"\casper-rw") Then
 		$boot_text = @LF& "label persist" & @LF & "menu label ^" & Translate("Persistent Mode") _
 			& @LF & "  kernel /casper/vmlinuz" _
-			& @LF & "  append  " & $kbd_code & "noprompt cdrom-detect/try-usb=true persistent file=/cdrom/preseed/" & $seed_name & ".seed boot=casper initrd=/casper/" & $initrd_file & " splash--"
+			& @LF & "  append  " & $kbd_code & $lang_code & "noprompt cdrom-detect/try-usb=true persistent file=/cdrom/preseed/" & $seed_name & ".seed boot=casper initrd=/casper/" & $initrd_file & " splash--"
 	EndIf
 	$boot_text&= @LF & "label live" _
 		& @LF & "  menu label ^" & Translate("Live Mode") _
 		& @LF & "  kernel /casper/vmlinuz" _
-		& @LF & "  append   " & $kbd_code & "noprompt cdrom-detect/try-usb=true file=/cdrom/preseed/" & $seed_name  & ".seed boot=casper initrd=/casper/" & $initrd_file & " splash--" _
+		& @LF & "  append   " & $kbd_code & $lang_code &  "noprompt cdrom-detect/try-usb=true file=/cdrom/preseed/" & $seed_name  & ".seed boot=casper initrd=/casper/" & $initrd_file & " splash--" _
 		& @LF & "label live-install" _
 		& @LF & "  menu label ^" & Translate("Install") _
 		& @LF & "  kernel /casper/vmlinuz" _
-		& @LF & "  append   " & $kbd_code & "noprompt cdrom-detect/try-usb=true persistent file=/cdrom/preseed/" & $seed_name  & ".seed boot=casper only-ubiquity initrd=/casper/" & $initrd_file & " splash --" _
+		& @LF & "  append   " & $kbd_code & $lang_code & "noprompt cdrom-detect/try-usb=true persistent file=/cdrom/preseed/" & $seed_name  & ".seed boot=casper only-ubiquity initrd=/casper/" & $initrd_file & " splash --" _
 		& @LF & "label check" _
 		& @LF & "  menu label ^" & Translate("File Integrity Check") _
 		& @LF & "  kernel /casper/vmlinuz" _
-		& @LF & "  append   " & $kbd_code & "noprompt boot=casper integrity-check initrd=/casper/" & $initrd_file & " splash --" _
+		& @LF & "  append   " & $kbd_code & $lang_code &  "noprompt boot=casper integrity-check initrd=/casper/" & $initrd_file & " splash --" _
 		& @LF & "label memtest" _
 		& @LF & "  menu label ^" & Translate("Memory Test") _
 		& @LF & "  kernel /install/mt86plus"

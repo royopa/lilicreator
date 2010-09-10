@@ -457,13 +457,21 @@ Func Rename_and_move_files($drive_letter, $release_in_list)
 	; Fix for Parted Magic > 4.6 (support is discontinued for 4.6)
 	If ReleaseGetVariant($release_in_list) ="pmagic"  Then
 		$search = FileFindFirstFile($drive_letter&"\pmagic-usb-*")
-
+		$search2 = FileFindFirstFile($drive_letter&"\pmagic-pxe-*")
 		; Check if the search was successful
 		If $search <> -1 Then
 			$pmagic_folder = FileFindNextFile($search)
-			SendReport("IN-Rename_and_move_files : Found pmagic folder (automatic) = "&$pmagic_folder)
+			SendReport("IN-Rename_and_move_files : Found pmagic USB folder (automatic) = "&$pmagic_folder)
+		ElseIf $search2 <> -1 Then
+			$pmagic_folder = FileFindNextFile($search2)
+			SendReport("IN-Rename_and_move_files : Found pmagic PXE folder (automatic) = "&$pmagic_folder)
 		Else
-			$pmagic_folder="pmagic-usb-"&ReleaseGetVariantVersion($release_in_list)
+			if GenericVersionCode(ReleaseGetVariantVersion($release_in_list)) > "52" Then
+				$look_for="pxe"
+			Else
+				$look_for="usb"
+			EndIf
+			$pmagic_folder="pmagic-"&$look_for&"-"&ReleaseGetVariantVersion($release_in_list)
 			SendReport("IN-Rename_and_move_files : Found pmagic folder (manual)= "&$pmagic_folder)
 		EndIf
 
@@ -936,8 +944,8 @@ Func CreateUninstaller($drive_letter,$release_in_list)
 	&@CRLF&"echo -----------------------------------------------------------------" _
 	&@CRLF&"echo." _
 	&@CRLF&"echo." _
-	&@CRLF&'choice /c yn /M "Are you sure you want to remove Linux Live from your key"' _
-	&@CRLF&"if errorlevel 2 goto End" _
+	&@CRLF&'set /P userchoice="Are you sure you want to remove Linux Live from your key (Y/N) ?"' _
+	&@CRLF&'if /i NOT "%userchoice%"=="y" goto:eof' _
 	&@CRLF&"cls" _
 	&@CRLF&"echo -----------------------------------------------------------------" _
 	&@CRLF&"echo -----------        Removal of LinuxLive      --------------------" _

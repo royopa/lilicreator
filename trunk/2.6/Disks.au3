@@ -10,7 +10,7 @@ Func Refresh_DriveList()
 	$all_drives = "|-> " & Translate("Choose a USB Key") & "|"
 	If Not @error Then
 		Dim $description[100]
-		If UBound($drive_list) > 1 Then
+		If IsArray($drive_list) AND UBound($drive_list) > 1 Then
 			For $i = 1 To $drive_list[0]
 				$label = DriveGetLabel($drive_list[$i])
 				$fs = DriveGetFileSystem($drive_list[$i])
@@ -26,7 +26,7 @@ Func Refresh_DriveList()
 	If Not @error Then
 		$all_drives &= "-> " & Translate("Hard drives") & " -------------|"
 		Dim $description[100]
-		If UBound($drive_list) > 1 Then
+		If IsArray($drive_list) AND UBound($drive_list) > 1 Then
 			For $i = 1 To $drive_list[0]
 				$label = DriveGetLabel($drive_list[$i])
 				$fs = DriveGetFileSystem($drive_list[$i])
@@ -144,7 +144,7 @@ Func GiveMePhysicalDisk($drive_letter)
 		Next
 
 	Else
-		UpdateLog("ERROR with WMI : object not created")
+		UpdateLog("ERROR with WMI : object not created, cannot find PhysicalDisk")
 	endif
 
 	if $physical_drive Then
@@ -154,6 +154,36 @@ Func GiveMePhysicalDisk($drive_letter)
 		Return "ERROR"
 	EndIf
 EndFunc   ;==>GiveMePhysicalDisk
+
+Func Get_Disk_UUID($drive_letter)
+	SendReport("Start-Get_Disk_UUID ( Drive : " & $drive_letter & " )")
+	Local $uuid = "EEEE-EEEE"
+	Local $g_eventerror
+	Local $wbemFlagReturnImmediately, $wbemFlagForwardOnly, $objWMIService, $colItems, $objItem
+	$wbemFlagReturnImmediately = 0x10
+	$wbemFlagForwardOnly = 0x20
+	$colItems = ""
+
+	$objWMIService = ObjGet("winmgmts:\\.\root\CIMV2")
+	if @error OR $g_eventerror OR NOT IsObj($objWMIService) Then
+		UpdateLog("ERROR with WMI : Trying alternate method (WMI impersonation)")
+		$g_eventerror =0
+		$objWMIService = ObjGet("winmgmts:{impersonationLevel=Impersonate}!//.")
+	EndIf
+
+	if @error OR $g_eventerror then
+		SendReport("End-Get_Disk_UUID : FATAL error with WMI")
+		Return $uuid
+	Elseif IsObj($objWMIService) Then
+		$o_ColListOfProcesses = $objWMIService.ExecQuery("SELECT * FROM Win32_LogicalDisk WHERE Name = '" & $drive_letter & "'")
+		For $o_ObjProcess In $o_ColListOfProcesses
+			$uuid = $o_ObjProcess.VolumeSerialNumber
+		Next
+		$result=StringTrimRight($uuid, 4) & "-" & StringTrimLeft($uuid, 4)
+		SendReport("End-Get_Disk_UUID : UUID is "&$result)
+		Return $result
+	EndIf
+EndFunc   ;==>Get_Disk_UUID
 
 Func FAT32Format($drive,$label)
 	SendReport("Start-FAT32Format ( Drive : " & $drive & " )")

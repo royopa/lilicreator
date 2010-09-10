@@ -9,8 +9,7 @@ Global $check_for_updates,$stable_only,$all_release,$hTreeView,$treeview_items
 Global $automatic_recognition,$force_install_parameters,$combo_use_setting
 
 Func GUI_Options_Menu()
-
-	Sleep(100)
+	Opt("GUIOnEventMode", 0)
 	$main_menu = GUICreate(Translate("Options"), 401, 436, -1, -1,-1, -1,$CONTROL_GUI)
 	$ok_button = GUICtrlCreateButton(Translate("OK"), 304, 408, 81, 23)
 	$Tabs = GUICtrlCreateTab(8, 8, 385, 393)
@@ -19,7 +18,7 @@ Func GUI_Options_Menu()
 	$logo = GUICtrlCreatePic(@ScriptDir & "\tools\img\logo.jpg", 32, 45, 344, 107)
 	$version = GUICtrlCreateLabel("LiLi : "&$software_version, 88, 196, 250, 25)
 	GUICtrlSetFont($version, 14)
-	$compat_version = GUICtrlCreateLabel("Compatibility List : "&IniRead($compatibility_ini, "Compatibility_List", "Version","none"), 88, 231, 250, 25)
+	$compat_version = GUICtrlCreateLabel(Translate("Compatibility List")&" : "&IniRead($compatibility_ini, "Compatibility_List", "Version","none"), 88, 231, 250, 25)
 	GUICtrlSetFont($compat_version, 14)
 	$group_version = GUICtrlCreateGroup(Translate("Versions"), 56, 160, 307, 123)
 	GUICtrlCreateGroup("", -99, -99, 1, 1)
@@ -156,8 +155,8 @@ Func GUI_Options_Menu()
 	;$tab_credits = GUICtrlCreateTabItem("Credits")
 	;GUICtrlCreateTabItem("")
 
-	Check_Internet_Status()
-	Opt("GUIOnEventMode", 0)
+	;Check_Internet_Status()
+
 	Sleep(100)
 	GUISetState(@SW_SHOW, $main_menu)
 
@@ -420,16 +419,16 @@ EndFunc
 Func Check_Internet_Status()
 	if OnlineStatus()=1 Then
 		GUICtrlSetColor($proxy_status,0x007f00)
-		GUICtrlSetData($proxy_status,"You are connected")
+		GUICtrlSetData($proxy_status,Translate("You are connected"))
 	Else
 		GUICtrlSetColor($proxy_status,0xAA0000)
-		GUICtrlSetData($proxy_status,"You are disconnected")
+		GUICtrlSetData($proxy_status,Translate("You are disconnected"))
 	EndIf
 EndFunc
 
 Func OnlineStatus()
 	GUICtrlSetColor($proxy_status,0xFF9104)
-	GUICtrlSetData($proxy_status,"Testing")
+	GUICtrlSetData($proxy_status,Translate("Testing"))
 	$inet = InetGet("http://www.google.com", @TempDir & "\connectivity-test.tmp",1,0)
     If @error OR $inet=0 Then
 		return 0

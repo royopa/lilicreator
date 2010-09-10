@@ -22,6 +22,12 @@ Func LogSystemConfig()
 	EndIf
 
 	$mem = MemGetStats()
+	if IsArray($mem) AND Ubound($mem) > 2 Then
+		$mem_stats=Round($mem[1] / 1024) & "MB  ( with " & (100 - $mem[0]) & "% free = " & Round($mem[2] / 1024) & "MB )"
+	Else
+		$mem_stats="Error fetching memory stats"
+	EndIf
+
 	$line = @CRLF & "--------------------------------  System Config  --------------------------------"
 	$line &= @CRLF & "LiLi USB Creator : " & $software_version
 	$line &= @CRLF & "Compatibility List Version : " & $current_compatibility_list_version
@@ -30,23 +36,27 @@ Func LogSystemConfig()
 	$line &= @CRLF & "OS Version : " & $os_version
 	$line &= @CRLF & "OS Build : " & @OSBuild
 	$line &= @CRLF & "OS Service Pack : " & @OSServicePack
-	$line &= @CRLF & "OS Lang : " & HumanOSLang(@OSLang) & " ("& @OSLang&")"
-	$line &= @CRLF & "Architecture : " & @OSArch
-	$line &= @CRLF & "Memory : " & Round($mem[1] / 1024) & "MB  ( with " & (100 - $mem[0]) & "% free = " & Round($mem[2] / 1024) & "MB )"
+	$line &= @CRLF & "OS Lang :  " & HumanOSLang(@OSLang) & " ("& @OSLang&")"
 	$line &= @CRLF & "Language : " & HumanOSLang(@MUILang) & " ("& @MUILang&")"
+	$line &= @CRLF & "Architecture : " & @OSArch
+	$line &= @CRLF & "Memory : " & $mem_stats
+
 	$line &= @CRLF & "Keyboard : " & @KBLayout
 	$line &= @CRLF & "Resolution : " & @DesktopWidth & "x" & @DesktopHeight
 	$line &= @CRLF & "Proxy settings : " & ProxySettingsReport()
-	$line &= @CRLF & "Chosen Key : " & $selected_drive
-	$line &= @CRLF & "Filesystem : " & DriveGetFileSystem($selected_drive)
-	If $selected_drive Then $space = Round(DriveSpaceFree($selected_drive))
-	$line &= @CRLF & "Free space on key : " & $space & "MB"
-	$line &= @CRLF & "Previous install : "&PreviousInstallReport()
-	If $file_set_mode == "iso" Then
+
+	If StringStripWS($selected_drive,8)<>"->" Then
+		$line &= @CRLF & "Chosen Key : " & $selected_drive
+		$line &= @CRLF & "Filesystem : " & DriveGetFileSystem($selected_drive)
+		$line &= @CRLF & "Free space on key : " & Round(DriveSpaceFree($selected_drive)) & "MB"
+		$line &= @CRLF & "Previous install : "&PreviousInstallReport()
+	EndIf
+
+	If $file_set_mode = "iso" Then
 		$line &= @CRLF & "Selected ISO : " &path_to_name($file_set)
 		$line &= @CRLF & "Recognized as : "&ReleaseGetDescription($release_number)&"("&ReleaseGetCodename($release_number)&")"
 		$line &= @CRLF & "ISO Hash : " & $MD5_ISO
-	Else
+	Elseif $file_set_mode == "img" Then
 		$line &= @CRLF & "Selected source : " & $file_set
 		$line &= @CRLF & "Selected file : " &path_to_name($file_set)
 	EndIf
@@ -89,18 +99,23 @@ EndFunc
 
 Func UpdateStatus($status)
 	Global $label_step5_status
-	SendReport(IniRead($lang_ini, "English", $status, $status))
-	GUICtrlSetData($label_step5_status, "")
-	GUICtrlSetData($label_step5_status, Translate($status))
-	_FileWriteLog($logfile, "Status : " & Translate($status))
+	$translated_status=Translate($status)
+	if GUICtrlRead($label_step5_status) <> $translated_status Then
+		GUICtrlSetData($label_step5_status, Translate($status))
+		SendReport(IniRead($lang_ini, "English", $status, $status))
+		_FileWriteLog($logfile, "Status : " & Translate($status))
+	EndIf
 EndFunc   ;==>UpdateStatus
 
 Func UpdateStatusStep2($status)
 	Global $label_step2_status
-	SendReport(IniRead($lang_ini, "English", $status, $status))
-	GUICtrlSetData($label_step2_status, "")
-	GUICtrlSetData($label_step2_status, Translate($status))
-	_FileWriteLog($logfile, "Status : " & Translate($status))
+	$translated_status=Translate($status)
+	if GUICtrlRead($label_step2_status) <> $translated_status Then
+		SendReport(IniRead($lang_ini, "English", $status, $status))
+		Sleep(100)
+		GUICtrlSetData($label_step2_status, Translate($status))
+		_FileWriteLog($logfile, "Status : " & Translate($status))
+	EndIf
 EndFunc   ;==>UpdateStatusStep2
 
 Func UpdateLog($status)
@@ -109,12 +124,14 @@ EndFunc   ;==>UpdateLog
 
 Func UpdateStatusNoLog($status)
 	Global $label_step5_status
-	GUICtrlSetData($label_step5_status, "")
-	GUICtrlSetData($label_step5_status, Translate($status))
+	$translated_status=Translate($status)
+	if GUICtrlRead($label_step5_status) <> $translated_status Then
+		GUICtrlSetData($label_step5_status, Translate($status))
+	EndIf
 EndFunc   ;==>UpdateStatusNoLog
 
 Func SendReport($report)
-	If ReadSetting( "General", "verbose_logging") = "yes" Then UpdateLog($report)
+	If $verbose_logging = "yes" Then UpdateLog($report)
 	_SendData($report, "lili-Reporter")
 EndFunc   ;==>SendReport
 

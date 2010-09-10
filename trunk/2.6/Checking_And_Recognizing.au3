@@ -183,6 +183,9 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "Super_OS") Then
 				; Super OS (Ubuntu)
 				$release_number = _ArraySearch($codenames_list, "superos-last")
+			ElseIf StringInStr($shortname, "uberstudent") Then
+				; UberStudent (Ubuntu)
+				$release_number = _ArraySearch($codenames_list, "uberstudent-last")
 			ElseIf StringInStr($shortname, "sidux") Then
 				; Sidux
 				if StringInStr($shortname, "kde") Then
@@ -441,6 +444,10 @@ Func Check_ISO($FileToHash)
 		Return $hexa_hash
 	EndIf
 
+	if $progress_bar Then
+		_ProgressDelete($progress_bar)
+		Global $_Progress_Bars[1][15] = [[-1]]
+	EndIf
 	$progress_bar = _ProgressCreate(38 + $offsetx0, 238 + $offsety0, 300, 30)
 	_ProgressSetImages($progress_bar, @ScriptDir & "\tools\img\progress_green.jpg", @ScriptDir & "\tools\img\progress_background.jpg")
 	_ProgressSetImages($progress_bar, @ScriptDir & "\tools\img\progress_green.jpg", @ScriptDir & "\tools\img\progress_background.jpg")
@@ -456,8 +463,9 @@ Func Check_ISO($FileToHash)
 		SendReport("End-Check_ISO (no iso)")
 		Return "no iso"
 	EndIf
-
+	SendReport("IN-Check_ISO : Crypto Library Startup")
 	_Crypt_Startup()
+
 	$iterations = Ceiling(FileGetSize($FileToHash) / $buffersize)
 
 	For $i = 1 To $iterations
@@ -470,6 +478,7 @@ Func Check_ISO($FileToHash)
 	FileClose($filehandle)
 	_Crypt_Shutdown()
 
+	SendReport("IN-Check_ISO : Closed Crypto Library, hash computed")
 	_ProgressSet($progress_bar,100 )
 	_ProgressSetText($progress_bar, "100%" )
 	_ProgressDelete($progress_bar)
@@ -485,12 +494,12 @@ Func Check_cache($FileToHash)
 	$cached_md5=ReadSetting("Cached_MD5",CleanPathForCache($FileToHash))
 
 	if $cached_md5 = "" Then
-		SendReport("IN-Check_Cache : no cache for this file")
+		SendReport("End-Check_Cache : no cache for this file")
 		Return ""
 	Else
 		$cached_settings=StringSplit($cached_md5,"||",1)
 
-		if Ubound($cached_settings)=5 Then
+		if IsArray($cached_settings) AND Ubound($cached_settings)=5 Then
 			$file_settings=FileGetSize($FileToHash)&"||"&FileGetTime($FileToHash,0,1)&"||"&FileGetTime($FileToHash,1,1)
 			$cache_settings_nomd5=$cached_settings[2]&"||"&$cached_settings[3]&"||"&$cached_settings[4]
 
