@@ -65,7 +65,7 @@ Func GUI_Exit()
 		If $foo Then ProcessClose($foo)
 		GUIDelete($CONTROL_GUI)
 		GUIDelete($GUI)
-		_ProgressDelete($progress_bar)
+		if $progress_bar Then _ProgressDelete($progress_bar)
 		_GDIPlus_GraphicsDispose($ZEROGraphic)
 		_GDIPlus_ImageDispose($EXIT_NORM)
 		_GDIPlus_ImageDispose($EXIT_OVER)
@@ -363,8 +363,8 @@ Func GUI_Hide_Step2_Download_Menu()
 	GUICtrlSetState($download_label2, $GUI_HIDE)
 	GUICtrlSetState($OR_label, $GUI_HIDE)
 	$cleaner = GUICtrlCreateLabel("", 38 + $offsetx0, 238 + $offsety0, 300, 30)
-
 	GUICtrlSetState($cleaner, $GUI_SHOW)
+	GUICtrlDelete($cleaner)
 EndFunc
 
 Func GUI_Show_Step2_Default_Menu()
@@ -397,8 +397,8 @@ EndFunc
 Func GUI_Back_Download()
 	SendReport("Start-GUI_Back_Download")
 	Global $label_step2_status,$label_step2_status2
-	Global $current_download
-	_ProgressDelete($progress_bar)
+	Global $current_download,$progress_bar
+	if $progress_bar Then _ProgressDelete($progress_bar)
 	InetClose($current_download)
 	GUI_Hide_Step2_Download_Menu()
 	GUI_Hide_Back_Button()
@@ -424,23 +424,23 @@ Func GUI_Select_Linux()
 EndFunc   ;==>GUI_Select_Linux
 
 Func GUI_Download_Automatically()
-	SendReport("Start-GUI_Download_Automatically")
 	$selected_linux = GUICtrlRead($combo_linux)
+	SendReport("Start-GUI_Download_Automatically (Downloading : "&$selected_linux&" )")
 	$release_in_list = FindReleaseFromDescription($selected_linux)
 	DownloadRelease($release_in_list, 1)
 	SendReport("End-GUI_Download_Automatically")
 EndFunc   ;==>GUI_Download_Automatically
 
 Func GUI_Download_Manually()
-	SendReport("Start-GUI_Download_Manually")
 	$selected_linux = GUICtrlRead($combo_linux)
+	SendReport("Start-GUI_Download_Manually (Downloading "&$selected_linux&" )")
 	$release_in_list = FindReleaseFromDescription($selected_linux)
 	DownloadRelease($release_in_list, 0)
 	SendReport("End-GUI_Download_Manually")
 EndFunc   ;==>GUI_Download_Manually
 
 Func DownloadRelease($release_in_list, $automatic_download)
-	SendReport("Start-DownloadRelease (Release=" & $release_in_list & " - Auto_DL=" & $automatic_download & " )")
+	SendReport("Start-DownloadRelease")
 	Local $latency[50], $i, $mirror, $available_mirrors = 0, $tested_mirrors = 0
 
 	GUI_Hide_Step2_Download_Menu()
@@ -451,15 +451,13 @@ Func DownloadRelease($release_in_list, $automatic_download)
 	;GUICtrlSetCursor($BACK_AREA, 0)
 	;GUICtrlSetOnEvent($BACK_AREA, "GUI_Back_Download")
 
+	if $progress_bar Then
+		_ProgressDelete($progress_bar)
+		Global $_Progress_Bars[1][15] = [[-1]]
+	EndIf
 	$progress_bar = _ProgressCreate(38 + $offsetx0, 238 + $offsety0, 300, 30)
 	_ProgressSetImages($progress_bar, @ScriptDir & "\tools\img\progress_green.jpg", @ScriptDir & "\tools\img\progress_background.jpg")
 	_ProgressSetFont($progress_bar, "", -1, -1, 0x000000, 0)
-
-	if NOT $progress_bar Then
-		$progress_bar = _ProgressCreate(38 + $offsetx0, 238 + $offsety0, 300, 30)
-		_ProgressSetImages($progress_bar, @ScriptDir & "\tools\img\progress_green.jpg", @ScriptDir & "\tools\img\progress_background.jpg")
-		_ProgressSetFont($progress_bar, "", -1, -1, 0x000000, 0)
-	EndIf
 
 	$label_step2_status = GUICtrlCreateLabel(Translate("Looking for the fastest mirror"), 38 + $offsetx0, 231 + $offsety0 + 50, 300, 80)
 	GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
@@ -468,12 +466,12 @@ Func DownloadRelease($release_in_list, $automatic_download)
 
 	For $i = $R_MIRROR1 To $R_MIRROR10
 		$mirror = $releases[$release_in_list][$i]
-		If StringStripWS($mirror, 1) <> "" Then $available_mirrors = $available_mirrors + 1
+		If StringStripWS($mirror, 8) <> "" Then $available_mirrors = $available_mirrors + 1
 	Next
 
 	For $i = $R_MIRROR1 To $R_MIRROR10
 		$mirror = $releases[$release_in_list][$i]
-		If StringStripWS($mirror, 1) <> "" Then
+		If StringStripWS($mirror, 8) <> "" Then
 			_ProgressSet($progress_bar, $tested_mirrors * 100 / $available_mirrors)
 			_ProgressSetText($progress_bar, Translate("Testing mirror") & " : " & URLToHostname($mirror))
 			$temp_latency = Ping(URLToHostname($mirror))
@@ -494,7 +492,6 @@ Func DownloadRelease($release_in_list, $automatic_download)
 
 	Next
 	If _ArrayMin($latency, 1, $R_MIRROR1, $R_MIRROR10) = 10000 Then
-		SendReport("ck2")
 		UpdateStatusStep2(Translate("No online mirror found") & " !" & @CRLF & Translate("Please check your internet connection or try with another linux"))
 		_ProgressSet($progress_bar, 100)
 		Sleep(3000)
@@ -510,7 +507,7 @@ Func DownloadRelease($release_in_list, $automatic_download)
 			$iso_size = InetGetSize($best_mirror)
 			$filename = unix_path_to_name($best_mirror)
 			$temp_filename = StringReplace($filename,get_extension($filename),"temp")
-			$current_download = InetGet($best_mirror, @ScriptDir & "\" & $temp_filename, 1, 1)
+			$current_download = InetGet($best_mirror, @DesktopDir & "\" & $temp_filename, 1, 1)
 			If InetGetInfo($current_download, 4)=0 Then
 				UpdateStatusStep2(Translate("Downloading") & " " & $filename & @CRLF & Translate("from") & " " & URLToHostname($best_mirror))
 				Download_State()
@@ -643,7 +640,7 @@ Func Download_State()
 		_ProgressSetText($progress_bar, $percent_downloaded & "% ( " & RoundForceDecimal($newgetbytesread / (1024 * 1024)) & " / " & $iso_size_mb & " " & "MB" & " ) " & $estimated_time)
 		Sleep(300)
 	Until InetGetInfo($current_download, 2)
-	FileMove(@ScriptDir & "\" & $temp_filename,@ScriptDir & "\" & $filename)
+	FileMove(@DesktopDir & "\" & $temp_filename,@DesktopDir & "\" & $filename)
 	_ProgressSet($progress_bar, 100)
 	_ProgressSetText($progress_bar, "100% ( " & Round($iso_size / (1024 * 1024)) & " / " & Round($iso_size / (1024 * 1024)) & " " & "MB" & " )")
 
@@ -652,7 +649,7 @@ Func Download_State()
 	_ProgressDelete($progress_bar)
 	GUI_Hide_Step2_Download_Menu()
 
-	$file_set = @ScriptDir & "\" & $filename
+	$file_set = @DesktopDir & "\" & $filename
 	Check_source_integrity($file_set)
 	SendReport("End-Download_State")
 EndFunc   ;==>Download_State
@@ -766,8 +763,9 @@ Func GUI_Launch_Creation()
 		$return = MsgBox(33,Translate("Please read"),Translate("You have already created a key")&"."&@CRLF&Translate("Are you sure that you want to recreate one")&" ?")
 		if $return == 2 Then Return ""
 	EndIf
-	SendReport(LogSystemConfig())
+
 	SendReport("Start-GUI_Launch_Creation")
+	SendReport(LogSystemConfig())
 	; Disable the controls and re-enable after creation
 
 	$selected_drive = StringLeft(GUICtrlRead($combo), 2)
@@ -883,7 +881,6 @@ Func Ask_For_Feedback()
 EndFunc   ;==>Ask_For_Feedback
 
 Func GUI_Events()
-
 	SendReport("Start-GUI_Events (GUI_CtrlID=" & @GUI_CtrlId & " )")
 	Select
 		Case @GUI_CtrlId = $GUI_EVENT_CLOSE
@@ -948,5 +945,6 @@ Func GUI_Help_Step5()
 	SendReport("Start-GUI_Help_Step5")
 	;_About(Translate("About this software"), "LiLi USB Creator", "CopyLeft by Thibaut Lauzière - GPL v3 License", $software_version, Translate("User's Guide"), "http://www.linuxliveusb.com/how-to.html", Translate("Homepage"), "http://www.linuxliveusb.com", Translate("Donate"), "https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=8297661", @AutoItExe, 0x0000FF, 0xFFFFFF, -1, -1, -1, -1, $CONTROL_GUI)
 	GUI_Options_Menu()
+	;DebugOptions()
 	SendReport("End-GUI_Help_Step5")
 EndFunc   ;==>GUI_Help_Step5

@@ -6,11 +6,10 @@
 #AutoIt3Wrapper_UseUpx=n
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.6.88.41
+#AutoIt3Wrapper_Res_Fileversion=2.6.88.42
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_SaveSource=y
-#AutoIt3Wrapper_Res_Field=AutoIt Version|%AutoItVer%
 #AutoIt3Wrapper_Res_Field=Site|http://www.linuxliveusb.com
 #AutoIt3Wrapper_AU3Check_Parameters=-w 4
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -32,9 +31,10 @@
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ; Global constants
-Global Const $software_version = "2.6 Beta2"
+Global Const $software_version = "2.6 RC1"
 Global $lang_folder = @ScriptDir & "\tools\languages\"
 Global $lang_ini
+Global $verbose_logging
 Global Const $settings_ini = @ScriptDir & "\tools\settings\settings.ini"
 Global Const $compatibility_ini = @ScriptDir & "\tools\settings\compatibility_list.ini"
 Global Const $blacklist_ini = @ScriptDir & "\tools\settings\black_list.ini"
@@ -179,6 +179,7 @@ EndIf
 ; ///////////////////////////////// Includes     															  ///////////////////////////////////////////////////
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #include-once
+
 ; AutoIT native includes
 #include <GuiConstants.au3>
 #include <GuiConstantsEx.au3>
@@ -223,6 +224,7 @@ EndIf
 #include <GUI_Actions.au3>
 #include <Options_Menu.au3>
 
+
 SplashImageOn("LiLi Splash Screen", @ScriptDir & "\tools\img\logo.jpg",344, 107, -1, -1, 1)
 
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -253,11 +255,12 @@ Else
 	HttpSetProxy($proxy_mode)
 EndIf
 
-; Initializing log file for verbose logging
-If ReadSetting("General", "verbose_logging") = "yes" Then InitLog()
-
 _SetAsReceiver("lili-main")
 _SetReceiverFunction("ReceiveFromSecondary")
+
+; Initializing log file for verbose logging
+$verbose_logging = ReadSetting( "General", "verbose_logging")
+If $verbose_logging = "yes" Then InitLog()
 
 SendReport("Starting LiLi USB Creator " & $software_version)
 
@@ -480,7 +483,7 @@ GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
 GUICtrlSetFont(-1, 10, 400, 0, "Tahoma")
 
-GUICtrlCreateButton(StringUpper(Translate("Options")), 240+28 + $offsetx0, 369 + $offsety4 + $offsety0, 80, 20)
+GUICtrlCreateButton(StringUpper(Translate("Options")), 220+28 + $offsetx0, 369 + $offsety4 + $offsety0, 100, 20)
 GUICtrlSetFont(-1, 10, 400, 0, "Tahoma")
 GUICtrlSetOnEvent(-1, "GUI_Help_Step5")
 
@@ -523,7 +526,7 @@ While 1
 		GUICtrlSetData($combo, GUICtrlRead($combo))
 		$combo_updated = 1
 	EndIf
-	Sleep(10)
+	Sleep(100)
 	;DrawAll()
 WEnd
 
@@ -590,7 +593,7 @@ Func Control_Hover()
 	Local $CursorCtrl
 	If WinActive("LinuxLive USB Creator") Or WinActive("LiLi USB Creator") Then
 		$CursorCtrl = GUIGetCursorInfo()
-		If Not @error Then
+		If Not @error And IsArray($CursorCtrl) Then
 			Switch $previous_hovered_control
 				Case $EXIT_AREA
 					If $CursorCtrl[2] = 1 Then GUI_Exit()
@@ -631,7 +634,7 @@ Func Control_Hover()
 			$previous_hovered_control = $CursorCtrl[4]
 		EndIf
 	EndIf
-	if Ubound($_Progress_Bars)>1 Then _Paint_Bars_Procedure2()
+	if IsArray($_Progress_Bars) Then _Paint_Bars_Procedure2()
 EndFunc   ;==>Control_Hover
 
 

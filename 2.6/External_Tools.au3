@@ -87,6 +87,11 @@ Func InstallSyslinux($drive_letter,$version=3)
 	SendReport("IN-InstallSyslinux : executing command -> " &@CRLF& $cmd)
 	$output=_RunReadStd($cmd)
 	SendReport("Return code : "&$output[0]&@CRLF&"Output : "&$output[1]&@CRLF&"Error : "&$output[2])
+
+	If StringInStr($output[2],"Did not successfully") OR StringInStr($output[2],"Error : ") Then
+		SendReport("End-InstallSyslinux : FATAL ERROR detected ("&StringReplace($output[2],@CRLF,"")&")")
+		Return -1
+	EndIf
 	SendReport("End-InstallSyslinux")
 	Return 0
 EndFunc   ;==>InstallSyslinux

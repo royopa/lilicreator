@@ -20,7 +20,7 @@ Global Const $StructDef_COPYDATA = "dword none;dword count;ptr pointer"
 Global Const $WM_COPYDATA_MH = 0x4A
 
 ;Message Queue Setup
-Global $MHCallBackTimer = 200
+Global $MHCallBackTimer = 700
 Global $pTimerProc, $uiTimer
 Global $aMessageQueue[1]=[0]
 
@@ -93,7 +93,10 @@ Func _OnAutoItError()
         If @error Then ExitLoop
         Sleep(1000)
     WEnd
-    If $sErrorMsg="" Then Exit
+    If StringStripWS($sErrorMsg, 8)="" Then
+		ProcessClose("LiLi USB Creator.exe")
+		Exit
+	EndIf
 	; Updating last log file with crash report
 	$report=ConstructReport()
 	_FileWriteLog($current_logfile,"!!!!!! Crash Detected : "&$sErrorMsg)
