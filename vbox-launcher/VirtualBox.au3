@@ -2,7 +2,7 @@
 #AutoIt3Wrapper_icon=VirtualBox.ico
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Launch VirtualBox for LiLi
-#AutoIt3Wrapper_Res_Fileversion=2.0.0.25
+#AutoIt3Wrapper_Res_Fileversion=2.0.0.26
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_Field=AutoIt Version|%AutoItVer%

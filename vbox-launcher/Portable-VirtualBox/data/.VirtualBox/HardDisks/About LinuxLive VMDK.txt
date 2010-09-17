@@ -1,0 +1,3 @@
+LinuxLive VMDK is an automatically generated virtual disk. It is regenerated everytime you launch VirtualBox in order to always point to your USB key.
+
+/!\ This file should never be renamed, and the virtual machine too.

@@ -1,0 +1,3 @@
+This file is just a workaround to be able to launch directly the LinuxLive virtual machine.
+
+It is deliberately empty. Portable-VirtualBox check the existence of this file before to launch the VM. 
