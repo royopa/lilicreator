@@ -155,6 +155,58 @@ Func GiveMePhysicalDisk($drive_letter)
 	EndIf
 EndFunc   ;==>GiveMePhysicalDisk
 
+
+Func Get_MBR_ID($drive_letter)
+	Local $physical_drive,$g_eventerror
+
+	UpdateLog("Get_MBR_identifier of : "&$drive_letter)
+
+	Local $wbemFlagReturnImmediately, $wbemFlagForwardOnly, $objWMIService, $colItems, $objItem, $found_usb, $usb_model, $usb_size
+	$wbemFlagReturnImmediately = 0x10
+	$wbemFlagForwardOnly = 0x20
+	$colItems = ""
+
+	$objWMIService = ObjGet("winmgmts:\\.\root\CIMV2")
+	if @error OR $g_eventerror OR NOT IsObj($objWMIService) Then
+		UpdateLog("ERROR with WMI : Trying alternate method (WMI impersonation)")
+		$g_eventerror =0
+		$objWMIService = ObjGet("winmgmts:{impersonationLevel=Impersonate}!//.")
+	EndIf
+
+	if @error OR $g_eventerror then
+		UpdateLog("ERROR with WMI")
+	Elseif IsObj($objWMIService) Then
+		UpdateLog("WMI seems to work")
+
+		$colItems = $objWMIService.ExecQuery("SELECT Caption, DeviceID, Signature FROM Win32_DiskDrive", "WQL", $wbemFlagReturnImmediately + $wbemFlagForwardOnly)
+
+		For $objItem In $colItems
+
+			$colItems2 = $objWMIService.ExecQuery("ASSOCIATORS OF {Win32_DiskDrive.DeviceID='" & $objItem.DeviceID & "'} WHERE AssocClass = Win32_DiskDriveToDiskPartition", "WQL", $wbemFlagReturnImmediately + $wbemFlagForwardOnly)
+			For $objItem2 In $colItems2
+				$colItems3 = $objWMIService.ExecQuery("ASSOCIATORS OF {Win32_DiskPartition.DeviceID='" & $objItem2.DeviceID & "'} WHERE AssocClass = Win32_LogicalDiskToPartition", "WQL", $wbemFlagReturnImmediately + $wbemFlagForwardOnly)
+				For $objItem3 In $colItems3
+					If $objItem3.DeviceID = $drive_letter Then
+						$mbr_signature = $objItem.Signature
+					EndIf
+				Next
+			Next
+
+		Next
+
+	Else
+		UpdateLog("ERROR with WMI : object not created, cannot find MBR identifier")
+	endif
+
+	if $mbr_signature Then
+		UpdateLog("MBR identifier of "&$drive_letter&" is : "& $mbr_signature&" (0x"&$mbr_signature&")")
+		Return StringLower(Hex($mbr_signature))
+	Else
+		Return "ERROR"
+	EndIf
+EndFunc
+
+
 Func Get_Disk_UUID($drive_letter)
 	SendReport("Start-Get_Disk_UUID ( Drive : " & $drive_letter & " )")
 	Local $uuid = "EEEE-EEEE"

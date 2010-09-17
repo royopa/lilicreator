@@ -4,7 +4,6 @@
 
 Func InitLog()
 	DirCreate($log_dir)
-	$logfile = @ScriptDir & "\logs\" & @MDAY & "-" & @MON & "-" & @YEAR&".log"
 	UpdateLog(LogSystemConfig())
 	SendReport("logfile-" & $logfile)
 EndFunc   ;==>InitLog

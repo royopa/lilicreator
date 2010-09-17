@@ -79,7 +79,7 @@ Func GetLangCode()
 	EndSelect
 	$full_return="locale="&$lang_code&" "
 	SendReport("Generated Lang Code : "&$full_return&" (code="&$use_source&")")
-	Return $lang_code
+	Return $full_return
 EndFunc   ;==>GetLang
 
 Func TinyCore_WriteTextCFG($selected_drive)
@@ -137,6 +137,36 @@ Func Sidux_WriteTextCFG($selected_drive)
 	SendReport("End-Sidux_WriteTextCFG")
 EndFunc
 
+
+Func Aptosid_WriteTextCFG($selected_drive)
+	SendReport("Start-Aptosid_WriteTextCFG ( Drive : " & $selected_drive & " )")
+	Local $boot_text = ""
+	if FileExists($selected_drive&"\boot\vmlinuz0.686") Then
+		$arch="686"
+	Else
+		$arch="amd"
+	EndIf
+	$boot_text="UI gfxboot bootlogo"
+
+	if FileExists($selected_drive&"\aptosid\aptosid-rw") Then
+		$boot_text &=@LF & "LABEL " & Translate("Persistent Mode") _
+		& @LF & "	KERNEL /boot/vmlinuz0."&$arch _
+		& @LF & "	APPEND initrd=/boot/initrd0."&$arch&" boot=fll persist=/aptosid/aptosid-rw"
+	EndIf
+
+	$boot_text&= @LF & "LABEL " & Translate("Live Mode") _
+	& @LF & "	KERNEL /boot/vmlinuz0."&$arch _
+	& @LF & "	APPEND initrd=/boot/initrd0."&$arch&" boot=fll " _
+	& @LF & "LABEL Boot_from_Hard_Disk" _
+	& @LF & "	localboot 0x80" _
+	& @LF & "LABEL "& Translate("Memory Test") _
+	& @LF & "	KERNEL /boot/memtest"
+	$file = FileOpen($selected_drive & "\boot\syslinux\syslinux.cfg", 2)
+	FileWrite($file, $boot_text)
+	FileClose($file)
+	SendReport("End-Aptosid_WriteTextCFG")
+EndFunc
+
 ; Modify boot menu for Arch Linux (applied to every default Linux) but will modify only if Arch Linux detected
 Func Default_WriteTextCFG($selected_drive)
 	SendReport("Start-Default_WriteTextCFG ( Drive : " & $selected_drive & " )")
@@ -170,7 +200,6 @@ Func Default_WriteTextCFG($selected_drive)
 	SendReport("End-Default_WriteTextCFG")
 EndFunc
 
-
 Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 	SendReport("Start-Ubuntu_WriteTextCFG (Drive : " & $selected_drive & " -  Codename: " & ReleaseGetCodename($release_in_list) & " )")
 
@@ -178,9 +207,6 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 	$distrib_version = ReleaseGetDistributionVersion($release_in_list)
 	$features = ReleaseGetSupportedFeatures($release_in_list)
 	$codename = ReleaseGetCodename($release_in_list)
-
-	; No custom boot menu when using default mode.
-	If StringInStr($features,"default") >0 Then Return ""
 
 	#cs
 	------------ Old BackTrack compatibility mode
@@ -230,7 +256,12 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 				 & @LF & "menu color cmdline 0 #ffffffff #00000000" _
 				 & @LF & "menu hidden" _
 				 & @LF & "menu hiddenrow 5"
-		$boot_text &= Ubuntu_BootMenu($initrd_file,"mint")
+
+		if StringInStr($codename,"mintdebian") Then
+			$boot_text &= Debian_BootMenu("mint")
+		Else
+			$boot_text &= Ubuntu_BootMenu($initrd_file,"mint")
+		EndIf
 		UpdateLog("Creating syslinux.cfg file for Mint :" & @CRLF & $boot_text)
 		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
 		FileWrite($file, $boot_text)
@@ -259,6 +290,25 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 		& @LF &"menu title UberStudent" _
 		& @LF &"menu background splash.png" _
 		& @LF &"menu color title 1;37;44 #c0ffffff #00000000 std"&Ubuntu_BootMenu($initrd_file,"custom")
+		UpdateLog("Creating syslinux.cfg file for "&$ubuntu_variant&" :" & @CRLF & $boot_text)
+		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
+		FileWrite($file, $boot_text)
+		FileClose($file)
+		SendReport("End-Ubuntu_WriteTextCFG")
+		Return 1
+	EndIf
+
+	; Not used for the moment because CAINE does not find live partition
+	if $ubuntu_variant = "caine" Then
+		$boot_text=@LF &"default vesamenu.c32" _
+		& @LF &"prompt 0" _
+		& @LF &"timeout 300" _
+		& @LF &"menu title Caine 2.0 Live " _
+		& @LF &"menu AUTOBOOT Booting in # seconds..." _
+		& @LF &"menu TABMSG  http://www.caine-live.net" _
+		& @LF &"menu background splash.png" _
+		& @LF &"menu color sel	7;37;40  #e0000000 #f0ff8000 all" _
+		& @LF &"menu color title 1;37;24 #c0ffffff #00000000 std" &Ubuntu_BootMenu($initrd_file,"custom")
 		UpdateLog("Creating syslinux.cfg file for "&$ubuntu_variant&" :" & @CRLF & $boot_text)
 		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
 		FileWrite($file, $boot_text)
@@ -313,22 +363,25 @@ Func AutomaticPreseed($selected_drive,$preseed_variant)
 EndFunc
 
 Func Ubuntu_BootMenu($initrd_file,$seed_name)
-	Local $kbd_code,$boot_text=""
+	Local $kbd_code,$boot_text="",$append_ubuntu
 	$kbd_code = GetKbdCode()
 	$lang_code = GetLangCode()
+
+	$append_ubuntu="noprompt cdrom-detect/try-usb=true file=/cdrom/preseed/" & $seed_name & ".seed boot=casper initrd=/casper/" & $initrd_file & " splash --"
+
 	If FileExists($selected_drive&"\casper-rw") Then
 		$boot_text = @LF& "label persist" & @LF & "menu label ^" & Translate("Persistent Mode") _
 			& @LF & "  kernel /casper/vmlinuz" _
-			& @LF & "  append  " & $kbd_code & $lang_code & "noprompt cdrom-detect/try-usb=true persistent file=/cdrom/preseed/" & $seed_name & ".seed boot=casper initrd=/casper/" & $initrd_file & " splash--"
+			& @LF & "  append  " & $kbd_code & $lang_code & " persistent "&$append_ubuntu
 	EndIf
 	$boot_text&= @LF & "label live" _
 		& @LF & "  menu label ^" & Translate("Live Mode") _
 		& @LF & "  kernel /casper/vmlinuz" _
-		& @LF & "  append   " & $kbd_code & $lang_code &  "noprompt cdrom-detect/try-usb=true file=/cdrom/preseed/" & $seed_name  & ".seed boot=casper initrd=/casper/" & $initrd_file & " splash--" _
+		& @LF & "  append   " & $kbd_code & $lang_code & $append_ubuntu _
 		& @LF & "label live-install" _
 		& @LF & "  menu label ^" & Translate("Install") _
 		& @LF & "  kernel /casper/vmlinuz" _
-		& @LF & "  append   " & $kbd_code & $lang_code & "noprompt cdrom-detect/try-usb=true persistent file=/cdrom/preseed/" & $seed_name  & ".seed boot=casper only-ubiquity initrd=/casper/" & $initrd_file & " splash --" _
+		& @LF & "  append   " & $kbd_code & $lang_code & " only-ubiquity "& $append_ubuntu _
 		& @LF & "label check" _
 		& @LF & "  menu label ^" & Translate("File Integrity Check") _
 		& @LF & "  kernel /casper/vmlinuz" _
@@ -337,6 +390,33 @@ Func Ubuntu_BootMenu($initrd_file,$seed_name)
 		& @LF & "  menu label ^" & Translate("Memory Test") _
 		& @LF & "  kernel /install/mt86plus"
 	Return $boot_text
+EndFunc
+
+Func Debian_BootMenu($variant)
+	Local $kbd_code,$boot_text="",$append_debian
+	$kbd_code = GetKbdCode()
+	$lang_code = GetLangCode()
+
+	$append_debian="boot=live initrd=/casper/initrd.lz live-media-path=/casper quiet splash --"
+	If FileExists($selected_drive&"\live-rw") Then
+		$boot_text = @LF& "label persist" & @LF & "menu label ^" & Translate("Persistent Mode") _
+			& @LF & "  kernel /casper/vmlinuz" _
+			& @LF & "  append  " & $kbd_code & $lang_code & " persistent "&$append_debian
+		EndIf
+
+	$boot_text&= @LF & "label live" _
+		& @LF & "  menu label ^" & Translate("Live Mode") _
+		& @LF & "  kernel /casper/vmlinuz" _
+		& @LF & "  append   " & $kbd_code & $lang_code & $append_debian _
+		& @LF & "label check" _
+		& @LF & "  menu label ^" & Translate("File Integrity Check") _
+		& @LF & "  kernel /casper/vmlinuz" _
+		& @LF & "  append   " & $kbd_code & $lang_code & " integrity-check "&StringReplace($append_debian,"quiet splash","") _
+		& @LF & "label memtest" _
+		& @LF & "  menu label ^" & Translate("Memory Test") _
+		& @LF & "  kernel memtest"
+	Return $boot_text
+
 EndFunc
 
 Func Fedora_WriteTextCFG($drive_letter)
@@ -480,5 +560,18 @@ Func Mandriva_WriteTextCFG($drive_letter)
 	SendReport("End-Mandriva_WriteTextCFG")
 EndFunc   ;==>Mandriva_WriteTextCFG
 
+Func Set_OpenSuse_MBR_ID($drive_letter)
+	SendReport("Start-Set_OpenSuse_MBR_ID ( Drive : " & $drive_letter & " )")
+	Local $mbr_id = "0x"&Get_MBR_ID($drive_letter)
+	FileMove($drive_letter&"\boot\grub\mbrid",$drive_letter&"\boot\grub\backup-mbrid")
+	$file = FileOpen($drive_letter&"\boot\grub\mbrid", 2)
 
+	; Check if file opened for writing OK
+	If $file = -1 Then
+		SendReport("IN-Set_OpenSuse_MBR_ID : Could not open MBRID file")
+		Return "ERROR"
+	EndIf
+	FileWrite($drive_letter&"\boot\grub\mbrid",$mbr_id)
+	SendReport("Stop-Set_OpenSuse_MBR_ID : Successfully set MBR ID file to "&$mbr_id)
+EndFunc
 

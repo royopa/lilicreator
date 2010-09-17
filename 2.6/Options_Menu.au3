@@ -25,7 +25,7 @@ Func GUI_Options_Menu()
 	$donate = GUICtrlCreateButton(Translate("Make a donation"), 32, 319, 153, 33, $WS_GROUP)
 	$contact = GUICtrlCreateButton(Translate("Contact me"), 212, 319, 153, 33, $WS_GROUP)
 	$copyright = GUICtrlCreateLabel(Translate("CopyLeft by")&" Thibaut Lauzière - ",  84, 380, 150, 17)
-	$licence=GUICtrlCreateLabel(Translate("GPL v3 License"), 232, 379, 360, 17)
+	$licence=GUICtrlCreateLabel(Translate("GPL v3 License"), 236, 379, 360, 17)
 	GUICtrlSetFont(-1,-1,-1,4)
 	GUICtrlSetColor(-1,0x0000cc)
 	GUICtrlSetCursor(-1,0)
@@ -34,8 +34,8 @@ Func GUI_Options_Menu()
 
 	$Group3 = GUICtrlCreateGroup(Translate("Install parameters"), 24, 48, 353, 129)
 
-	$automatic_recognition = GUICtrlCreateRadio(Translate("Use LiLi automatic recognition")&" ("&Translate("highly recommended")&")", 64, 72, 265, 17)
-	$force_install_parameters = GUICtrlCreateRadio(Translate("Force using same parameters as")&" :", 64, 104, 265, 17)
+	$automatic_recognition = GUICtrlCreateRadio(Translate("Use LiLi automatic recognition")&" ("&Translate("highly recommended")&")", 44, 72, 330, 17)
+	$force_install_parameters = GUICtrlCreateRadio(Translate("Force using same parameters as")&" :", 44, 104, 265, 17)
 	$combo_use_setting = GUICtrlCreateCombo(">> " & Translate("Select a Linux"), 88, 136, 250, -1, BitOR($CBS_DROPDOWNLIST, $WS_VSCROLL))
 	GUICtrlSetData($combo_use_setting, $prefetched_linux_list)
 	UpdateRecognition()
@@ -78,19 +78,19 @@ Func GUI_Options_Menu()
 
 	GUICtrlSetState($proxy_modes[ReadSetting("Proxy", "proxy_mode")],$GUI_CHECKED)
 
-	$label_proxy_url = GUICtrlCreateLabel(Translate("Proxy URL"), 85, 170, 87, 21, $WS_GROUP)
+	$label_proxy_url = GUICtrlCreateLabel(Translate("Proxy URL")&" : ", 30, 173, 110, 21, $WS_GROUP+$SS_RIGHT)
 
 	$proxy_url_input = GUICtrlCreateInput(ReadSetting( "Proxy", "proxy_url"), 150, 170, 217, 22, $WS_GROUP)
 
-	$label_proxy_port = GUICtrlCreateLabel(Translate("Port"), 85, 203, 71, 21, $WS_GROUP)
+	$label_proxy_port = GUICtrlCreateLabel(Translate("Port")&" : ", 30, 206, 110, 21, $WS_GROUP+$SS_RIGHT)
 
 	$proxy_port_input = GUICtrlCreateInput(ReadSetting( "Proxy", "proxy_port"), 150, 203, 49, 22, $WS_GROUP+$ES_NUMBER)
 
-	$label_proxy_user = GUICtrlCreateLabel(Translate("Username"), 85, 233, 84, 21, $WS_GROUP)
+	$label_proxy_user = GUICtrlCreateLabel(Translate("Username")&" : ", 30, 236, 110, 21, $WS_GROUP+$SS_RIGHT)
 
 	$proxy_username_input = GUICtrlCreateInput(ReadSetting( "Proxy", "proxy_username"), 150, 233, 160, 22, $WS_GROUP)
 
-	$label_proxy_password = GUICtrlCreateLabel(Translate("Password"), 85, 269, 82, 21, $WS_GROUP)
+	$label_proxy_password = GUICtrlCreateLabel(Translate("Password")&" : ", 30, 272, 110, 21, $WS_GROUP+$SS_RIGHT)
 
 	$proxy_password_input = GUICtrlCreateInput(ReadSetting( "Proxy", "proxy_password"), 150, 269, 160, 22, $WS_GROUP+$ES_PASSWORD)
 
@@ -99,7 +99,7 @@ Func GUI_Options_Menu()
 	GUICtrlSetFont(-1, 10)
 	$test_proxy = GUICtrlCreateButton(Translate("Test settings"), 204, 348, 161, 25, $WS_GROUP)
 	$proxy_status = GUICtrlCreateLabel(Translate("Not tested yet"), 32, 351, 164, 26,$WS_GROUP)
-	GUICtrlSetColor($proxy_status,0x007f00)
+	GUICtrlSetColor($proxy_status,0xFF9104)
 	GUICtrlSetFont($proxy_status, 12)
 
 
@@ -135,7 +135,7 @@ Func GUI_Options_Menu()
 
 
 	$tab_options = GUICtrlCreateTabItem(Translate("Advanced"))
-	$label_warning = GUICtrlCreateLabel(Translate("Do not modify these options unless you know what you are doing")&" !",30, 43, 320, 30)
+	$label_warning = GUICtrlCreateLabel(Translate("Do not modify these options unless you know what you are doing")&" !",20, 43, 350, 30)
 	GUICtrlSetColor($label_warning,0xAA0000)
 	;Display_Options()
 	;-------------------------
@@ -156,10 +156,14 @@ Func GUI_Options_Menu()
 	;GUICtrlCreateTabItem("")
 
 	;Check_Internet_Status()
-
-	Sleep(100)
+	;GUISetState(@SW_DISABLE, $GUI)
+	GUISetState(@SW_DISABLE, $CONTROL_GUI)
+	AdlibUnRegister("Control_Hover")
 	GUISetState(@SW_SHOW, $main_menu)
-
+	If ReadSetting("Internal","restart_language") ="yes" Then
+		GuiCtrlSetState($tab_language,$GUI_SHOW)
+		WriteSetting("Internal","restart_language","no")
+	EndIf
 	#EndRegion ### END Koda GUI section ###
 
 	While 1
@@ -169,17 +173,19 @@ Func GUI_Options_Menu()
 				WriteAdvancedSettings()
 				Opt("GUIOnEventMode", 1)
 				GUIDelete($main_menu)
-				Sleep(100)
-				GUISwitch($CONTROL_GUI)
+				AdlibRegister("Control_Hover", 150)
+				GUISetState(@SW_ENABLE, $CONTROL_GUI)
 				ControlFocus("LinuxLive USB Creator", "", $REFRESH_AREA)
+				GUISwitch($CONTROL_GUI)
 				Return ""
 			Case $ok_button
 				WriteAdvancedSettings()
 				Opt("GUIOnEventMode", 1)
 				GUIDelete($main_menu)
-				Sleep(100)
-				GUISwitch($CONTROL_GUI)
+				AdlibRegister("Control_Hover", 150)
+				GUISetState(@SW_ENABLE, $CONTROL_GUI)
 				ControlFocus("LinuxLive USB Creator", "", $REFRESH_AREA)
+				GUISwitch($CONTROL_GUI)
 				Return ""
 			Case $language_list
 				$language_selected=GUICtrlRead($language_list)
@@ -187,7 +193,9 @@ Func GUI_Options_Menu()
 					WriteSetting("General", "force_lang","")
 				Else
 					WriteSetting("General", "force_lang",$language_selected)
+					WriteSetting("Internal","restart_language","yes")
 				EndIf
+				_ScriptRestart()
 			Case $check_for_updates
 				Checkbox_To_Setting($check_for_updates,"Updates","check_for_updates")
 			Case $licence
@@ -436,3 +444,42 @@ Func OnlineStatus()
 		return 1
     EndIf
 EndFunc
+
+Global $__Restart = False
+; #FUNCTION# ====================================================================================================================
+; Name...........: _ScriptRestart
+; Description....: Initiates a restart of the current script.
+; Syntax.........: _ScriptRestart ( [$fExit] )
+;                  $fExit  - Specifies whether terminates the current script, valid values:
+;                  |TRUE   - Terminates script. (Default)
+;                  |FALSE  - Does not terminates script.
+; Return values..: Success - 1 ($fExit = TRUE)
+;                  Failure - 0 and sets the @error flag to non-zero.
+; Author.........: Yashied
+; Modified.......:
+; Remarks........:
+; Related .......:
+; Link...........:
+; Example........: Yes
+; ===============================================================================================================================
+Func _ScriptRestart($fExit = 1)
+	Local $Pid
+	If Not $__Restart Then
+		If @compiled Then
+			$Pid = Run(@ScriptFullPath & ' ' & $CmdLineRaw, @ScriptDir, Default, 1)
+		Else
+			$Pid = Run(@AutoItExe & ' "' & @ScriptFullPath & '" ' & $CmdLineRaw, @ScriptDir, Default, 1)
+		EndIf
+		If @error Then
+			Return SetError(@error, 0, 0)
+		EndIf
+		StdinWrite($Pid, @AutoItPID)
+	EndIf
+	$__Restart = 1
+	If $fExit Then
+		Sleep(50)
+		Exit
+	EndIf
+	Return 1
+EndFunc   ;==>_ScriptRestart
+
