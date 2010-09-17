@@ -448,11 +448,14 @@ Func Rename_and_move_files($drive_letter, $release_in_list)
 			$syslinux_path = $drive_letter & "\BOOT\SYSLINUX\"
 		Elseif FileExists($drive_letter & "\HBCD\isolinux.cfg") Then
 			$syslinux_path = $drive_letter & "\HBCD\"
+		Elseif FileExists($drive_letter & "\boot\i386\loader\isolinux.cfg") AND ReleaseGetVariant($release_in_list)="opensuse" Then
+			FileDelete($drive_letter&"\syslinux.cfg")
+			DirMove($drive_letter & "\boot\i386\loader", $drive_letter & "\boot\syslinux",1)
+			$syslinux_path = $drive_letter & "\boot\syslinux\"
 		Else
 			$syslinux_path = $drive_letter & "\"
 		EndIf
 		isolinux2syslinux($syslinux_path)
-
 
 	; Fix for Parted Magic > 4.6 (support is discontinued for 4.6)
 	If ReleaseGetVariant($release_in_list) ="pmagic"  Then
@@ -512,10 +515,7 @@ Func Create_boot_menu($drive_letter,$release_in_list)
 	$distribution = ReleaseGetDistribution($release_in_list)
 	$features=ReleaseGetSupportedFeatures($release_in_list)
 	if StringInStr($features,"default") = 0 Then
-		if $distribution = "ubuntu" Then
-			SendReport("IN-Create_boot_menu for Ubuntu")
-			Ubuntu_WriteTextCFG($drive_letter,$release_in_list)
-		Elseif $variant ="CentOS" Then
+		If $variant ="CentOS" Then
 			SendReport("IN-Create_boot_menu for CentOS")
 			CentOS_WriteTextCFG($drive_letter)
 		Elseif $distribution = "Fedora" Then
@@ -524,10 +524,19 @@ Func Create_boot_menu($drive_letter,$release_in_list)
 		Elseif $variant = "TinyCore" Then
 			SendReport("IN-Create_boot_menu for TinyCore")
 			TinyCore_WriteTextCFG($drive_letter)
+		Elseif $variant = "Aptosid" Then
+			SendReport("IN-Create_boot_menu for Aptosid")
+			Aptosid_WriteTextCFG($drive_letter)
 		Elseif $variant = "Sidux" Then
 			SendReport("IN-Create_boot_menu for Sidux")
 			Sidux_WriteTextCFG($drive_letter)
+		Elseif $distribution = "ubuntu" OR $variant= "debian" Then
+			SendReport("IN-Create_boot_menu for Ubuntu and Debian")
+			Ubuntu_WriteTextCFG($drive_letter,$release_in_list)
 		EndIf
+	Elseif $variant = "opensuse" Then
+			SendReport("IN-Create_boot_menu for OpenSuse")
+			Set_OpenSuse_MBR_ID($drive_letter)
 	Else
 		SendReport("IN-Create_boot_menu for Regular Linux")
 		Default_WriteTextCFG($drive_letter)
@@ -660,14 +669,29 @@ Func Create_persistence_file($drive_letter,$release_in_list,$persistence_size,$h
 		$variant = ReleaseGetVariant($release_in_list)
 
 		if StringInStr($features,"ubuntu-persistence")<>0 Then
+			; Ubuntu
 			$persistence_file= $drive_letter & '\casper-rw'
+			AddToSmartClean($drive_letter,"casper-rw")
 		Elseif StringInStr($features,"sidux-persistence")<>0 Then
+			; Sidux
 			$persistence_file= $drive_letter &"\sidux\sidux-rw"
+			AddToSmartClean($drive_letter,"sidux")
+		Elseif StringInStr($features,"aptosid-persistence")<>0 Then
+			; Aptosid (ex-Sidux)
+			$persistence_file= $drive_letter &"\aptosid\aptosid-rw"
+			AddToSmartClean($drive_letter,"aptosid")
 		Elseif StringInStr($features,"fedora-persistence")<>0 Then
-			; fedora
+			; Fedora
 			$persistence_file= $drive_letter & '\LiveOS\overlay-' & StringReplace(DriveGetLabel($drive_letter)," ", "_") & '-' & Get_Disk_UUID($drive_letter)
+			AddToSmartClean($drive_letter,"LiveOS")
+		Elseif StringInStr($features,"debian-persistence")<>0 Then
+			; Debian > 6.0
+			$persistence_file= $drive_letter & '\live-rw'
+			AddToSmartClean($drive_letter,"live-rw")
 		Else
+			; Default mode is Ubuntu
 			$persistence_file= $drive_letter & '\casper-rw'
+			AddToSmartClean($drive_letter,"casper-rw")
 		Endif
 
 		Create_Empty_File($persistence_file, $persistence_size)
@@ -917,7 +941,7 @@ Func CreateUninstaller($drive_letter,$release_in_list)
 	AddToSmartClean($drive_letter,"ldlinux.sys")
 	AddToSmartClean($drive_letter,"syslinux")
 	AddToSmartClean($drive_letter,"syslinux.cfg")
-	AddToSmartClean($drive_letter,"casper-rw")
+
 	if ReleaseGetVariant($release_in_list)="pmagic" Then
 		AddToSmartClean($drive_letter,"pmagic")
 		AddToSmartClean($drive_letter,"boot")
@@ -1032,7 +1056,7 @@ Func Setup_RAM_for_VM($drive_letter,$release_in_list)
 
 	$old_value = _StringBetween ($line, 'Memory RAMSize="', '"')
 
-	If $old_value[0] > 0 Then
+	If NOt @error AND isArray($old_value) AND $old_value[0] > 0 Then
 		$recommended_ram = ReleaseGetVBoxRAM($release_in_list)
 		UpdateStatus(Translate("Setting the memory to the recommended value")&" ( "& $recommended_ram&Translate("MB") & " )")
 		SendReport("IN-Setup_RAM_for_VM (Recommended settings found :"&$recommended_ram&" )")

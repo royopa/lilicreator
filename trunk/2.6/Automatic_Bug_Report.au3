@@ -61,9 +61,6 @@ Else
 	HttpSetProxy($proxy_mode)
 EndIf
 
-; Better if executed before running the main process
-Check_for_compatibility_list_updates()
-
 OnAutoItExitRegister( "CallBack_Exit" )
 
 _OnAutoItError()
@@ -87,10 +84,18 @@ Func _OnAutoItError()
     $sErrorMsg=""
 	$hwnd = _SetAsReceiver("lili-Reporter")
 	$myFunc = _SetReceiverFunction("_ReceiveReport")
-    ;   trap the error message
+
+	$timer_check=TimerInit()
+	$update_checked=0
+
+	;   trap the error message
     While 1
         $sErrorMsg&=StdoutRead($iPID)
         If @error Then ExitLoop
+		if TimerDiff($timer_check) > 10000 AND $update_checked=0 Then
+			Check_for_compatibility_list_updates()
+			$update_checked=1
+		EndIf
         Sleep(1000)
     WEnd
     If StringStripWS($sErrorMsg, 8)="" Then
@@ -287,6 +292,7 @@ Func ConstructHTMLReport()
 EndFunc
 
 Func SendReportToMain($report)
+	UpdateLog("Sending report to main GUI :"&$report)
 	_SendData($report, "lili-main")
 EndFunc   ;==>SendReport
 
@@ -303,6 +309,7 @@ Func _ReceiveReport($report)
 		InetGet("http://www.linuxliveusb.com/stats/?distrib="&$distrib&"&id="&$anonymous_id,"",1,1)
 	ElseIf StringLeft($report, 17) = "check_for_updates" Then
 		Check_for_updates()
+		;Check_for_compatibility_list_updates()
 	ElseIf StringLeft($report, 12) = "End-GUI_Exit" Then
 		Exit
 	Else
@@ -471,6 +478,47 @@ Func _SetAsReceiver($vTitle)
 	$pTimerProc = DllCallbackRegister("_CALLBACKQUEUE", "none", "")
 	$uiTimer = DllCall("user32.dll", "uint", "SetTimer", "hwnd", 0, "uint", 0, "int", $MHCallBackTimer, "ptr", DllCallbackGetPtr($pTimerProc))
 	$uiTimer = $uiTimer[0]
+	Return $MHhwmd_Receiver
+
+EndFunc
+
+
+; #FUNCTION# ====================================================================================================================
+; Name...........: _SetAsReceiver
+; Description ...: Sets the script up to accept messages
+; Syntax.........: _SetAsReceiver($vTitle)
+; Parameters ....: $vTitle    - The Local_ReceiverID_Name
+; Return values .: Success    - Handle to the receiver window
+;                  Failure    - @error is set and the relevant message is displayed
+; Author ........: ChrisL
+; ===============================================================================================================================
+Func _SetAsReceiverNoCallback($vTitle)
+
+	If StringLen($vTitle) = 0 then
+		Msgbox(16 + 262144,"Message Handler Error","A Local_ReceiverID_Name must be specified." & @crlf & _
+			"Messages will not be received unless a unique Local_ReceiverID_Name is used!")
+		Return SetError(1,1,-1);Make sure the user has specified a title
+	EndIf
+
+	$vTitle &= $MHAdditionalIdentifier;add on our additionalIdentifier which is unlikely to be used exept by scripts using this UDF
+
+	If WInExists($vtitle) and WinGetHandle($vTitle) <> $MHhwmd_Receiver then ;already a window exists with this title and it's not ours highly unlikely unless 2 copies of the script are running
+		;Msgbox(16 + 262144,"ERROR", "Only run one LiLi USB Creator at a time please - PID :"&$iPID&"PID reporter:"&@AutoItPID )
+		if $iPID Then ProcessClose($iPID)
+		Exit
+		#cs
+		Msgbox(16 + 262144,"Message Handler Error","The Local_ReceiverID_Name " & StringTrimRight($vTitle,StringLen($MHAdditionalIdentifier)) & " already exists." & @crlf & _
+			"A unique Local_ReceiverID_Name must be specified." & @crlf & _
+			"Messages will not be received unless a unique Local_ReceiverID_Name is used!")
+		#ce
+		Return SetError(1,2,-1)
+	EndIf
+
+	$MHhwmd_Receiver = GUICreate($vTitle)
+	GUIRegisterMsg($WM_COPYDATA_MH, "_GUIRegisterMsgProc")
+	;$pTimerProc = DllCallbackRegister("_CALLBACKQUEUE", "none", "")
+	;$uiTimer = DllCall("user32.dll", "uint", "SetTimer", "hwnd", 0, "uint", 0, "int", $MHCallBackTimer, "ptr", DllCallbackGetPtr($pTimerProc))
+	;$uiTimer = $uiTimer[0]
 	Return $MHhwmd_Receiver
 
 EndFunc

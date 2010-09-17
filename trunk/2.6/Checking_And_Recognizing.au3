@@ -118,10 +118,10 @@ Func Check_source_integrity($linux_live_file)
 			; Filename is not known but trying to find what it is with its name => INTELLIGENT PROCESSING
 			SendReport("IN-Check_source_integrity (start intelligent processing)")
 
-			if ((StringInStr($shortname, "alternate") OR StringInStr($shortname, "server")) AND NOT StringInStr($shortname, "live") ) Then
+			if ((StringInStr($shortname, "alternate") OR StringInStr($shortname, "server") OR StringInStr($shortname, "ubuntu-studio") ) AND NOT StringInStr($shortname, "live") ) Then
 					; Any Server versions and alternate
 					$release_number = _ArraySearch($codenames_list, "default")
-			ElseIf ((StringInStr($shortname, "10.04") OR StringInStr($shortname, "lucid") OR StringInStr($shortname, "buntu")) AND NOT StringInStr($shortname, "9.10") AND NOT StringInStr($shortname, "karmic")) Then
+			ElseIf ((StringInStr($shortname, "10.04") OR StringInStr($shortname, "lucid") OR StringInStr($shortname, "buntu")) AND NOT StringInStr($shortname, "10.10") AND NOT StringInStr($shortname, "9.10") AND NOT StringInStr($shortname, "karmic")) Then
 				if (StringInStr($shortname, "xubuntu")) Then
 					; Xubuntu
 					$release_number = _ArraySearch($codenames_list, "xubuntu-last")
@@ -153,12 +153,12 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf ( StringInStr($shortname, "9.10") ) And StringInStr($shortname, "mythbuntu") Then
 				; Mythbuntu >=9.10
 				$release_number = _ArraySearch($codenames_list, "mythbuntu-9.10")
-			ElseIf StringInStr($shortname, "moblin-remix") Then
-				; Ubuntu moblin remix
-				$release_number = _ArraySearch($codenames_list, "moblin-remix-last")
 			Elseif ( StringInStr($shortname, "maverick") ) OR StringInStr($shortname, "10.10") Then
 				; Ubuntu Maverick 10.10
 				$release_number = _ArraySearch($codenames_list, "ubuntu10.10-last")
+			ElseIf StringInStr($shortname, "moblin-remix") Then
+				; Ubuntu moblin remix
+				$release_number = _ArraySearch($codenames_list, "moblin-remix-last")
 			ElseIf StringInStr($shortname, "grml") Then
 				; Grml
 				$release_number = _ArraySearch($codenames_list, "grml-last")
@@ -195,6 +195,9 @@ Func Check_source_integrity($linux_live_file)
 				else
 					$release_number = _ArraySearch($codenames_list, "sidux-kdelite-last")
 				EndIf
+			ElseIf StringInStr($shortname, "aptosid") Then
+				; Aptosid (ex-Sidux)
+				$release_number = _ArraySearch($codenames_list, "aptosid-xfce-last")
 			ElseIf StringInStr($shortname, "android-x86") Then
 				; Android x86
 				$release_number = _ArraySearch($codenames_list, "androidx86-last")
@@ -236,6 +239,10 @@ Func Check_source_integrity($linux_live_file)
 					$release_number = _ArraySearch($codenames_list, "mintlxde-last")
 				elseif StringInStr($shortname, "Xfce") Then
 					$release_number = _ArraySearch($codenames_list, "mintxfce-last")
+				elseif StringInStr($shortname, "debian") Then
+					$release_number = _ArraySearch($codenames_list, "mintdebian-last")
+				elseif StringInStr($shortname, "flux") Then
+					$release_number = _ArraySearch($codenames_list, "mintfluxbox-last")
 				else
 					$release_number = _ArraySearch($codenames_list, "mint-last")
 				EndIf
@@ -349,6 +356,16 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "redobackup") Then
 				; Redo Backup
 				$release_number = _ArraySearch($codenames_list, "redobackup-last")
+			ElseIf StringInStr($shortname, "opensuse") Then
+				; OpenSUSE
+				if StringInStr($shortname, "KDE") Then
+					$release_number = _ArraySearch($codenames_list, "opensusekde-last")
+				Else
+					$release_number = _ArraySearch($codenames_list, "opensuse-last")
+				EndIf
+			ElseIf StringInStr($shortname, "sms") Then
+				; Simple Mini Server
+				$release_number = _ArraySearch($codenames_list, "sms-last")
 			ElseIf StringInStr($shortname, "livehacking") Then
 				; Live Hacking CD
 				if StringInStr($shortname, "mini") Then
@@ -388,11 +405,8 @@ Func Check_If_Default_Should_Be_Used($release_in_list)
 	$features=ReleaseGetSupportedFeatures($release_in_list)
 	$codename=ReleaseGetCodename($release_in_list)
 
-	if StringInStr($features,"default") Then
-		Disable_Persistent_Mode()
-		Step2_Check("good")
-		SendReport("IN-Check_If_Default_Should_Be_Used ( Disable persistency for " & $codename& " )")
-	Elseif StringInStr($features,"persistence") Then
+
+	if StringInStr($features,"persistence") Then
 		if StringInStr($features,"builtin") Then
 			BuiltIn_Persistent_Mode()
 			SendReport("IN-Check_If_Default_Should_Be_Used ( builtin persistency for " & $codename& " )")
@@ -401,6 +415,10 @@ Func Check_If_Default_Should_Be_Used($release_in_list)
 			SendReport("IN-Check_If_Default_Should_Be_Used ( Enable persistency for " & $codename& " )")
 		EndIf
 		Step2_Check("good")
+	Else
+		Disable_Persistent_Mode()
+		Step2_Check("good")
+		SendReport("IN-Check_If_Default_Should_Be_Used ( Disable persistency for " & $codename& " )")
 	EndIf
 	SendReport("End-Check_If_Default_Should_Be_Used")
 EndFunc   ;==>Check_If_Default_Should_Be_Used
@@ -444,10 +462,10 @@ Func Check_ISO($FileToHash)
 		Return $hexa_hash
 	EndIf
 
-	if $progress_bar Then
-		_ProgressDelete($progress_bar)
-		Global $_Progress_Bars[1][15] = [[-1]]
-	EndIf
+
+	_ProgressDelete($progress_bar)
+	Global $_Progress_Bars[1][15] = [[-1]]
+
 	$progress_bar = _ProgressCreate(38 + $offsetx0, 238 + $offsety0, 300, 30)
 	_ProgressSetImages($progress_bar, @ScriptDir & "\tools\img\progress_green.jpg", @ScriptDir & "\tools\img\progress_background.jpg")
 	_ProgressSetImages($progress_bar, @ScriptDir & "\tools\img\progress_green.jpg", @ScriptDir & "\tools\img\progress_background.jpg")

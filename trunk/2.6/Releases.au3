@@ -151,59 +151,59 @@ EndFunc
 
 Func ReleaseGetCodename($release_in_list)
 	if $release_in_list <=0 Then Return "default"
-	Return $releases[$release_in_list][$R_CODE]
+	Return StringStripWS($releases[$release_in_list][$R_CODE],3)
 EndFunc
 
 Func ReleaseGetFilename($release_in_list)
 	if $release_in_list <=0 Then Return "NotFound"
-	Return $releases[$release_in_list][$R_FILENAME]
+	Return StringStripWS($releases[$release_in_list][$R_FILENAME],3)
 EndFunc
 
 Func ReleaseGetMD5($release_in_list)
 	if $release_in_list <=0 Then Return "NotFound"
-	Return $releases[$release_in_list][$R_FILE_MD5]
+	Return StringStripWS($releases[$release_in_list][$R_FILE_MD5],3)
 EndFunc
 
 Func ReleaseGetDistribution($release_in_list)
 	if $release_in_list <=0 Then Return "NotFound"
-	Return $releases[$release_in_list][$R_DISTRIBUTION]
+	Return StringStripWS($releases[$release_in_list][$R_DISTRIBUTION],3)
 EndFunc
 
 Func ReleaseGetDistributionVersion($release_in_list)
 	if $release_in_list <=0 Then Return "NotFound"
-	Return $releases[$release_in_list][$R_DISTRIBUTION_VERSION]
+	Return StringStripWS($releases[$release_in_list][$R_DISTRIBUTION_VERSION],3)
 EndFunc
 
 Func ReleaseGetVariant($release_in_list)
 	if $release_in_list <=0 Then Return "NotFound"
-	Return $releases[$release_in_list][$R_VARIANT]
+	Return StringStripWS($releases[$release_in_list][$R_VARIANT],3)
 EndFunc
 
 Func ReleaseGetVariantVersion($release_in_list)
 	if $release_in_list <=0 Then Return "NotFound"
-	Return $releases[$release_in_list][$R_VARIANT_VERSION]
+	Return StringStripWS($releases[$release_in_list][$R_VARIANT_VERSION],3)
 EndFunc
 
 Func ReleaseGetInstallSize($release_in_list)
 	if $release_in_list <=0 Then Return 800
-	Return $releases[$release_in_list][$R_INSTALL_SIZE]
+	Return StringStripWS($releases[$release_in_list][$R_INSTALL_SIZE],3)
 EndFunc
 
 Func ReleaseGetDescription($release_in_list)
 	if $release_in_list <=0 Then Return "NotFound"
 	if StringInStr(ReleaseGetCodename($release_in_list),"separator")>0 Then
 		; This is a separator description
-		Return ">>>>>>>>>>>>>>> "&Translate($releases[$release_in_list][$R_DESCRIPTION])&" <<<<<<<<<<<<<<<"
+		Return ">>>>>>>>>>>>>>> "&Translate(StringStripWS($releases[$release_in_list][$R_DESCRIPTION],3))&" <<<<<<<<<<<<<<<"
 	Else
 		; This is Linux description
-		Return Translate($releases[$release_in_list][$R_DESCRIPTION])
+		Return Translate(StringStripWS($releases[$release_in_list][$R_DESCRIPTION],3))
 	Endif
 
 EndFunc
 
 Func ReleaseGetSupportedFeatures($release_in_list)
 	if $release_in_list <=0 Then Return "NotFound"
-	Return $releases[$release_in_list][$R_FEATURES]
+	Return StringStripWS($releases[$release_in_list][$R_FEATURES],3)
 EndFunc
 
 Func ReleaseGetVBoxRAM($release_in_list)
@@ -212,7 +212,7 @@ Func ReleaseGetVBoxRAM($release_in_list)
 	For $feature IN $feature_list
 		if StringInStr($feature,"vboxram-") Then
 			$vboxram=StringSplit($feature,"-")
-			if $vboxram[0]=2 Then Return $vboxram[2]
+			if IsArray($vboxram) AND $vboxram[0]=2 Then Return $vboxram[2]
 		EndIf
 	Next
 	Return "256"
@@ -221,23 +221,39 @@ EndFunc
 Func URLToHostname($url)
 	if StringInStr($url,"/") >= 3 Then
 		$temp = StringSplit($url,"/")
-		Return $temp[3]
+		if NOt @error AND IsArray($temp) AND $temp[0]>3 Then
+			Return $temp[3]
+		Else
+			Return "ERROR"
+		EndIf
 	Else
-		Return ""
+		Return "ERROR"
 	EndIf
 EndFunc
 
 Func path_to_name($filepath)
 	$short_name = StringSplit($filepath, '\')
-	Return ($short_name[$short_name[0]])
+	if NOt @error AND IsArray($short_name) Then
+		Return ($short_name[$short_name[0]])
+	Else
+		Return "ERROR"
+	EndIf
 EndFunc   ;==>path_to_name
 
 Func unix_path_to_name($filepath)
 	$short_name = StringSplit($filepath, '/')
-	Return ($short_name[$short_name[0]])
+	if NOt @error AND IsArray($short_name) Then
+		Return ($short_name[$short_name[0]])
+	Else
+		Return "ERROR"
+	EndIf
 EndFunc   ;==>unix_path_to_name
 
 Func get_extension($filepath)
 	$short_name = StringSplit($filepath, '.')
-	Return ($short_name[$short_name[0]])
+	if NOt @error AND IsArray($short_name) Then
+		Return ($short_name[$short_name[0]])
+	Else
+		Return "ERROR"
+	EndIf
 EndFunc   ;==>unix_path_to_name

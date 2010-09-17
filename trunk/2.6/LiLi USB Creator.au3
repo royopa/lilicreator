@@ -6,7 +6,7 @@
 #AutoIt3Wrapper_UseUpx=n
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.6.88.42
+#AutoIt3Wrapper_Res_Fileversion=2.6.88.45
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_SaveSource=y
@@ -39,6 +39,7 @@ Global Const $settings_ini = @ScriptDir & "\tools\settings\settings.ini"
 Global Const $compatibility_ini = @ScriptDir & "\tools\settings\compatibility_list.ini"
 Global Const $blacklist_ini = @ScriptDir & "\tools\settings\black_list.ini"
 Global Const $log_dir = @ScriptDir & "\logs\"
+Global $logfile = $log_dir & @MDAY & "-" & @MON & "-" & @YEAR&".log"
 Global Const $check_updates_url = "http://www.linuxliveusb.com/updates/"
 
 ; Auto-Clean feature (relative to the usb drive path)
@@ -46,7 +47,7 @@ Global Const $autoclean_file = "Remove_LiLi.bat"
 Global Const $autoclean_settings = "SmartClean.ini"
 
 ; Global that will be set up later
-Global $lang, $anonymous_id,$logfile
+Global $lang, $anonymous_id
 
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////// Gui Buttons and Label                         ///////////////////////////////////////////////////////////////////////////////
@@ -211,11 +212,11 @@ EndIf
 #include <Updates.au3>
 #include <Settings.au3>
 #include <Files.au3>
+#include <Logs_And_Status.au3>
 #include <Automatic_Bug_Report.au3>
 #include <Graphics.au3>
 #include <External_Tools.au3>
 #include <Disks.au3>
-#include <Logs_And_Status.au3>
 #include <Boot_Menus.au3>
 #include <Checking_And_Recognizing.au3>
 #include <Statistics.au3>
@@ -255,7 +256,7 @@ Else
 	HttpSetProxy($proxy_mode)
 EndIf
 
-_SetAsReceiver("lili-main")
+_SetAsReceiverNoCallback("lili-main")
 _SetReceiverFunction("ReceiveFromSecondary")
 
 ; Initializing log file for verbose logging
@@ -512,12 +513,20 @@ GUISetState($GUI_SHOW, $CONTROL_GUI)
 SendReport("check_for_updates")
 
 SplashOff()
+Sleep(100)
 GUISetState(@SW_SHOW, $GUI)
 GUISetState(@SW_SHOW, $CONTROL_GUI)
+Sleep(100)
+; LiLi has been restarted due to a language change
+If ReadSetting("Internal","restart_language")="yes" Then
+	GUI_Options_Menu()
+EndIf
 
-Sleep(300)
-
-if @DesktopHeight<=600 then MsgBox(64,Translate("Netbook screen detected"),Translate("Your screen vertical resolution is less than 600 pixels")&"."& @CRLF & Translate("Please use the arrow keys (up and down) of your keyboard to move the interface")&".")
+; Netbook warning (interface too big). Warning will only appear once
+if @DesktopHeight<=600 AND ReadSetting("Advanced","skip_netbook_warning")<>"yes" Then
+	$return = MsgBox(64,Translate("Netbook screen detected"),Translate("Your screen vertical resolution is less than 600 pixels")&"."& @CRLF & Translate("Please use the arrow keys (up and down) of your keyboard to move the interface")&".")
+	WriteSetting("Advanced","skip_netbook_warning","yes")
+EndIf
 
 ; Main part
 While 1
@@ -635,17 +644,20 @@ Func Control_Hover()
 		EndIf
 	EndIf
 	if IsArray($_Progress_Bars) Then _Paint_Bars_Procedure2()
+	_CALLBACKQUEUE()
 EndFunc   ;==>Control_Hover
 
 
 ; Received a message from the secondary lili's process
 Func ReceiveFromSecondary($message)
-	SendReport("Start-ReceiveFromSecondary : "&$message)
+
 	; Compatibility list has been updated => force reloading
 	If $message ="compatibility_updated" Then
 		; initialize list of compatible releases (load the compatibility_list.ini)
 		Get_Compatibility_List()
 		$prefetched_linux_list = Print_For_ComboBox()
+		UpdateLog("Compatibility list has been successfully updated")
+	Else
+		UpdateLog("Received message from secondary process ("&$message&")")
 	EndIf
-	SendReport("End-ReceiveFromSecondary")
 EndFunc
