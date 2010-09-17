@@ -12,19 +12,22 @@ CheckIfInstalled()
 
 ; Check if virtualbox is installed or runned
 Func CheckIfInstalled()
-	if @OSArch="X64" Then	$add="64"
-	Else 					$add=""
+	if @OSArch="X64" Then
+		$add="64"
+	Else
+		$add=""
+	EndIf
 
 	$version_new = RegRead("HKLM"&$add&"\SOFTWARE\Oracle\VirtualBox","Version")
 	$version_old = RegRead("HKLM"&$add&"\SOFTWARE\Sun\VirtualBox","Version")
 	$version=$version_old&$version_new
-	If $version <> "" AND IniRead($settings_ini,"Others","force_portable")<>"yes" Then
+	If $version <> "" AND IniRead($settings_ini,"Others","force_portable","no")<>"yes" Then
 		;MsgBox(16, "Found an installed VirtualBox", "Please uninstall VirtualBox "&$version&" in order to use the portable version.")
-		$iMsgBoxAnswer=MsgBox(65, "Found an installed VirtualBox", "This is a beta feature."&@CRLF&"LinuxLive USB will try to run in your non-portable VirtualBox."&@CRLF&"Click OK to continue or Cancel to abandon.")
-		Select
-			Case $iMsgBoxAnswer = 2 ;Cancel
-				Exit
-		EndSelect
+		;$iMsgBoxAnswer=MsgBox(65, "Found an installed VirtualBox", "This is a beta feature."&@CRLF&"LinuxLive USB will try to run in your non-portable VirtualBox."&@CRLF&"Click OK to continue or Cancel to abandon.")
+		;Select
+			;Case $iMsgBoxAnswer = 2 ;Cancel
+				;Exit
+		;EndSelect
 		PrepareForLinuxLive()
 		EnvSet("VBOX_USER_HOME",@ScriptDir&"\data\.VirtualBox")
 		$nonportable_install_dir=RegRead("HKLM"&$add&"\SOFTWARE\Oracle\VirtualBox","InstallDir")

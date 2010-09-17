@@ -187,6 +187,12 @@ Func GUI_Options_Menu()
 				ControlFocus("LinuxLive USB Creator", "", $REFRESH_AREA)
 				GUISwitch($CONTROL_GUI)
 				Return ""
+			Case $contact
+				ShellExecute("http://www.linuxliveusb.com/contact-me")
+			Case $licence
+				ShellExecute("http://www.linuxliveusb.com/license")
+			Case $donate
+				ShellExecute("https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=8297661")
 			Case $language_list
 				$language_selected=GUICtrlRead($language_list)
 				if $language_selected="Automatic" OR StringInStr($language_selected,"—")>0 Then
@@ -198,8 +204,6 @@ Func GUI_Options_Menu()
 				_ScriptRestart()
 			Case $check_for_updates
 				Checkbox_To_Setting($check_for_updates,"Updates","check_for_updates")
-			Case $licence
-				ShellExecute("http://www.linuxliveusb.com/licence")
 			Case $all_release
 				Checkbox_To_Setting($all_release,"Updates","check_for_beta_versions")
 			Case $stable_only
@@ -261,7 +265,7 @@ Func GUI_Options_Menu()
 							HttpSetProxy(2, $proxy_url)
 						EndIf
 					EndIf
-				Elseif GuiCtrlRead($custom_proxy) = $GUI_CHECKED Then
+				Elseif GuiCtrlRead($no_proxy) = $GUI_CHECKED Then
 					WriteSetting("Proxy", "proxy_mode",1)
 					HttpSetProxy(1)
 				Else
