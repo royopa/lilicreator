@@ -321,7 +321,7 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 	$boot_text = Ubuntu_BootMenu($initrd_file,AutomaticPreseed($selected_drive,$ubuntu_variant))
 	UpdateLog("Creating text.cfg file for Ubuntu variants :" & @CRLF & $boot_text)
 
-	If GenericVersionCode($distrib_version) >= 1010 Then
+	If GenericVersionCode($distrib_version) = 1010 Then
 		$text_file="txt.cfg"
 	Else
 		$text_file="text.cfg"
