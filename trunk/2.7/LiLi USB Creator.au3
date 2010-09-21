@@ -6,7 +6,7 @@
 #AutoIt3Wrapper_UseUpx=n
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.6.88.45
+#AutoIt3Wrapper_Res_Fileversion=2.7.88.45
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_SaveSource=y
@@ -31,7 +31,7 @@
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ; Global constants
-Global Const $software_version = "2.6"
+Global Const $software_version = "2.7 Alpha"
 Global $lang_folder = @ScriptDir & "\tools\languages\"
 Global $lang_ini
 Global $verbose_logging
@@ -395,7 +395,7 @@ GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
 GUICtrlSetFont(-1, 10, 400, 0, "Tahoma")
 
-$label_iso = GUICtrlCreateLabel("ISO / IMG / ZIP", 40 + $offsetx0, 302 + $offsety0, 80, 50)
+$label_iso = GUICtrlCreateLabel("ISO / IMG / ZIP", 40 + $offsetx0, 302 + $offsety0, 110, 50)
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
 

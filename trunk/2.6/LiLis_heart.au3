@@ -14,13 +14,17 @@ Func Format_FAT32($drive_letter)
 	SendReport("Start-Format_FAT32 ( Drive : "& $drive_letter &" )")
 	UpdateStatus("Formating the key")
 	$drive_size=Round(DriveSpaceTotal($drive_letter)/1024,1)
-	if $drive_size<32 AND NOT ReadSetting( "Advanced", "force_3rdparty_format") = "yes" Then
+	if $drive_size<32 AND ReadSetting( "Advanced", "force_3rdparty_format") <> "yes" Then
 		UpdateLog("Drive is smaller than 32GB ("&$drive_size&"GB)-> LiLi will use the Windows Format utility")
 		; default Method, will force work even when some applications are locking the drive
 		RunWait3('cmd /c format /Q /X /y /V:MyLinuxLive /FS:FAT32 ' & $drive_letter)
 	Else
-		UpdateLog("Drive is bigger than 32GB ("&$drive_size&"GB) or force_3rdparty_format=yes -> LiLi will use the Windows Format utility")
 		; Alternative method using fat32format for filesystems bigger than 32GB
+		if ReadSetting( "Advanced", "force_3rdparty_format") = "yes" Then
+			UpdateLog("force_3rdparty_format="&ReadSetting( "Advanced", "force_3rdparty_format")&" -> LiLi will use the Third party format utility")
+		Else
+			UpdateLog("Drive is bigger than 32GB ("&$drive_size&"GB) and force_3rdparty_format="&ReadSetting( "Advanced", "force_3rdparty_format")&"-> LiLi will use the Third party format utility")
+		EndIf
 		FAT32Format($drive_letter,"MyLinuxLive")
 	EndIf
 

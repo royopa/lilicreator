@@ -17,5 +17,5 @@ Func ReadSetting($category,$key)
 	Else
 		$val=RegRead("HKEY_CURRENT_USER\SOFTWARE\LinuxLive\"&$category, $key)
 	EndIf
-	Return $val
+	Return StringStripWS($val,3)
 EndFunc

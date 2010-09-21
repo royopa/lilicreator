@@ -675,11 +675,13 @@ Func HumanTime($sec)
 EndFunc   ;==>HumanTime
 
 
-
 Func RoundForceDecimal($number)
 	$rounded = Round($number, 1)
-	If Not StringInStr($rounded, ".") Then $rounded = $rounded & ".0"
-	Return $rounded
+	If Not StringInStr($rounded, ".") Then
+		Return $rounded & ".0"
+	Else
+		Return $rounded
+	EndIf
 EndFunc   ;==>RoundForceDecimal
 
 

@@ -31,6 +31,12 @@ Func LogSystemConfig()
 	$line &= @CRLF & "LiLi USB Creator : " & $software_version
 	$line &= @CRLF & "Compatibility List Version : " & $current_compatibility_list_version
 	$line &= @CRLF & "Unique ID : " & ReadSetting("General","unique_id")
+
+	if FileExists("Z:/bin/uname") Then
+		$realOS=_RunReadStd("Z:/bin/uname -s")
+		$line &= @CRLF & "Wine Detected : "&$realOS[1]
+	EndIf
+
 	$line &= @CRLF & "OS Type : " & @OSType
 	$line &= @CRLF & "OS Version : " & $os_version
 	$line &= @CRLF & "OS Build : " & @OSBuild
