@@ -218,6 +218,9 @@ Func Check_source_integrity($linux_live_file)
 					; PLoP Linux without X
 					$release_number = _ArraySearch($codenames_list, "plop-last")
 				EndIf
+			ElseIf StringInStr($shortname, "fedora") AND StringInStr($shortname, "14") Then
+				; Fedora Based
+				$release_number = _ArraySearch($codenames_list, "fedora14-last")
 			ElseIf StringInStr($shortname, "fedora") Or StringInStr($shortname, "F10") Or StringInStr($shortname, "F11") OR StringInStr($shortname, "F12") Then
 				; Fedora Based
 				$release_number = _ArraySearch($codenames_list, "fedora-last")
@@ -350,9 +353,18 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "ylmf") Then
 				; Ylmf OS
 				$release_number = _ArraySearch($codenames_list, "ylmf-last")
+			ElseIf StringInStr($shortname, "archbang") Then
+				; ArchBang
+				$release_number = _ArraySearch($codenames_list, "archbang-last")
 			ElseIf StringInStr($shortname, "archlinux") Then
 				; Arch Linux
 				$release_number = _ArraySearch($codenames_list, "archlinux-last")
+			ElseIf StringInStr($shortname, "ipfire") Then
+				; IPFire
+				$release_number = _ArraySearch($codenames_list, "ipfire-last")
+			ElseIf StringInStr($shortname, "vyatta") Then
+				; vyatta
+				$release_number = _ArraySearch($codenames_list, "vyatta-last")
 			ElseIf StringInStr($shortname, "redobackup") Then
 				; Redo Backup
 				$release_number = _ArraySearch($codenames_list, "redobackup-last")
@@ -364,7 +376,7 @@ Func Check_source_integrity($linux_live_file)
 					$release_number = _ArraySearch($codenames_list, "opensuse-last")
 				EndIf
 			ElseIf StringInStr($shortname, "sms") Then
-				; Simple Mini Server
+				; Superb Mini Server
 				$release_number = _ArraySearch($codenames_list, "sms-last")
 			ElseIf StringInStr($shortname, "livehacking") Then
 				; Live Hacking CD
