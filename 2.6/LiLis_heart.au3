@@ -534,8 +534,8 @@ Func Create_boot_menu($drive_letter,$release_in_list)
 		Elseif $variant = "Sidux" Then
 			SendReport("IN-Create_boot_menu for Sidux")
 			Sidux_WriteTextCFG($drive_letter)
-		Elseif $distribution = "ubuntu" OR $variant= "debian" Then
-			SendReport("IN-Create_boot_menu for Ubuntu and Debian")
+		Elseif $distribution = "ubuntu" OR $variant= "mint" Then
+			SendReport("IN-Create_boot_menu for Ubuntu and Mint Debian")
 			Ubuntu_WriteTextCFG($drive_letter,$release_in_list)
 		EndIf
 	Elseif $variant = "opensuse" Then
