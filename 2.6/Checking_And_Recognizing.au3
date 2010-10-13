@@ -121,7 +121,13 @@ Func Check_source_integrity($linux_live_file)
 			if ((StringInStr($shortname, "alternate") OR StringInStr($shortname, "server") OR StringInStr($shortname, "ubuntu-studio") ) AND NOT StringInStr($shortname, "live") ) Then
 					; Any Server versions and alternate
 					$release_number = _ArraySearch($codenames_list, "default")
-			ElseIf ((StringInStr($shortname, "10.04") OR StringInStr($shortname, "lucid") OR StringInStr($shortname, "buntu")) AND NOT StringInStr($shortname, "10.10") AND NOT StringInStr($shortname, "9.10") AND NOT StringInStr($shortname, "karmic")) Then
+			ElseIf StringInStr($shortname, "archbang") Then
+				; ArchBang
+				$release_number = _ArraySearch($codenames_list, "archbang-last")
+			ElseIf StringInStr($shortname, "archlinux") Then
+				; Arch Linux
+				$release_number = _ArraySearch($codenames_list, "archlinux-last")
+			ElseIf ((StringInStr($shortname, "10.10") OR StringInStr($shortname, "maverick") OR StringInStr($shortname, "buntu")) AND NOT StringInStr($shortname, "10.04") AND NOT StringInStr($shortname, "9.10") AND NOT StringInStr($shortname, "karmic")) Then
 				if (StringInStr($shortname, "xubuntu")) Then
 					; Xubuntu
 					$release_number = _ArraySearch($codenames_list, "xubuntu-last")
@@ -146,6 +152,32 @@ Func Check_source_integrity($linux_live_file)
 				Else
 					; Falls back to Ubuntu Desktop
 					$release_number = _ArraySearch($codenames_list, "ubuntu-last")
+				EndIf
+			ElseIf ((StringInStr($shortname, "10.04") OR StringInStr($shortname, "lucid") OR StringInStr($shortname, "buntu")) AND NOT StringInStr($shortname, "10.10") AND NOT StringInStr($shortname, "9.10") AND NOT StringInStr($shortname, "karmic")) Then
+				if (StringInStr($shortname, "xubuntu")) Then
+					; Xubuntu
+					$release_number = _ArraySearch($codenames_list, "xubuntu-10.04")
+				Elseif (StringInStr($shortname, "mythbuntu")) Then
+					; Mythbuntu
+					$release_number = _ArraySearch($codenames_list, "mythbuntu-10.04.1")
+				Elseif (StringInStr($shortname, "lubuntu")) Then
+					; Lubuntu
+					$release_number = _ArraySearch($codenames_list, "lubuntu-10.04")
+				Elseif (StringInStr($shortname, "kubuntu") AND NOT StringInStr($shortname, "netbook") ) Then
+					; Kubuntu Desktop
+					$release_number = _ArraySearch($codenames_list, "kubuntu-10.04.1")
+				Elseif (StringInStr($shortname, "kubuntu") AND StringInStr($shortname, "netbook") ) Then
+					; Kubuntu Netbook
+					$release_number = _ArraySearch($codenames_list, "kubuntu-netbook-10.04.1")
+				Elseif (StringInStr($shortname, "ubuntu") AND NOT StringInStr($shortname, "netbook") ) Then
+					; Ubuntu Desktop
+					$release_number = _ArraySearch($codenames_list, "ubuntu-10.04.1")
+				Elseif (StringInStr($shortname, "ubuntu") AND StringInStr($shortname, "netbook") ) Then
+					; Ubuntu NetBook
+					$release_number = _ArraySearch($codenames_list, "ubuntu-netbook-10.04")
+				Else
+					; Falls back to Ubuntu Desktop
+					$release_number = _ArraySearch($codenames_list, "ubuntu-10.04.1")
 				EndIf
 			Elseif ( StringInStr($shortname, "9.10") ) And StringInStr($shortname, "netbook") Then
 				; Ubuntu Karmic 9.10 based
@@ -353,12 +385,6 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "ylmf") Then
 				; Ylmf OS
 				$release_number = _ArraySearch($codenames_list, "ylmf-last")
-			ElseIf StringInStr($shortname, "archbang") Then
-				; ArchBang
-				$release_number = _ArraySearch($codenames_list, "archbang-last")
-			ElseIf StringInStr($shortname, "archlinux") Then
-				; Arch Linux
-				$release_number = _ArraySearch($codenames_list, "archlinux-last")
 			ElseIf StringInStr($shortname, "ipfire") Then
 				; IPFire
 				$release_number = _ArraySearch($codenames_list, "ipfire-last")
