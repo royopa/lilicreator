@@ -143,3 +143,60 @@ EndFunc   ;==>VersionCode
 Func GenericVersionCode($version)
 	Return Int(StringReplace($version,".",""))
 EndFunc
+
+Func CompareHuman($version1,$version2)
+	$result = CompareVersion($version1,$version2)
+	if $result=0 Then
+		return $version1&" is equal to "&$version2
+	Elseif $result = 1 Then
+		return $version1&" is greater than "&$version2
+	Elseif $result = 2 Then
+		return $version2&" is greater than "&$version1
+	EndIf
+EndFunc
+
+#cs
+	Can compare any version using X.X.X.X format (with X = 1-10 / A-F)
+	Return :
+		0 if equal
+		1 if var > var2 (var is newer)
+		2 if var < var 2 (var2 is newer)
+#ce
+Func CompareVersion($var, $var2)
+    $aVar1 = StringSplit($var,".")
+    $aVar2 = StringSplit($var2,".")
+    If $aVar1[0] > $aVar2[0] Then
+        $length = $aVar2[0]
+    Else
+        $length =$aVar1[0]
+    EndIf
+    For $i = 1 to $length
+        $ret = 0
+		if StringIsAlpha($aVar1[$i]) AND StringIsXDigit($aVar1[$i]) Then
+			$number1 = Dec($aVar1[$i])
+		Else
+			$number1 = number($aVar1[$i])
+		EndIf
+
+		if StringIsAlpha($aVar2[$i]) AND StringIsXDigit($aVar2[$i]) Then
+			$number2 = Dec($aVar2[$i])
+		Else
+			$number2 = number($aVar2[$i])
+		EndIf
+
+        If $number1 >  $number2 Then
+            $ret = 1
+            ExitLoop
+        ElseIf $number1 = $number2 Then
+            If $aVar1[0] > $aVar2[0] Then
+                $ret = 1
+            ElseIf $aVar1[0] < $aVar2[0] Then
+                $ret = 2;
+            EndIf
+        Else
+            $ret = 2
+            ExitLoop
+        EndIf
+    Next
+    Return $ret
+EndFunc

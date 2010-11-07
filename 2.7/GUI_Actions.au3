@@ -840,8 +840,8 @@ Func GUI_Launch_Creation()
 
 				; maybe check downloaded file ?
 
-				; Next step : uncompressing vbox on the key
-				Uncompress_virtualbox_on_key($selected_drive)
+				; Next step : installing vbox on the key
+				Install_virtualbox_on_key($selected_drive)
 
 				UpdateStatus("Applying VirtualBox settings")
 				Setup_RAM_for_VM($selected_drive,$release_number)

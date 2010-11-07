@@ -73,7 +73,7 @@ Func Check_source_integrity($linux_live_file)
 		Return ""
 	EndIf
 
-	SendReport("Start-Check_source_integrity-1")
+	SendReport("IN-Check_source_integrity -> Checking if non grata")
 	If Check_if_version_non_grata($shortname) Then Return ""
 
 	; Some files do not need to be checked by MD5 ( Alpha releases ...). Only trusting filename
@@ -391,6 +391,9 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "vyatta") Then
 				; vyatta
 				$release_number = _ArraySearch($codenames_list, "vyatta-last")
+			ElseIf StringInStr($shortname, "blankon") Then
+				; BlankOn
+				$release_number = _ArraySearch($codenames_list, "blankon-last")
 			ElseIf StringInStr($shortname, "redobackup") Then
 				; Redo Backup
 				$release_number = _ArraySearch($codenames_list, "redobackup-last")
@@ -404,6 +407,12 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "sms") Then
 				; Superb Mini Server
 				$release_number = _ArraySearch($codenames_list, "sms-last")
+			ElseIf StringInStr($shortname, "xpud") Then
+				; xPUD
+				$release_number = _ArraySearch($codenames_list, "xpud-last")
+			ElseIf StringInStr($shortname, "tangostudio") Then
+				; TangoStudio
+				$release_number = _ArraySearch($codenames_list, "tangostudio-last")
 			ElseIf StringInStr($shortname, "livehacking") Then
 				; Live Hacking CD
 				if StringInStr($shortname, "mini") Then

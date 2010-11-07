@@ -131,7 +131,45 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+#cs
+	Description : Check for VirtualBox update online
+	Input :
+		No input
+	Output :
+		None
+#ce
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Func Check_VirtualBox_Update()
+	SendReport("Start-Check_VirtualBox_Update")
+	; Checking online for an update
+	InetGet($check_updates_url&"?virtualbox", $vbox_update_ini,1,0 )
+	$vbox_last_version=IniRead($vbox_update_ini,"VirtualBox","version","NONE")
 
+	if $vbox_last_version<>"NONE" AND $vbox_last_version<>"" Then
+		;MsgBox(0,"Resultat","Mirror1 : "&Iniread($vbox_ini,"VirtualBox","Mirror1",""))
+		SendReport("IN-Download_virtualBox : last version is "&$vbox_last_version)
+	Else
+		;MsgBox(0,"ERROR","Could not check virtualbox update")
+		; Could not check virtualbox update
+		SendReport("IN-Download_virtualBox : Could not check virtualbox update")
+	EndIf
+	$cached_version=IniRead(@ScriptDir&"\tools\VirtualBox\Portable-VirtualBox\linuxlive\settings.ini","General","pack_version","0")
+	$compare = CompareVersion($vbox_last_version,$cached_version)
+	if $compare=1 Then
+		SendReport("END-Check_VirtualBox_Update : Online version is newer, need to download the update")
+		Return "UPDATE-AVAILABLE"
+	elseif $compare=2 Then
+		SendReport("END-Check_VirtualBox_Update : Online version is older (SVN repo ?), nothing to do ")
+		return "NO-UPDATE"
+	Else
+		SendReport("END-Check_VirtualBox_Update : They are equal, nothing to do")
+		return "NO-UPDATE"
+	EndIf
+
+EndFunc
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -148,63 +186,53 @@ EndFunc
 Func Download_virtualBox()
 	Global $current_download
 	SendReport("Start-Download_virtualBox")
-				UpdateStatus("Setting up virtualization software")
-				$no_internet = 0
-				$virtualbox_size = -1
 
-				$VirtualBoxUrl1 = ReadSetting("VirtualBox", "portable_virtualbox_mirror1")
-				$VirtualBoxUrl2 = ReadSetting("VirtualBox", "portable_virtualbox_mirror2")
+	if Check_VirtualBox_Update() <> "UPDATE-AVAILABLE" Then
+		SendReport("END-Download_virtualBox : no update to download")
+		Return 2
+	EndIf
 
-				; Testing download mirrors
-				$virtualbox_size1 = InetGetSize($VirtualBoxUrl1)
-				$virtualbox_size2 = InetGetSize($VirtualBoxUrl2)
+	UpdateStatus("Setting up virtualization software")
+	$no_internet = 0
+	$virtualbox_size = IniRead($vbox_update_ini,"VirtualBox","filesize","ERROR")
+	If $virtualbox_size="ERROR" Then
+		SendReport("END-Download_virtualBox : could not check update size")
+		Return 2
+	EndIf
 
-				; Selecting mirror
-				Global $virtualbox_size
-				If $virtualbox_size1 <= 0 Then
-					If $virtualbox_size2 <= 0 Then
-						$virtualbox_size = -1
-					Else
-						$VirtualBoxUrl = $VirtualBoxUrl2
-						$virtualbox_size = $virtualbox_size2
-					EndIf
-				Else
-					$VirtualBoxUrl = $VirtualBoxUrl1
-					$virtualbox_size = $virtualbox_size1
-				EndIf
+	$mirrors_nbr=10
+	$i=1
 
-				SendReport("Start-Download_virtualBox-1")
-				UpdateLog("Found Mirror 1 : " & $VirtualBoxUrl1 & " with VirtualBox size : " & $virtualbox_size1 )
-				UpdateLog("Found Mirror 2 : " & $VirtualBoxUrl2 & " with VirtualBox size : " & $virtualbox_size2 )
+	Dim $vbox_mirrors[10]
+	Do
+		$vbox_mirrors[$i-1]=IniRead($vbox_update_ini,"VirtualBox","Mirror"&$i,"")
+		$i+=1
+	Until $i>$mirrors_nbr
 
-				; No mirror working we should log that
-				If $virtualbox_size <= 0 Then
-					$no_internet = 1
-					UpdateLog("No working mirror !")
-					$downloaded_virtualbox_filename = "VirtualBox.zip"
-				Else
-					$downloaded_virtualbox_filename = unix_path_to_name($VirtualBoxUrl)
-				EndIf
+	$i=0
+	Do
+		$size=InetGetSize($vbox_mirrors[$i])
+		$i+=1
+	Until ($size=$virtualbox_size OR $i=10)
+
+	if NOT $size=$virtualbox_size Then
+		SendReport("END-Download_virtualBox : could not find an online mirror")
+		Return 2
+	Else
+		$downloaded_virtualbox_filename = "VirtualBox.zip"
+		$online_mirror=$vbox_mirrors[$i-1]
+		SendReport("IN-Download_virtualBox : using online mirror "&$online_mirror)
+	EndIf
 
 
-				$virtualbox_already_downloaded = 0
-				SendReport("Start-Download_virtualBox-2")
 
-				; Checking if last version has aleardy been downloaded
-				If FileExists(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename) And $virtualbox_size > 0 And $virtualbox_size = FileGetSize(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename) Then
-					; Already have last version, no download needed
-					UpdateStatus("VirtualBox already downloaded")
-					Sleep(700)
-					$check_vbox = 2
-				ElseIf FileExists(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename) And $virtualbox_size > 0 And $virtualbox_size <> FileGetSize(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename) Then
-					; A new version is available, downloading it
+
 					UpdateStatus("A new version of VirtualBox is available")
 					Sleep(700)
-					UpdateStatus("This new version will be downloaded")
-					Sleep(700)
 					UpdateStatus("Downloading VirtualBox as a background task")
 					Sleep(700)
-					$current_download = InetGet($VirtualBoxUrl, @ScriptDir & "\tools\" & $downloaded_virtualbox_filename, 1, 1)
+					FileDelete(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename)
+					$current_download = InetGet($online_mirror, @ScriptDir & "\tools\" & $downloaded_virtualbox_filename, 1, 1)
 					If InetGetInfo($current_download, 4)=0 Then
 						UpdateStatus("Download started succesfully")
 						$check_vbox = 1
@@ -214,50 +242,6 @@ Func Download_virtualBox()
 						UpdateStatus("VirtualBox will not be installed")
 						$check_vbox = 0
 					EndIf
-
-				ElseIf FileExists(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename) And $virtualbox_size <= 0 Then
-					; Alerady downloaded but can't tell if it's last version and if it's good
-					UpdateStatus("VirtualBox already downloaded")
-					Sleep(1000)
-					UpdateStatus("Integrity could not be verified")
-					Sleep(1000)
-					UpdateStatus("Will attempt installation")
-					$check_vbox = 2
-
-				ElseIf $virtualbox_size > 0 Then
-					; Does not have any version, downloading it
-					UpdateStatus("Downloading VirtualBox as a background task")
-					Sleep(1000)
-					$current_download = InetGet($VirtualBoxUrl, @ScriptDir & "\tools\" & $downloaded_virtualbox_filename, 1, 1)
-					If InetGetInfo($current_download, 4)=0 Then
-						UpdateStatus("Download started succesfully")
-						Sleep(1000)
-						$check_vbox = 1
-					Else
-						; Can't download it => aborted
-						UpdateStatus("Download failed to start")
-						Sleep(1000)
-						UpdateStatus("VirtualBox will not be installed")
-						$check_vbox = 0
-					EndIf
-
-				Else
-					; Cannot start download, VirtualBox install is aborted
-					UpdateStatus("Cannot download")
-					Sleep(1000)
-					UpdateStatus("VirtualBox will not be installed")
-					$check_vbox = 0
-				EndIf
-
-				;#ce
-				#cs
-				$downloaded_virtualbox_filename = "VirtualBox.zip"
-				$virtualbox_already_downloaded = 1
-				$virtualbox_size = FileGetSize(@ScriptDir & "\tools\VirtualBox.zip")
-					UpdateStatus("VirtualBox already downloaded")
-					Sleep(1000)
-					$check_vbox = 2
-					#ce
 
 				Sleep(2000)
 				SendReport("End-Download_virtualBox")
@@ -802,7 +786,43 @@ Func Check_virtualbox_download()
 		UpdateStatusNoLog(Translate("Downloading VirtualBox") & "  : " & $prog & "% ( " & Round(InetGetInfo($current_download,0) / (1024 * 1024), 1) & "/" & Round($virtualbox_size / (1024 * 1024), 1) & " " & Translate("MB") & " )")
 		Sleep(300)
 	Until InetGetInfo($current_download, 2)
+
 	UpdateStatus("Download complete")
+	$control_md5=IniRead($vbox_update_ini,"VirtualBox","file_md5","")
+	$FileToHash=@ScriptDir & "\tools\" & $downloaded_virtualbox_filename
+
+	Local $filehandle = FileOpen($FileToHash, 16)
+	Local $buffersize=0x20000,$final=0,$hash=""
+
+	UpdateStatus(Translate("Checking VirtualBox archive integrity"))
+	SendReport("IN-Check_virtualbox_download : Crypto Library Startup")
+	_Crypt_Startup()
+	$iterations = Ceiling(FileGetSize($FileToHash) / $buffersize)
+	For $i = 1 To $iterations
+		if $i=$iterations Then $final=1
+		$hash=_Crypt_HashData(FileRead($filehandle, $buffersize),0x00008003,$final,$hash)
+		$percent_md5 = Round(100 * $i / $iterations)
+		UpdateStatusNoLog(Translate("Checking VirtualBox archive integrity")&" ("&$percent_md5&"%)" )
+	Next
+	FileClose($filehandle)
+	_Crypt_Shutdown()
+	SendReport("IN-Check_virtualbox_download : Crypto Library shutdown. Hash is "&$hash)
+	$hexa_hash = StringTrimLeft($hash, 2)
+
+	If StringStripWS($hexa_hash,3)=$control_md5 Then
+		UpdateStatus(Translate("VirtualBox archive integrity checked"))
+		Sleep(1500)
+		UpdateStatus(Translate("Unzipping VirtualBox archive to disk"))
+		DirRemove(@ScriptDir&"\tools\VirtualBox\",1)
+		RunWait3('"' & @ScriptDir & '\tools\7z.exe" x -y "' & @ScriptDir & "\tools\" & $downloaded_virtualbox_filename,@ScriptDir & "\tools\")
+		if IniRead(@ScriptDir&"\tools\VirtualBox\Portable-VirtualBox\linuxlive\settings.ini","General","pack_version","ERROR")<> "ERROR" Then
+			FileDelete(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename)
+		EndIf
+	Else
+		UpdateStatus(Translate("VirtualBox archive is corrupted"))
+		Return "ERROR"
+	EndIf
+
 	SendReport("End-Check_virtualbox_download")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -822,42 +842,46 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Func Uncompress_virtualbox_on_key($drive_letter)
-	SendReport("Start-Uncompress_virtualbox_on_key")
+Func Install_virtualbox_on_key($drive_letter)
+	SendReport("Start-Install_virtualbox_on_key")
 	Local $downloaded_version,$installed_version
 
-	if FileExists($drive_letter&"\VirtualBox\") Then
 
-		; Portable-VirtualBox already installed, checking if older
-		DirRemove(@ScriptDir&"\tools\VirtualBox\Portable-VirtualBox",1)
-		RunWait3('"' & @ScriptDir & '\tools\7z.exe" x -y "' & @ScriptDir & "\tools\" & $downloaded_virtualbox_filename & '" VirtualBox\Portable-VirtualBox\linuxlive\settings.ini',@ScriptDir & "\tools\")
 
-		if FileExists(@ScriptDir&"\tools\VirtualBox\Portable-VirtualBox\linuxlive\settings.ini") Then
-			$downloaded_version=IniRead(@ScriptDir&"\tools\VirtualBox\Portable-VirtualBox\linuxlive\settings.ini","General","pack_version","3.0.0.0")
-			$installed_version=IniRead($drive_letter&"\VirtualBox\Portable-VirtualBox\linuxlive\settings.ini","General","pack_version","3.0.0.0")
-			SendReport("IN-Uncompress_virtualbox_on_key (downloaded pack="&$downloaded_version&" - installed pack="&$installed_version&")")
-			if GenericVersionCode($downloaded_version)<=GenericVersionCode($installed_version) Then
-				SendReport("End-Uncompress_virtualbox_on_key (Pack is up to date)")
-				Return "1"
-			Else
-				SendReport("IN-Uncompress_virtualbox_on_key (Pack needs to be updated)")
-			EndIf
+	if FileExists(@ScriptDir&"\tools\VirtualBox\Portable-VirtualBox\linuxlive\settings.ini") Then
+		$cached_version=IniRead(@ScriptDir&"\tools\VirtualBox\Portable-VirtualBox\linuxlive\settings.ini","General","pack_version","3.0.0.0")
+		$installed_version=IniRead($drive_letter&"\VirtualBox\Portable-VirtualBox\linuxlive\settings.ini","General","pack_version","0")
+		SendReport("IN-Install_virtualbox_on_key (downloaded pack="&$cached_version&" - installed pack="&$installed_version&")")
+
+		$compare = CompareVersion($cached_version,$installed_version)
+		if $compare=1 Then
+			; Cached version is newer, need to update the installed one
+			SendReport("IN-Install_virtualbox_on_key (Pack needs to be updated)")
 		Else
-			SendReport("IN-Uncompress_virtualbox_on_key (Warning : settings.ini not found)")
+			SendReport("End-Install_virtualbox_on_key (Pack is up to date)")
+			Return "1"
 		EndIf
-
-		; Cleaning previous install of VBox
-		UpdateStatus("Updating Portable-VirtualBox pack")
-		DirRemove2($drive_letter & "\VirtualBox\", 1)
-
+	Else
+		SendReport("END-Install_virtualbox_on_key (Warning : settings.ini not found, error while uncompressing ?)")
+		Return "1"
 	EndIf
+
+	; Cleaning previous install of VBox
+	UpdateStatus("Updating Portable-VirtualBox pack")
+	DirRemove2($drive_letter & "\VirtualBox\", 1)
 
 	; Unzipping to the key
 	UpdateStatus(Translate("Extracting VirtualBox on key") & " ( 4" & Translate("min") & " )")
-	Run7zip2('"' & @ScriptDir & '\tools\7z.exe" x "' & @ScriptDir & "\tools\" & $downloaded_virtualbox_filename & '" -r -aoa -y -o' & $drive_letter, 140)
+	;Run7zip2('"' & @ScriptDir & '\tools\7z.exe" x "' & @ScriptDir & "\tools\" & $downloaded_virtualbox_filename & '" -r -aoa -y -o' & $drive_letter, 140)
+	DirRemove($drive_letter & "\VirtualBox",1)
+	DirCopy(@ScriptDir & "\tools\VirtualBox",$drive_letter & "\VirtualBox",1)
 
-	; maybe check after ?
-	SendReport("End-Uncompress_virtualbox_on_key")
+	if IniRead($drive_letter&"\VirtualBox\Portable-VirtualBox\linuxlive\settings.ini","General","pack_version","3.0.0.0") = $cached_version Then
+		SendReport("End-Install_virtualbox_on_key : Pack "&$cached_version&" successfully installed to key")
+	Else
+		SendReport("End-Install_virtualbox_on_key : ERROR - pack not installed ?")
+	EndIf
+
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
