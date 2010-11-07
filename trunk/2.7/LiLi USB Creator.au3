@@ -37,6 +37,7 @@ Global $lang_ini
 Global $verbose_logging
 Global Const $settings_ini = @ScriptDir & "\tools\settings\settings.ini"
 Global Const $compatibility_ini = @ScriptDir & "\tools\settings\compatibility_list.ini"
+Global Const $vbox_update_ini = @ScriptDir & "\tools\settings\virtualbox.ini"
 Global Const $blacklist_ini = @ScriptDir & "\tools\settings\black_list.ini"
 Global Const $log_dir = @ScriptDir & "\logs\"
 Global $logfile = $log_dir & @MDAY & "-" & @MON & "-" & @YEAR&".log"
@@ -268,7 +269,11 @@ SendReport("Starting LiLi USB Creator " & $software_version)
 ; initialize list of compatible releases (load the compatibility_list.ini)
 Get_Compatibility_List()
 
-_GDIPlus_Startup()
+If _GDIPlus_Startup() Then
+	SendReport("GDI+ started up successfully")
+Else
+	SendReport("ERROR : GDI+ did not start !!!")
+EndIf
 
 ; Loading PNG Files
 $EXIT_NORM = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\close.PNG")

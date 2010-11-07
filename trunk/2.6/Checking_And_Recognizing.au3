@@ -404,6 +404,9 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "sms") Then
 				; Superb Mini Server
 				$release_number = _ArraySearch($codenames_list, "sms-last")
+			ElseIf StringInStr($shortname, "xpud") Then
+				; xPUD
+				$release_number = _ArraySearch($codenames_list, "xpud-last")
 			ElseIf StringInStr($shortname, "livehacking") Then
 				; Live Hacking CD
 				if StringInStr($shortname, "mini") Then

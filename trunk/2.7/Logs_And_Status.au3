@@ -5,7 +5,7 @@
 Func InitLog()
 	DirCreate($log_dir)
 	UpdateLog(LogSystemConfig())
-	SendReport("logfile-" & $logfile)
+	;SendReport("logfile-" & $logfile)
 EndFunc   ;==>InitLog
 
 Func LogSystemConfig()
