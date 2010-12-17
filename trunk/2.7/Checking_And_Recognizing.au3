@@ -528,6 +528,13 @@ Func Check_ISO($FileToHash)
 		SendReport("End-Check_ISO (no iso)")
 		Return "no iso"
 	EndIf
+
+	if IsArray($_Progress_Bars) Then
+		SendReport("Progress bars is an array")
+		_Paint_Bars_Procedure2()
+	Else
+		SendReport("ERROR : Progress bars is not an array !!!")
+	EndIf
 	SendReport("IN-Check_ISO : Crypto Library Startup")
 	_Crypt_Startup()
 
@@ -537,8 +544,10 @@ Func Check_ISO($FileToHash)
 		if $i=$iterations Then $final=1
 		$hash=_Crypt_HashData(FileRead($filehandle, $buffersize),0x00008003,$final,$hash)
 		$percent_md5 = Round(100 * $i / $iterations)
-		_ProgressSet($progress_bar,$percent_md5 )
-		_ProgressSetText($progress_bar, $percent_md5&"%" )
+		$return1 = _ProgressSet($progress_bar,$percent_md5 )
+		if @error Then SendReport("Error on _ProgressSet")
+		$return2 = _ProgressSetText($progress_bar, $percent_md5&"%" )
+
 	Next
 	FileClose($filehandle)
 	_Crypt_Shutdown()
