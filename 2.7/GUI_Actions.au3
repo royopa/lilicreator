@@ -467,6 +467,8 @@ Func DownloadRelease($release_in_list, $automatic_download)
 		If StringStripWS($mirror, 8) <> "" Then $available_mirrors = $available_mirrors + 1
 	Next
 
+	if IsArray($_Progress_Bars) Then _Paint_Bars_Procedure2()
+
 	For $i = $R_MIRROR1 To $R_MIRROR10
 		$mirror = $releases[$release_in_list][$i]
 		If StringStripWS($mirror, 8) <> "" Then
@@ -526,8 +528,9 @@ Func DisplayMirrorList($latency_table, $release_in_list)
 	Local $hImage, $hListView
 
 	; Create GUI
-	$gui_mirrors = GUICreate("Select the mirror", 350, 250)
 	Opt("GUIOnEventMode", 0)
+	AdlibUnRegister("Control_Hover")
+	$gui_mirrors = GUICreate("Select the mirror", 350, 250)
 	$hListView = GUICtrlCreateListView("  " & Translate("Latency") & "  |  " & Translate("Server Name") & "  | ", 0, 0, 350, 200)
 	_GUICtrlListView_SetColumnWidth($hListView, 0, 80)
 	_GUICtrlListView_SetColumnWidth($hListView, 1, 230)
@@ -609,7 +612,7 @@ Func DisplayMirrorList($latency_table, $release_in_list)
 	wend
 	Opt("GUIOnEventMode", 1)
 	GUIDelete($gui_mirrors)
-
+	AdlibRegister("Control_Hover", 150)
 	GUIRegisterMsg($WM_PAINT, "DrawAll")
 	WinActivate($for_winactivate)
 	GUISetState($GUI_SHOW, $CONTROL_GUI)
@@ -619,6 +622,8 @@ Func Download_State()
 	SendReport("Start-Download_State")
 	Global $current_download
 	Local $begin, $oldgetbytesread, $estimated_time = ""
+
+	if IsArray($_Progress_Bars) Then _Paint_Bars_Procedure2()
 
 	$begin = TimerInit()
 	$oldgetbytesread = InetGetInfo($current_download, 0)

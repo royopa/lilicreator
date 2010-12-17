@@ -658,38 +658,34 @@ Func Create_persistence_file($drive_letter,$release_in_list,$persistence_size,$h
 
 		if StringInStr($features,"ubuntu-persistence")<>0 Then
 			; Ubuntu
-			$persistence_file= $drive_letter & '\casper-rw'
-			AddToSmartClean($drive_letter,"casper-rw")
+			$persistence_file= 'casper-rw'
 		Elseif StringInStr($features,"sidux-persistence")<>0 Then
 			; Sidux
-			$persistence_file= $drive_letter &"\sidux\sidux-rw"
-			AddToSmartClean($drive_letter,"sidux")
+			$persistence_file= "sidux\sidux-rw"
 		Elseif StringInStr($features,"aptosid-persistence")<>0 Then
 			; Aptosid (ex-Sidux)
-			$persistence_file= $drive_letter &"\aptosid\aptosid-rw"
-			AddToSmartClean($drive_letter,"aptosid")
+			$persistence_file= "aptosid\aptosid-rw"
 		Elseif StringInStr($features,"fedora-persistence")<>0 Then
 			; Fedora
-			$persistence_file= $drive_letter & '\LiveOS\overlay-' & StringReplace(DriveGetLabel($drive_letter)," ", "_") & '-' & Get_Disk_UUID($drive_letter)
-			AddToSmartClean($drive_letter,"LiveOS")
+			$persistence_file= 'LiveOS\overlay-' & StringReplace(DriveGetLabel($drive_letter)," ", "_") & '-' & Get_Disk_UUID($drive_letter)
 		Elseif StringInStr($features,"debian-persistence")<>0 Then
 			; Debian > 6.0
-			$persistence_file= $drive_letter & '\live-rw'
-			AddToSmartClean($drive_letter,"live-rw")
+			$persistence_file= 'live-rw'
 		Else
 			; Default mode is Ubuntu
-			$persistence_file= $drive_letter & '\casper-rw'
-			AddToSmartClean($drive_letter,"casper-rw")
+			$persistence_file= 'casper-rw'
 		Endif
 
-		Create_Empty_File($persistence_file, $persistence_size)
-		If ( $hide_it = $GUI_CHECKED) Then HideFile($persistence_file)
+		Create_Empty_File($drive_letter&"\"&$persistence_file, $persistence_size)
+		AddToSmartClean($drive_letter,$persistence_file)
+
+		If ( $hide_it = $GUI_CHECKED) Then HideFile($drive_letter&"\"&$persistence_file)
 		$time_to_format=3
 		if ($persistence_size >= 1000) Then $time_to_format=6
 		if ($persistence_size >= 2000) Then $time_to_format=10
 		if ($persistence_size >= 3000) Then $time_to_format=15
 		UpdateStatus(Translate("Formating persistence file") & " ( ±"& $time_to_format & " " & Translate("min") & " )")
-		EXT2_Format_File($persistence_file)
+		EXT2_Format_File($drive_letter&"\"&$persistence_file)
 	Else
 		UpdateStatus("Live mode : no persistence file")
 	EndIf

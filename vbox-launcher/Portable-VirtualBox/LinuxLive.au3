@@ -121,11 +121,11 @@ Func GiveMePhysicalDisk()
 		$colItems = $objWMIService.ExecQuery("SELECT Caption, DeviceID FROM Win32_DiskDrive", "WQL", $wbemFlagReturnImmediately + $wbemFlagForwardOnly)
 
 		For $objItem In $colItems
-
 			$colItems2 = $objWMIService.ExecQuery("ASSOCIATORS OF {Win32_DiskDrive.DeviceID='" & $objItem.DeviceID & "'} WHERE AssocClass = Win32_DiskDriveToDiskPartition", "WQL", $wbemFlagReturnImmediately + $wbemFlagForwardOnly)
 			For $objItem2 In $colItems2
 				$colItems3 = $objWMIService.ExecQuery("ASSOCIATORS OF {Win32_DiskPartition.DeviceID='" & $objItem2.DeviceID & "'} WHERE AssocClass = Win32_LogicalDiskToPartition", "WQL", $wbemFlagReturnImmediately + $wbemFlagForwardOnly)
 				For $objItem3 In $colItems3
+					UpdateLog("Found a mounted disk in WMI : "&$objItem3.DeviceID &" mounted on "&$objItem.DeviceID)
 					If $objItem3.DeviceID = $drive_letter Then
 						$physical_drive = $objItem.DeviceID
 					EndIf

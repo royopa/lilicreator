@@ -4,7 +4,7 @@
 #AutoIt3Wrapper_Compression=3
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.0.88.5
+#AutoIt3Wrapper_Res_Fileversion=2.0.88.6
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_Language=1033
@@ -16,7 +16,7 @@
 #include <Crypt.au3>
 _Crypt_Startup()
 
-$Filename= FileOpenDialog("Select files to hash", @ScriptDir & "\", "All Files (*.*)", 5)
+$Filename= FileOpenDialog("Select files to hash","", "All Files (*.*)", 5)
 
 	If $FileName = "" Then
 		Exit
@@ -26,21 +26,22 @@ $Filename= FileOpenDialog("Select files to hash", @ScriptDir & "\", "All Files (
 
 	if $multiple_files > 0 Then
 		$files = StringSplit($FileName, "|")
-		$folder= $files[1] &"\"
+		$folder= $files[1]
 		$lines="------------------------------- Start "& @MDAY & "-" & @MON & "-" & @YEAR & " (" & @HOUR & "h" & @MIN & "s" & @SEC &") -------------------------------"&@CRLF
 		$j=2
 		$hashes=""
 		While $j < $files[0]+1
-			$lines &= $files[$j] & " = " & SHA1($folder & "\" &$files[$j]) & @CRLF
-			$hashes &= $files[$j] & " = " & SHA1($folder & "\" &$files[$j]) & @CRLF
+			$hash=SHA1($folder & "\" &$files[$j])
+			$lines &= $files[$j] & " = " & $hash & @CRLF
+			$hashes &= $files[$j] & " = " & $hash & @CRLF
 			$j=$j+1
 		Wend
 		$lines &= "------------------------------- End "& @MDAY & "-" & @MON & "-" & @YEAR & " (" & @HOUR & "h" & @MIN & "s" & @SEC &") -------------------------------"&@CRLF
-		$file = FileOpen(@ScriptDir &"\SHA1 HASHES.txt", 1)
+		$file = FileOpen($folder &"\SHA1 HASHES.txt", 1)
 		FileWrite($file, $lines)
 		FileClose($file)
 		ClipPut($hashes)
-		MsgBox(64, "Result", $hashes & @CRLF & "It has been put in your clipboard, you just have to paste it." )
+		MsgBox(64, "Result", $hashes & @CRLF & "It has been put in your clipboard, you just have to paste it."&@CRLF&"A file named 'SHA1 HASHES.txt' and containing the results has been created in the same folder." )
 	Else
 		$hash = SHA1($FileName)
 		ClipPut($hash)
