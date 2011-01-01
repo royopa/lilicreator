@@ -277,7 +277,7 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 		FileWrite($file, $boot_text)
 		FileClose($file)
 		FileCopy($selected_drive & "\syslinux\isolinux.txt",$selected_drive & "\syslinux\isolinux-orig.txt")
-		FileCopy(@ScriptDir & "\tools\"&$ubuntu_variant&"-isolinux.txt", $selected_drive & "\syslinux\isolinux.txt", 1)
+		FileCopy(@ScriptDir & "\tools\boot-menus\"&$ubuntu_variant&"-isolinux.txt", $selected_drive & "\syslinux\isolinux.txt", 1)
 		SendReport("End-Ubuntu_WriteTextCFG")
 		Return 1
 	EndIf
@@ -559,6 +559,54 @@ Func Mandriva_WriteTextCFG($drive_letter)
 	FileClose($file)
 	SendReport("End-Mandriva_WriteTextCFG")
 EndFunc   ;==>Mandriva_WriteTextCFG
+
+Func Crunchbang_WriteTextCFG($selected_drive,$release_in_list)
+	UpdateLog("Start-Crunchbang_WriteTextCFG : Creating live.cfg file for Crunchbang")
+	$features = ReleaseGetSupportedFeatures($release_in_list)
+
+	If StringInStr($features,"debian-persistence") Then
+		$prepend = "label persist" _
+		& @LF & "menu label Persistent" _
+		& @LF & "kernel /live/vmlinuz1" _
+		& @LF & "append initrd=/live/initrd1.img boot=live config live-config.hostname=crunchbang live-config.username=crunchbang live-config.user-fullname=CrunchBangLiveUser live-config.locales=en_GB.UTF-8 live-config.timezone=Europe/London persistent quiet"
+
+		; read original boot menu
+		$original_boot=FileRead($selected_drive & "\syslinux\live.cfg")
+
+		; Backup original boot menu
+		FileMove($selected_drive & "\syslinux\live.cfg",$selected_drive & "\syslinux\live.cfg-orig")
+
+		; Append Persistence if necessary
+		FileWrite($selected_drive & "\syslinux\live.cfg",$prepend& @LF & @LF &$original_boot)
+	EndIf
+	SendReport("End-Crunchbang_WriteTextCFG")
+EndFunc
+
+Func XBMC_WriteTextCFG($selected_drive,$release_in_list)
+	UpdateLog("Start-XBMC_WriteTextCFG : Creating live.cfg file for Crunchbang")
+	$features = ReleaseGetSupportedFeatures($release_in_list)
+
+
+	$prepend = "default 0" _
+		& @LF & "timeout 30" _
+		& @LF & "foreground e3e3e3" _
+		& @LF & "background 303030"
+
+
+	If StringInStr($features,"debian-persistence") Then
+		$prepend &= @LF & @LF & "title XBMCLive Persistent" _
+			& @LF & "kernel /live/vmlinuz video=vesafb boot=live persistent xbmc=autostart,nodiskmount splash quiet loglevel=0 persistent quickreboot quickusbmodules notimezone noaccessibility noapparmor noaptcdrom noautologin noxautologin noconsolekeyboard nofastboot nognomepanel nohosts nokpersonalizer nolanguageselector nolocales nonetworking nopowermanagement noprogramcrashes nojockey nosudo noupdatenotifier nouser nopolkitconf noxautoconfig noxscreensaver nopreseed union=aufs" _
+			& @LF & "initrd /live/initrd.img"
+
+		; Default to Live (non persistent)
+		$prepend = StringReplace($prepend,"default 0","default 1")
+	EndIf
+
+	$boot_menu=FileRead(@ScriptDir & "\tools\boot-menus\xbmc-menu.lst")
+	FileWrite($selected_drive & "\boot\grub\menu.lst",$prepend& @LF & @LF &$boot_menu)
+
+	SendReport("End-XBMC_WriteTextCFG")
+EndFunc
 
 Func Set_OpenSuse_MBR_ID($drive_letter)
 	SendReport("Start-Set_OpenSuse_MBR_ID ( Drive : " & $drive_letter & " )")

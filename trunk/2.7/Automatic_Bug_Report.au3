@@ -30,6 +30,7 @@ Global $sending_status
 Global $current_crashlog = @ScriptDir & "\logs\crash-report-" & @MDAY & "-" & @MON & "-" & @YEAR & " (" & @HOUR & "h" & @MIN & "s" & @SEC & ").log"
 Global $current_logfile = @ScriptDir & "\logs\" & @MDAY & "-" & @MON & "-" & @YEAR&".log"
 Global $user_system
+Global $email_address,$problem_details,$report_gui
 
 Global $oMyRet[2]
 Global $oMyError,$crash_detected=0
@@ -106,7 +107,9 @@ Func _OnAutoItError()
 	$report=ConstructReport()
 	_FileWriteLog($current_logfile,"!!!!!! Crash Detected : "&$sErrorMsg)
 	_FileWriteLog($current_crashlog,$report)
-    GUICreate("LiLi USB Creator Automatic Bug Report",400,90,Default,Default,-2134376448);BitOR($WS_CAPTION,$WS_POPUP,$WS_SYSMENU)
+
+	#cs
+	GUICreate("LiLi USB Creator Automatic Bug Report",400,90,Default,Default,-2134376448);BitOR($WS_CAPTION,$WS_POPUP,$WS_SYSMENU)
     GUISetBkColor(0xE0DFE2)
         GUICtrlSetBkColor(GUICtrlCreateLabel("",1,1,398,1),0x41689E)
         GUICtrlSetBkColor(GUICtrlCreateLabel("",1,88,398,1),0x41689E)
@@ -190,6 +193,54 @@ Func _OnAutoItError()
     While 1
 		Sleep(60000)
     Wend
+	#ce
+	Opt("TrayIconHide",0)
+    Opt("TrayAutoPause",0)
+	Opt("GUIOnEventMode",1)
+
+	GUICreate("LiLi USB Creator Automatic Crash Report",461,401)
+	GUISetOnEvent($GUI_EVENT_CLOSE,"GUI_Err_Stop")
+
+	$group_welcome = GUICtrlCreateGroup("Welcome to the automatic crash reporter", 18, 12, 425, 89)
+	GUICtrlCreateGroup("", -99, -99, 1, 1)
+	GUICtrlCreateIcon("user32.dll", 103, 35, 45, 32, 32)
+	GUICtrlCreateLabel(Translate("I'm sorry for the inconvenience but LiLi has crashed")&"."&@CRLF&@CRLF&Translate("Please enter an email address and a detailed comment about this crash."&@CRLF&"I will contact you as soon as I can."),90,35,340,60)
+
+	$group_email = GUICtrlCreateGroup("Your Email address", 18, 112, 425, 57)
+	GUICtrlCreateGroup("", -99, -99, 1, 1)
+	$email_address = GUICtrlCreateInput("", 108, 136, 249, 21)
+
+	$group_details = GUICtrlCreateGroup("Problem Details", 18, 184, 425, 177)
+	GUICtrlCreateGroup("", -99, -99, 1, 1)
+	$problem_details = GUICtrlCreateEdit("", 34, 208, 393, 137, BitOR($ES_AUTOVSCROLL,$ES_WANTRETURN,$WS_VSCROLL))
+
+	$offx_b1=17
+	$offy_b1=370
+
+	GUICtrlCreateButton("  "&Translate("Show crash report"),  $offx_b1,$offy_b1, 120, 24)
+	GUICtrlSetOnEvent(-1, "GUI_Err_Debug")
+	GUICtrlSetImage(-1, "shell32.dll", -210,0)
+
+
+	GUICtrlCreateButton("  "&Translate("Close (don't send)"),  $offx_b1+155,$offy_b1, 120, 24)
+	GUICtrlSetOnEvent(-1,"GUI_Err_Stop")
+	GUICtrlSetImage(-1, "shell32.dll", -132,0)
+
+
+	GUICtrlCreateButton("  "&Translate("Send Report"),  $offx_b1+310,$offy_b1, 120, 24)
+	GUICtrlSetOnEvent(-1,"SendCrashReport")
+	GUICtrlSetImage(-1, "shell32.dll", -177,0)
+
+
+
+    TraySetToolTip("LiLi USB Creator Automatic Crash Report")
+	TraySetIcon(@ScriptDir&"\tools\img\lili.ico")
+	GUISetState(@SW_SHOW)
+    WinActivate("LiLi USB Creator Automatic Crash Report","")
+
+    While 1
+		Sleep(60000)
+    Wend
 
 EndFunc
 
@@ -209,8 +260,17 @@ EndFunc
 #ce
 
 Func GUI_Err_Debug()
-	If @Compiled=0 Then MsgBox(270400,Translate("Show bug report"),ConstructReport())
-	If @Compiled Then MsgBox(270400,Translate("Show bug report"),ConstructReport())
+	;If @Compiled=0 Then MsgBox(270400,Translate("Show bug report"),ConstructReport())
+	;If @Compiled Then MsgBox(270400,Translate("Show bug report"),ConstructReport())
+	$report_gui=GUICreate("Crash Report",400,300)
+	GUISetOnEvent($GUI_EVENT_CLOSE,"GUI_Close_Report",$report_gui)
+	GUICtrlCreateEdit(ConstructReport(), 0,0,400,300,$WS_VSCROLL+$ES_READONLY)
+	GUISetState(@SW_SHOW,$report_gui)
+EndFunc
+
+Func GUI_Close_Report()
+	GUIDelete($report_gui)
+	WinActivate(WinActivate("LiLi USB Creator Automatic Crash Report",""))
 EndFunc
 
 Func GUI_Err_RunAgain()
@@ -221,11 +281,14 @@ Func GUI_Err_Stop()
 	Exit
 EndFunc
 
-Func SendBug()
-
+; sending the Crash report using HTTPS
+Func SendCrashReport()
 	$hw_open = _WinHttpOpen()
-	$hw_connect = _WinHttpConnect($hw_open, "www.linuxliveusb.com")
-	$h_openRequest = _WinHttpOpenRequest($hw_connect, "POST", "/bugs/automatic-bug-report.php")
+	; Options to avoid checking SSL certificate
+	_WinHttpSetOption($hw_open, $WINHTTP_OPTION_SECURITY_FLAGS, BitOR($SECURITY_FLAG_IGNORE_UNKNOWN_CA, $SECURITY_FLAG_IGNORE_CERT_CN_INVALID,$SECURITY_FLAG_IGNORE_CERT_DATE_INVALID,$SECURITY_FLAG_IGNORE_CERT_WRONG_USAGE))
+
+	$hw_connect = _WinHttpConnect($hw_open, "www.linuxliveusb.com",$INTERNET_DEFAULT_HTTPS_PORT)
+	$h_openRequest = _WinHttpOpenRequest($hw_connect, "POST", "/bugs/automatic-bug-report.php","","","",$WINHTTP_FLAG_SECURE)
 
 	_WinHttpAddRequestHeaders($h_openRequest,"LiLi USB Creator " & $software_version)
 	_WinHttpAddRequestHeaders($h_openRequest, "Content-Type: multipart/form-data; boundary=" & $HTTP_POST_BOUNDARY)
@@ -234,19 +297,14 @@ Func SendBug()
 	AddPostData("REPORTER_ID",ReadSetting( "General", "unique_ID"))
 	AddPostData("ERROR_MSG",$sErrorMsg)
 	AddPostData("SOFTWARE_VERSION",$software_version)
-	; Little fix for AutoIT 3.3.0.0
-	$os_version_long= RegRead("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ProductName")
-	if Not @error AND ( StringInStr($os_version_long,"Seven") OR StringInStr($os_version_long,"Windows 7")) Then
-		$os_version="WIN_SEVEN"
-	Else
-		$os_version=@OSVersion
-	EndIf
 	AddPostData("OS_VERSION",@OSVersion)
 	AddPostData("ARCH",@OSArch)
 	AddPostData("SERVICE_PACK",@OSServicePack)
 	AddPostData("LANGUAGE",_Language_for_stats())
 	AddPostData("TEN_LAST_ACTIONS",_ArrayToString($last_actions,@CRLF & "--> "))
 	AddPostData("LAST_CONFIG",$last_config)
+	AddPostData("PROBLEM_DETAILS",GUICtrlRead($problem_details))
+	AddPostData("EMAIL_ADDRESS",GUICtrlRead($email_address))
 	ClosePostData()
 
 	_WinHttpAddRequestHeaders($h_openRequest,"Content-Length: "& StringLen($post_data))
@@ -255,33 +313,39 @@ Func SendBug()
 	_WinHttpReceiveResponse($h_openRequest)
 
 	If _WinHttpQueryDataAvailable($h_openRequest) Then
-		_ReceiveReport("-------SendBug6")
 		$header = StringLeft(_WinHttpQueryHeaders($h_openRequest),50)
+		$source_return = _WinHttpReadData($h_openRequest)
 		;debug purpose :
-		;MsgBox(0, "Header", $header &@CRLF&"---------------------------------"&@CRLF&_WinHttpReadData($h_openRequest))
+		;MsgBox(0, "Header", $header &@CRLF&"---------------------------------"&@CRLF&$source_return)
 		_WinHttpCloseHandle($h_openRequest)
 		_WinHttpCloseHandle($hw_connect)
 		_WinHttpCloseHandle($hw_open)
 
 		; Checking if status is OK
-		if StringInStr($header,"200") AND StringInStr($header,"OK") Then
-			return "OK"
+		if StringInStr($source_return,"CRASH_SUCCESSFULLY_RECORDED") Then
+			MsgBox(64,"","You crash report has been sent."&@CRLF&@CRLF&"Thank you !")
 		Else
-			return "NOT OK"
+			MsgBox(48,"ERROR","Could not send crash report."&@CRLF&@CRLF&"Please contact debug@linuxliveusb.com")
 		EndIf
 	Else
 		_WinHttpCloseHandle($h_openRequest)
 		_WinHttpCloseHandle($hw_connect)
 		_WinHttpCloseHandle($hw_open)
-		return "NOT OK"
+		MsgBox(48,"ERROR","Could not send crash report."&@CRLF&@CRLF&"Please check your internet connection.")
 	EndIf
 
 EndFunc
 
 Func ConstructReport()
-	$temp = Translate("Error") & " :" & @CRLF & $sErrorMsg &  @CRLF & Translate("30 Last Actions") & _
-	": " & @CRLF & _ArrayToString($last_actions,@CRLF & "--> ") & @CRLF & $last_config  & @CRLF & _
-	Translate("Unique anonymous ID") &  ": " & ReadSetting( "General", "unique_ID")
+	$temp = "REPORTER_ID : "&ReadSetting( "General", "unique_ID") _
+	&@CRLF& "ERROR_MSG : "&$sErrorMsg _
+	&@CRLF&"SOFTWARE_VERSION : "&$software_version _
+	&@CRLF&"OS_VERSION : "&@OSVersion _
+	&@CRLF&"ARCH : "&@OSArch _
+	&@CRLF&"SERVICE_PACK : "&@OSServicePack _
+	&@CRLF&"LANGUAGE : "&_Language_for_stats() _
+	&@CRLF&"LAST ACTION : "&@CRLF&_ArrayToString($last_actions,@CRLF & "--> ") _
+	&@CRLF&"LAST CONFIG : "&@CRLF&$last_config
 	Return $temp
 EndFunc
 
@@ -301,12 +365,12 @@ Func _ReceiveReport($report)
 		$last_config = $report
 	ElseIf StringLeft($report, 6) = "stats-" Then
 		$stats = StringTrimLeft($report, 6)
-		InetGet("http://www.linuxliveusb.com/stats/?"&$stats,"",1,1)
+		InetGet("https://www.linuxliveusb.com/stats/?"&$stats,"",3,1)
 	;ElseIf StringLeft($report, 8) = "logfile-" Then
 	;	$current_logfile = StringTrimLeft($report, 6)
 	ElseIf StringLeft($report, 8) = "distrib-" Then
 		$distrib= StringTrimLeft($report, 8)
-		InetGet("http://www.linuxliveusb.com/stats/?distrib="&$distrib&"&id="&$anonymous_id,"",1,1)
+		InetGet("https://www.linuxliveusb.com/stats/?distrib="&$distrib&"&id="&$anonymous_id,"",3,1)
 	ElseIf StringLeft($report, 17) = "check_for_updates" Then
 		Check_for_updates()
 		;Check_for_compatibility_list_updates()

@@ -145,6 +145,36 @@ Func FindReleaseFromDescription($description)
 	Return $found
 EndFunc
 
+Func FindReleaseFromMD5($MD5_to_find)
+	Global $releases
+	Local $found=-1
+	$sections = IniReadSectionNames($compatibility_ini)
+	For $i=1 to $sections[0]
+		If ReleaseGetMD5($i) = $MD5_to_find Then $found = $i
+	Next
+	Return $found
+EndFunc
+
+Func FindReleaseFromFileName($filename_to_find)
+	Global $releases
+	Local $found=-1
+	$sections = IniReadSectionNames($compatibility_ini)
+	For $i=1 to $sections[0]
+		If ReleaseGetFilename($i) = $filename_to_find Then $found = $i
+	Next
+	Return $found
+EndFunc
+
+Func FindReleaseFromCodeName($codename_to_find)
+	Global $releases
+	Local $found=-1
+	$sections = IniReadSectionNames($compatibility_ini)
+	For $i=1 to $sections[0]
+		If $sections[$i] = $codename_to_find Then $found = $i
+	Next
+	Return $found
+EndFunc
+
 Func DisplayAllReleases()
 	$sections = IniReadSectionNames($compatibility_ini)
 	For $i=1 to $sections[0]
@@ -158,7 +188,7 @@ Func ReleaseGetCodename($release_in_list)
 EndFunc
 
 Func ReleaseGetFilename($release_in_list)
-	if $release_in_list <=0 OR Ubound($releases[$release_in_list])<$R_CODE Then Return "NotFound"
+	if $release_in_list <=0 Then Return "NotFound"
 	Return StringStripWS($releases[$release_in_list][$R_FILENAME],3)
 EndFunc
 

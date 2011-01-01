@@ -280,7 +280,7 @@ Func GUI_Choose_CD()
 		$step2_display_menu = 1
 		GUI_Hide_Step2_Default_Menu()
 		GUI_Show_Back_Button()
-		$temp_index = _ArraySearch($compatible_filename, "regular_linux.iso")
+		$temp_index = FindReleaseFromCodename("default")
 		$release_number = $temp_index
 		GUI_Show_Check_status(Translate("This Linux is not in the compatibility list")& "." & @CRLF &Translate("However, LinuxLive USB Creator will try to use same install parameters as for") & @CRLF & @CRLF & @TAB & ReleaseGetDescription($release_number))
 		Step2_Check("good")

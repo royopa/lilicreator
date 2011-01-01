@@ -475,7 +475,7 @@ Func Rename_and_move_files($drive_letter, $release_in_list)
 	; fix for bootlogo too big of PCLinuxOS 2010
 	if NOT StringInStr(ReleaseGetSupportedFeatures($release_in_list),"fix-bootlogo") = 0 Then
 		SendReport("Fixing bootlogo too big")
-		FileCopy2(@ScriptDir&"\tools\small-bootlogo",$drive_letter & "\syslinux\bootlogo")
+		FileCopy2(@ScriptDir&"\tools\boot-menus\small-bootlogo",$drive_letter & "\syslinux\bootlogo")
 	EndIf
 
 	SendReport("End-Rename_and_move_files")
@@ -518,9 +518,15 @@ Func Create_boot_menu($drive_letter,$release_in_list)
 		Elseif $variant = "Sidux" Then
 			SendReport("IN-Create_boot_menu for Sidux")
 			Sidux_WriteTextCFG($drive_letter)
+		Elseif $variant="XBMC" Then
+			SendReport("IN-Create_boot_menu for XBMC")
+			XBMC_WriteTextCFG($drive_letter,$release_in_list)
 		Elseif $distribution = "ubuntu" OR $variant= "debian" Then
 			SendReport("IN-Create_boot_menu for Ubuntu and Debian")
 			Ubuntu_WriteTextCFG($drive_letter,$release_in_list)
+		Elseif $variant="Crunchbang" Then
+			SendReport("IN-Create_boot_menu for CrunchBang")
+			Crunchbang_WriteTextCFG($drive_letter,$release_in_list)
 		EndIf
 	Elseif $variant = "opensuse" Then
 			SendReport("IN-Create_boot_menu for OpenSuse")
@@ -638,6 +644,7 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Create_persistence_file($drive_letter,$release_in_list,$persistence_size,$hide_it)
+	Global $persistence_file
 	If ReadSetting( "Advanced", "skip_persistence") = "yes" Then Return 0
 	SendReport("Start-Create_persistence_file")
 
@@ -656,28 +663,49 @@ Func Create_persistence_file($drive_letter,$release_in_list,$persistence_size,$h
 		$distribe = ReleaseGetDistribution($release_in_list)
 		$variant = ReleaseGetVariant($release_in_list)
 
+
 		if StringInStr($features,"ubuntu-persistence")<>0 Then
 			; Ubuntu
 			$persistence_file= 'casper-rw'
+			UpdateLog("Found feature ubuntu-persistence, persistence file will be "&$persistence_file)
 		Elseif StringInStr($features,"sidux-persistence")<>0 Then
 			; Sidux
 			$persistence_file= "sidux\sidux-rw"
+			UpdateLog("Found feature sidux-persistence, persistence file will be "&$persistence_file)
 		Elseif StringInStr($features,"aptosid-persistence")<>0 Then
 			; Aptosid (ex-Sidux)
 			$persistence_file= "aptosid\aptosid-rw"
+			UpdateLog("Found feature aptosid-persistence, persistence file will be "&$persistence_file)
 		Elseif StringInStr($features,"fedora-persistence")<>0 Then
 			; Fedora
 			$persistence_file= 'LiveOS\overlay-' & StringReplace(DriveGetLabel($drive_letter)," ", "_") & '-' & Get_Disk_UUID($drive_letter)
+			UpdateLog("Found feature fedora-persistence, persistence file will be "&$persistence_file)
 		Elseif StringInStr($features,"debian-persistence")<>0 Then
-			; Debian > 6.0
+			; Debian > 6.0 and CrunchBang 10 and XBMC Live
 			$persistence_file= 'live-rw'
+			UpdateLog("Found feature debian-persistence, persistence file will be "&$persistence_file)
+		Elseif StringInStr($features,"custom-persistence")<>0 Then
+			; Custom persistence filename
+			$features_array=StringSplit ($features,",",2)
+			FOR $feature IN $features_array
+				if StringInStr($feature,"custom-persistence")<>0 Then
+					$persistence_file=StringReplace($feature,"custom-persistence:","")
+				EndIf
+			Next
+			if $persistence_file <> "" Then
+				UpdateLog("Found feature custom-persistence, persistence file will be "&$persistence_file)
+			Else
+				$persistence_file= 'casper-rw'
+				UpdateLog("Found feature custom-persistence but no persistence file set. Falling back to default file name ("&$persistence_file&")")
+			EndIf
+
 		Else
 			; Default mode is Ubuntu
 			$persistence_file= 'casper-rw'
+			UpdateLog("Found feature  default persistence ??, persistence file will be "&$persistence_file)
 		Endif
 
 		Create_Empty_File($drive_letter&"\"&$persistence_file, $persistence_size)
-		AddToSmartClean($drive_letter,$persistence_file)
 
 		If ( $hide_it = $GUI_CHECKED) Then HideFile($drive_letter&"\"&$persistence_file)
 		$time_to_format=3
@@ -739,7 +767,7 @@ Func Install_boot_sectors($drive_letter,$release_in_list,$hide_it)
 		; Syslinux will chainload GRUB loader
 		DirCreate($drive_letter &"\syslinux")
 		FileCopy2(@ScriptDir & '\tools\grub.exe',$drive_letter & "\syslinux\grub.exe")
-		FileCopy2(@ScriptDir & '\tools\grub-syslinux.cfg',$drive_letter & "\syslinux\syslinux.cfg")
+		FileCopy2(@ScriptDir & '\tools\boot-menus\grub-syslinux.cfg',$drive_letter & "\syslinux\syslinux.cfg")
 
 		if NOT (FileExists($drive_letter&"\menu.lst") OR FileExists($drive_letter&"\boot\menu.lst") OR FileExists($drive_letter&"\boot\grub\menu.lst")) Then
 			SendReport("--------------> ERROR : syslinux.cfg and menu.lst not found !")
@@ -958,6 +986,8 @@ Func CreateUninstaller($drive_letter,$release_in_list)
 		SendReport("End-CreateUninstaller : list of files is not an array !")
 		return "ERROR"
 	EndIf
+
+	AddToSmartClean($drive_letter,$persistence_file)
 
 	AddToSmartClean($drive_letter,"lili.ico")
 	AddToSmartClean($drive_letter,"autorun.inf")

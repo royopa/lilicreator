@@ -1,4 +1,0 @@
-Syslinux 4.01
-Mke2fs 0.04
-7zip 9.13b
-dd 0.5
