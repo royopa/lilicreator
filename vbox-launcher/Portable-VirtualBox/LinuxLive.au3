@@ -2,59 +2,94 @@
 #include <Array.au3>
 
 
-Global $arch, $vmdkfile, $vbox_output, $vbox_config, $logfile
+Global $vmdkfile, $vbox_output, $vbox_config
 Global $g_eventerror = 0 ; to be checked to know if com error occurs. Must be reset after handling.
 Global $settings_ini = @ScriptDir & "\linuxlive\settings.ini"
 Global $oMyError
 Global $timer
+Global 	$logfile = @ScriptDir & "\linuxlive\launcher.log"
+Global $append_arch =""
 
+If DirGetSize(@ScriptDir & "\linuxlive\") == -1 Then DirCreate(@ScriptDir & "\linuxlive\")
+If FileExists($logfile) Then FileDelete($logfile)
+
+LogLauncher()
 CheckIfInstalled()
 
 ; Check if virtualbox is installed or runned
 Func CheckIfInstalled()
+	UpdateLog("Start-CheckIfInstalled")
 	if @OSArch="X64" Then
-		$add="64"
+		UpdateLog("64 Bits OS detected")
+		$append_arch="64"
 	Else
-		$add=""
+		UpdateLog("32 Bits OS detected")
+		$append_arch=""
 	EndIf
 
-	$version_new = RegRead("HKLM"&$add&"\SOFTWARE\Oracle\VirtualBox","Version")
-	$version_old = RegRead("HKLM"&$add&"\SOFTWARE\Sun\VirtualBox","Version")
+
+	$version_new = RegRead("HKLM"&$append_arch&"\SOFTWARE\Oracle\VirtualBox","Version")
+	$version_old = RegRead("HKLM"&$append_arch&"\SOFTWARE\Sun\VirtualBox","Version")
+
+	If $version_new <> "" Then
+		UpdateLog("Found an Oracle VM VirtualBox installed, version is "&$version_new)
+	Elseif $version_old <> "" Then
+		UpdateLog("Found an old Sun VM VirtualBox installed, version is "&$version_old&", portable mode should be used instead.")
+	Else
+		UpdateLog("No VirtualBox installed, portable mode should be used.")
+	EndIf
+
 	$version=$version_old&$version_new
-	If $version <> "" AND IniRead($settings_ini,"Others","force_portable","no")<>"yes" Then
+	$portable_mode = IniRead($settings_ini,"Others","force_portable","no")
+
+	UpdateLog("Portable mode forced : "&$portable_mode)
+	UpdateLog("Setting Environment variable VBOX_USER_HOME="&@ScriptDir&"\data\.VirtualBox")
+	EnvSet("VBOX_USER_HOME",@ScriptDir&"\data\.VirtualBox")
+
+	If $version <> "" AND $portable_mode<>"yes" Then
 		;MsgBox(16, "Found an installed VirtualBox", "Please uninstall VirtualBox "&$version&" in order to use the portable version.")
 		;$iMsgBoxAnswer=MsgBox(65, "Found an installed VirtualBox", "This is a beta feature."&@CRLF&"LinuxLive USB will try to run in your non-portable VirtualBox."&@CRLF&"Click OK to continue or Cancel to abandon.")
 		;Select
 			;Case $iMsgBoxAnswer = 2 ;Cancel
 				;Exit
 		;EndSelect
-		PrepareForLinuxLive()
-		EnvSet("VBOX_USER_HOME",@ScriptDir&"\data\.VirtualBox")
-		$nonportable_install_dir=RegRead("HKLM"&$add&"\SOFTWARE\Oracle\VirtualBox","InstallDir")
+
+		$nonportable_install_dir=RegRead("HKLM"&$append_arch&"\SOFTWARE\Oracle\VirtualBox","InstallDir")
+		UpdateLog("Virtualbox install directory is : "&$nonportable_install_dir)
+
+		PrepareForLinuxLive($nonportable_install_dir)
+
 		if $CmdLine[0] = 1 Then
-			Run('cmd /c ""'&$nonportable_install_dir&'VBoxManage.exe" startvm "'&$CmdLine[1]&'""',@ScriptDir,@SW_HIDE)
+			UpdateLog("Automatically starting VM named "&$CmdLine[1])
+			$cmd_vbox='cmd /c ""'&$nonportable_install_dir&'VBoxManage.exe" startvm "'&$CmdLine[1]&'""'
+			UpdateLog('Command line used : '&$cmd_vbox)
+			Run($cmd_vbox,@ScriptDir,@SW_HIDE)
 		Else
-			Run($nonportable_install_dir&"VirtualBox.exe")
+			$cmd_vbox=$nonportable_install_dir&"VirtualBox.exe"
+			UpdateLog("Command line used : "&$cmd_vbox)
+			Run($cmd_vbox)
 		EndIf
-
-
-
+		UpdateLog("Done launching regular VirtualBox, now exiting")
+		UpdateLog("END-CheckIfInstalled")
 		exit
+	Else
+		UpdateLog("Using portable mode")
 	EndIf
-	EnvSet("VBOX_USER_HOME",@ScriptDir&"\data\.VirtualBox")
+	#cs
+	UpdateLog("Closing process VirtualBox.exe")
 	ProcessClose ("VirtualBox.exe")
+	UpdateLog("Closing process VBoxManage.exe")
 	ProcessClose ("VBoxManage.exe")
+	UpdateLog("Closing process VBoxSVC.exe")
 	ProcessClose ("VBoxSVC.exe")
+	#ce
 	$timer=TimerInit()
+	UpdateLog("END-CheckIfInstalled")
 EndFunc
 
-Func PrepareForLinuxLive()
+Func PrepareForLinuxLive($installdir="")
+	UpdateLog("Start-PrepareForLinuxLive")
 	$oMyError = ObjEvent("AutoIt.Error", "MyErrFunc") ; Install a custom error handler
-
-	; preparing for logging
-	$logfile = @ScriptDir & "\linuxlive\launcher.log"
-	If DirGetSize(@ScriptDir & "\linuxlive\") == -1 Then DirCreate(@ScriptDir & "\linuxlive\")
-	If FileExists($logfile) Then FileDelete($logfile)
 
 	$vmdkfile = @ScriptDir & "\data\.VirtualBox\HardDisks\LinuxLive.vmdk"
 	; To be sure it exists
@@ -62,8 +97,37 @@ Func PrepareForLinuxLive()
 	; deleting old VMDK, Creating new one and changing back its uuid
 	If FileExists($vmdkfile) Then FileDelete($vmdkfile)
 
+	UpdateLog("VMDK File is "&$vmdkfile)
+
+	$physical_drive=GiveMePhysicalDisk()
+	UpdateLog("biou")
+	  If FileExists (@ScriptDir&"\app32\") AND FileExists (@ScriptDir&"\app64\") Then
+			If @OSArch = "x86" Then
+			  Global $arch = "app32"
+			EndIf
+			If @OSArch = "x64" Then
+			  Global $arch = "app64"
+			EndIf
+		  Else
+			If FileExists (@ScriptDir&"\app32\") AND NOT FileExists (@ScriptDir&"\app64\") Then
+			  Global $arch = "app32"
+			EndIf
+			If NOT FileExists (@ScriptDir&"\app32\") AND FileExists (@ScriptDir&"\app64\") Then
+			  Global $arch = "app64"
+			EndIf
+		EndIf
+UpdateLog("biou2")
 	; recreating LinuxLive virtual Disk
-	RunWait3($arch & '\VBoxManage.exe internalcommands createrawvmdk -filename "' & $vmdkfile & '" -rawdisk ' & GiveMePhysicalDisk())
+	if $installdir="" Then
+		UpdateLog("biou3")
+		$biou='"'&$arch & '\VBoxManage.exe" internalcommands createrawvmdk -filename "' & $vmdkfile & '" -rawdisk ' & $physical_drive
+	Else
+		UpdateLog("biou3-2")
+		$biou='"'&$installdir & 'VBoxManage.exe" internalcommands createrawvmdk -filename "' & $vmdkfile & '" -rawdisk ' & $physical_drive
+	EndIf
+UpdateLog("biou4")
+	UpdateLog("Updating VMDK File using CLI : "&$biou)
+	RunWait3($biou)
 
 	If NOT FileExists($vmdkfile) Then
 		UpdateLog("VMDK not created using native method.")
@@ -72,6 +136,7 @@ Func PrepareForLinuxLive()
 	EndIf
 
 	If FileExists($vmdkfile) Then
+		UpdateLog("VMDK has been successfully created")
 		ChangeUUID()
 		;to avoid the bug with vbox tools
 		;DetachDVD()
@@ -81,22 +146,27 @@ Func PrepareForLinuxLive()
 		SplashOff()
 		MsgBox(16, "WARNING", "There was a problem recreating Linux Live virtual disk." & @CRLF & "Please send log file (Portable-VirtualBox\linuxlive\launcher.log) to vbox-debug@linuxliveusb.com")
 	EndIf
+	UpdateLog("End-PrepareForLinuxLive")
 EndFunc
 
 Func RunWait3($soft)
 	Local $foo
-	UpdateLog($soft)
 	$foo = Run($soft, @ScriptDir, @SW_HIDE, $STDOUT_CHILD + $STDERR_CHILD)
 	$vbox_output = @CRLF
 	While True
 		$vbox_output &= StdoutRead($foo)
 		If @error Then ExitLoop
 	WEnd
-	UpdateLog("Creating VMDK using VBoxManage - Return : " & $vbox_output)
+	if $vbox_output=@CRLF Then
+		UpdateLog("ERROR : No return from command line ! Wrong command")
+	Else
+		UpdateLog("Creating VMDK using VBoxManage - Return : " & @CRLF &$vbox_output)
+	EndIf
 EndFunc   ;==>RunWait3
 
 ; returns the physical disk (\\.\PhysicalDiskX) corresponding to a drive letter
 Func GiveMePhysicalDisk()
+	UpdateLog("Start-GiveMePhysicalDisk")
 	Local $physical_drive = 0
 	$drive_letter = StringLeft(@ScriptDir, 2)
 	UpdateLog("GiveMePhysicalDisk of : " & $drive_letter)
@@ -139,15 +209,14 @@ Func GiveMePhysicalDisk()
 	EndIf
 
 	If $physical_drive Then
-		UpdateLog("PhysicalDisk is : " & $physical_drive)
+		UpdateLog("END-GiveMePhysicalDisk : PhysicalDisk is : " & $physical_drive)
 		Return $physical_drive
 	Else
 		If StringIsDigit(IniRead($settings_ini, "Force_disk", "disk_number", "none")) Then
-
-			UpdateLog("ERROR - PhysicalDisk NOT FOUND but found a force disk setting - returning \\.\PHYSICALDRIVE" & IniRead($settings_ini, "Force_disk", "disk_number", "none"))
+			UpdateLog("END-GiveMePhysicalDisk : ERROR - PhysicalDisk NOT FOUND but found a force disk setting - returning \\.\PHYSICALDRIVE" & IniRead($settings_ini, "Force_disk", "disk_number", "none"))
 			Return "\\.\PHYSICALDRIVE" & IniRead($settings_ini, "Force_disk", "disk_number", "none")
 		EndIf
-		UpdateLog("ERROR - PhysicalDisk NOT FOUND - Returning an ERROR")
+		UpdateLog("END-GiveMePhysicalDisk : ERROR - PhysicalDisk NOT FOUND - Returning an ERROR")
 		Return "ERROR"
 	EndIf
 EndFunc   ;==>GiveMePhysicalDisk
@@ -217,6 +286,7 @@ EndFunc   ;==>GiveMePhysicalDisk
 
 ; Change the UUID in order to match with the one originally affected to the disk
 Func ChangeUUID()
+	UpdateLog("Start-ChangeUUID")
 	If FileExists(@ScriptDir & "\data\.VirtualBox\VirtualBox.xml") Then
 		UpdateLog("Changing UUID of virtual disk to match the one in VirtualBox.xml and LinuxLive.xml")
 		; read content from VirtualBox.xml
@@ -225,11 +295,9 @@ Func ChangeUUID()
 		$lines = FileRead($file)
 		FileClose($file)
 
-		UpdateLog("VirtualBox.xml content :" & @CRLF & @CRLF & $lines)
+		;UpdateLog("VirtualBox.xml content :" & @CRLF & @CRLF & $lines)
 
 		$current_uuid = StringRegExp($lines,'(?i)<HardDisk uuid="{(.*)}".*LinuxLive.vmdk',3)
-
-
 		If StringLen($current_uuid[0]) < 10 Then
 			UpdateLog("ERROR : LinuxLive VMDK was not found in VirtualBox config.")
 		Else
@@ -256,22 +324,24 @@ Func ChangeUUID()
 				UpdateLog("UUID Replaced : "& $vmdk_uuid[0] &" -> "&$current_uuid[0])
 			EndIf
 		EndIf
-
+		UpdateLog("END-ChangeUUID")
 	Else
-		UpdateLog("ERROR : Portable-VirtualBox\data\.VirtualBox\VirtualBox.xml was not found !")
-		MsgBox(4096, "ERROR", "File Portable-VirtualBox\data\.VirtualBox\VirtualBox.xml was not found !")
+		UpdateLog("ERROR : Portable-VirtualBox\data\.VirtualBox\VirtualBox.xml not found !")
+		MsgBox(4096, "ERROR", "File Portable-VirtualBox\data\.VirtualBox\VirtualBox.xml not found !")
+		UpdateLog("END-ChangeUUID : FATAL, exiting now")
 		Exit
 	EndIf
 EndFunc   ;==>ChangeUUID
 
 Func RelativePaths()
+	UpdateLog("Start-RelativePaths")
 	$nonportable_install_dir=RegRead("HKEY_LOCAL_MACHINE\SOFTWARE\Oracle\VirtualBox","InstallDir")
 	If FileExists(@ScriptDir & "\data\.VirtualBox\VirtualBox.xml") Then
 		$file = FileOpen(@ScriptDir & "\data\.VirtualBox\VirtualBox.xml", 128)
 		If $file <> -1 Then
 			$vbox_config = FileRead($file)
 			FileClose($file)
-			UpdateLog(@CRLF&"--------------- before relative paths ----------------"&@CRLF&$vbox_config&@CRLF&"-----------------------------------------------------")
+			;UpdateLog(@CRLF&"--------------- before relative paths ----------------"&@CRLF&$vbox_config&@CRLF&"-----------------------------------------------------")
 			$new_vbox_config = StringRegExpReplace($vbox_config, '(?i)location="(.*?)Portable-VirtualBox\\', 'location="' & StringReplace(@ScriptDir,'\','\\') & '\\Portable-VirtualBox\\')
 			$new_vbox_config = StringRegExpReplace($new_vbox_config, '(?i)src="(.*?)Portable-VirtualBox\\', 'src="' & StringReplace(@ScriptDir,'\','\\') & '\\Portable-VirtualBox\\')
 			if NOT $nonportable_install_dir = "" Then
@@ -281,11 +351,18 @@ Func RelativePaths()
 			If $file <> -1 Then
 				FileWrite($file, $new_vbox_config)
 				FileClose($file)
-				UpdateLog(@CRLF&"--------------- after relative paths ----------------"&@CRLF&$new_vbox_config&@CRLF&"-----------------------------------------------------")
+				;UpdateLog(@CRLF&"--------------- after relative paths ----------------"&@CRLF&$new_vbox_config&@CRLF&"-----------------------------------------------------")
+				UpdateLog("END-RelativePaths")
 			Else
 				UpdateLog("Error while trying to write new config to virtualbox.xml")
+				UpdateLog("END-RelativePaths")
 			EndIf
 		EndIf
+	Else
+		UpdateLog("ERROR : Portable-VirtualBox\data\.VirtualBox\VirtualBox.xml not found !")
+		MsgBox(4096, "ERROR", "File Portable-VirtualBox\data\.VirtualBox\VirtualBox.xml not found !")
+		UpdateLog("END-RelativePaths : FATAL, exiting now")
+		Exit
 	EndIf
 EndFunc   ;==>RelativePaths
 
@@ -353,12 +430,19 @@ Func LogLauncher()
 	$line &= @CRLF & "OS Build : " & @OSBuild
 	$line &= @CRLF & "OS Service Pack : " & @OSServicePack
 	$line &= @CRLF & "OS Architecture : " & @OSArch
+	$line &= @CRLF & "Processor Architecture : " & @CPUArch
+	$line &= @CRLF & "Processor Model : " & RegRead("HKEY_LOCAL_MACHINE"&$append_arch&"\HARDWARE\DESCRIPTION\System\CentralProcessor\0","ProcessorNameString")
 	$line &= @CRLF & "Memory : " & Round($mem[1] / 1024) & "MB  ( with " & (100 - $mem[0]) & "% free = " & Round($mem[2] / 1024) & "MB )"
-	$line &= @CRLF & "Language : " & @OSLang
+	$line &= @CRLF & "OS Lang :  " & HumanOSLang(@OSLang) & " ("& @OSLang&")"
+	$line &= @CRLF & "Language : " & HumanOSLang(@MUILang) & " ("& @MUILang&")"
 	$line &= @CRLF & "Keyboard : " & @KBLayout
 	$line &= @CRLF & "Resolution : " & @DesktopWidth & "x" & @DesktopHeight
 	$line &= @CRLF & "------------------------------  End of system config  ------------------------------"
-	$line &= @CRLF & "------------------------------  Launcher log  ------------------------------"
+	UpdateLog($line)
+EndFunc
+
+Func VMDKLog()
+	$line=""
 	If FileExists($vmdkfile) Then
 		$line &= @CRLF & "VMDK >> Present"
 	Else
@@ -381,7 +465,7 @@ Func LogLauncher()
 	$line &= @CRLF & "Vmdk config >>" & @CRLF & FileRead(FileOpen($vmdkfile, 128))
 	$line &= @CRLF & "------------------------------  End of Launcher log  ------------------------------"
 	_FileWriteLog($logfile, $line)
-EndFunc   ;==>LogLauncher
+EndFunc
 
 
 ; Display legal Notice For at least 3 sec
@@ -399,3 +483,261 @@ Func MyErrFunc()
 			"Source is: " & $oMyError.source & @CRLF & "Scriptline is: " & $oMyError.scriptline)
 	$g_eventerror = 1 ; something to check for when this function returns
 EndFunc   ;==>MyErrFunc
+
+Func HumanOSLang($code)
+	if $code="0436" Then
+		 Return "Afrikaans"
+	Elseif $code="041c" Then
+		 Return "Albanian"
+	Elseif $code="0401" Then
+		 Return "Arabic_Saudi_Arabia"
+	Elseif $code="0801" Then
+		 Return "Arabic_Iraq"
+	Elseif $code="0c01" Then
+		 Return "Arabic_Egypt"
+	Elseif $code="1001" Then
+		 Return "Arabic_Libya"
+	Elseif $code="1401" Then
+		 Return "Arabic_Algeria"
+	Elseif $code="1801" Then
+		 Return "Arabic_Morocco"
+	Elseif $code="1c01" Then
+		 Return "Arabic_Tunisia"
+	Elseif $code="2001" Then
+		 Return "Arabic_Oman"
+	Elseif $code="2401" Then
+		 Return "Arabic_Yemen"
+	Elseif $code="2801" Then
+		 Return "Arabic_Syria"
+	Elseif $code="2c01" Then
+		 Return "Arabic_Jordan"
+	Elseif $code="3001" Then
+		 Return "Arabic_Lebanon"
+	Elseif $code="3401" Then
+		 Return "Arabic_Kuwait"
+	Elseif $code="3801" Then
+		 Return "Arabic_UAE"
+	Elseif $code="3c01" Then
+		 Return "Arabic_Bahrain"
+	Elseif $code="4001" Then
+		 Return "Arabic_Qatar"
+	Elseif $code="042b" Then
+		 Return "Armenian"
+	Elseif $code="042c" Then
+		 Return "Azeri_Latin"
+	Elseif $code="082c" Then
+		 Return "Azeri_Cyrillic"
+	Elseif $code="042d" Then
+		 Return "Basque"
+	Elseif $code="0423" Then
+		 Return "Belarusian"
+	Elseif $code="0402" Then
+		 Return "Bulgarian"
+	Elseif $code="0403" Then
+		 Return "Catalan"
+	Elseif $code="0404" Then
+		 Return "Chinese_Taiwan"
+	Elseif $code="0804" Then
+		 Return "Chinese_PRC"
+	Elseif $code="0c04" Then
+		 Return "Chinese_Hong_Kong"
+	Elseif $code="1004" Then
+		 Return "Chinese_Singapore"
+	Elseif $code="1404" Then
+		 Return "Chinese_Macau"
+	Elseif $code="041a" Then
+		 Return "Croatian"
+	Elseif $code="0405" Then
+		 Return "Czech"
+	Elseif $code="0406" Then
+		 Return "Danish"
+	Elseif $code="0413" Then
+		 Return "Dutch_Standard"
+	Elseif $code="0813" Then
+		 Return "Dutch_Belgian"
+	Elseif $code="0409" Then
+		 Return "English_United_States"
+	Elseif $code="0809" Then
+		 Return "English_United_Kingdom"
+	Elseif $code="0c09" Then
+		 Return "English_Australian"
+	Elseif $code="1009" Then
+		 Return "English_Canadian"
+	Elseif $code="1409" Then
+		 Return "English_New_Zealand"
+	Elseif $code="1809" Then
+		 Return "English_Irish"
+	Elseif $code="1c09" Then
+		 Return "English_South_Africa"
+	Elseif $code="2009" Then
+		 Return "English_Jamaica"
+	Elseif $code="2409" Then
+		 Return "English_Caribbean"
+	Elseif $code="2809" Then
+		 Return "English_Belize"
+	Elseif $code="2c09" Then
+		 Return "English_Trinidad"
+	Elseif $code="3009" Then
+		 Return "English_Zimbabwe"
+	Elseif $code="3409" Then
+		 Return "English_Philippines"
+	Elseif $code="0425" Then
+		 Return "Estonian"
+	Elseif $code="0438" Then
+		 Return "Faeroese"
+	Elseif $code="0429" Then
+		 Return "Farsi"
+	Elseif $code="040b" Then
+		 Return "Finnish"
+	Elseif $code="040c" Then
+		 Return "French_Standard"
+	Elseif $code="080c" Then
+		 Return "French_Belgian"
+	Elseif $code="0c0c" Then
+		 Return "French_Canadian"
+	Elseif $code="100c" Then
+		 Return "French_Swiss"
+	Elseif $code="140c" Then
+		 Return "French_Luxembourg"
+	Elseif $code="180c" Then
+		 Return "French_Monaco"
+	Elseif $code="0437" Then
+		 Return "Georgian"
+	Elseif $code="0407" Then
+		 Return "German_Standard"
+	Elseif $code="0807" Then
+		 Return "German_Swiss"
+	Elseif $code="0c07" Then
+		 Return "German_Austrian"
+	Elseif $code="1007" Then
+		 Return "German_Luxembourg"
+	Elseif $code="1407" Then
+		 Return "German_Liechtenstei"
+	Elseif $code="408" 	Then
+		 Return "Greek"
+	Elseif $code="040d" Then
+		 Return "Hebrew"
+	Elseif $code="0439" Then
+		 Return "Hindi"
+	Elseif $code="040e" Then
+		 Return "Hungarian"
+	Elseif $code="040f" Then
+		 Return "Icelandic"
+	Elseif $code="0421" Then
+		 Return "Indonesian"
+	Elseif $code="0410" Then
+		 Return "Italian_Standard"
+	Elseif $code="0810" Then
+		 Return "Italian_Swiss"
+	Elseif $code="0411" Then
+		 Return "Japanese"
+	Elseif $code="043f" Then
+		 Return "Kazakh"
+	Elseif $code="0457" Then
+		 Return "Konkani"
+	Elseif $code="0412" Then
+		 Return "Korean"
+	Elseif $code="0426" Then
+		 Return "Latvian"
+	Elseif $code="0427" Then
+		 Return "Lithuanian"
+	Elseif $code="042f" Then
+		 Return "Macedonian"
+	Elseif $code="043e" Then
+		 Return "Malay_Malaysia"
+	Elseif $code="083e" Then
+		 Return "Malay_Brunei_Darussalam"
+	Elseif $code="044e" Then
+		 Return "Marathi"
+	Elseif $code="0414" Then
+		 Return "Norwegian_Bokmal"
+	Elseif $code="0814" Then
+		 Return "Norwegian_Nynorsk"
+	Elseif $code="0415" Then
+		 Return "Polish"
+	Elseif $code="0416" Then
+		 Return "Portuguese_Brazilian"
+	Elseif $code="0816" Then
+		 Return "Portuguese_Standard"
+	Elseif $code="0418" Then
+		 Return "Romanian"
+	Elseif $code="0419" Then
+		 Return "Russian"
+	Elseif $code="044f" Then
+		 Return "Sanskrit"
+	Elseif $code="081a" Then
+		 Return "Serbian_Latin"
+	Elseif $code="0c1a" Then
+		 Return "Serbian_Cyrillic"
+	Elseif $code="041b" Then
+		 Return "Slovak"
+	Elseif $code="0424" Then
+		 Return "Slovenian"
+	Elseif $code="040a" Then
+		 Return "Spanish_Traditional_Sort"
+	Elseif $code="080a" Then
+		 Return "Spanish_Mexican"
+	Elseif $code="0c0a" Then
+		 Return "Spanish_Modern_Sort"
+	Elseif $code="100a" Then
+		 Return "Spanish_Guatemala"
+	Elseif $code="140a" Then
+		 Return "Spanish_Costa_Rica"
+	Elseif $code="180a" Then
+		 Return "Spanish_Panama"
+	Elseif $code="1c0a" Then
+		 Return "Spanish_Dominican_Republic"
+	Elseif $code="200a" Then
+		 Return "Spanish_Venezuela"
+	Elseif $code="240a" Then
+		 Return "Spanish_Colombia"
+	Elseif $code="280a" Then
+		 Return "Spanish_Peru"
+	Elseif $code="2c0a" Then
+		 Return "Spanish_Argentina"
+	Elseif $code="300a" Then
+		 Return "Spanish_Ecuador"
+	Elseif $code="340a" Then
+		 Return "Spanish_Chile"
+	Elseif $code="380a" Then
+		 Return "Spanish_Uruguay"
+	Elseif $code="3c0a" Then
+		 Return "Spanish_Paraguay"
+	Elseif $code="400a" Then
+		 Return "Spanish_Bolivia"
+	Elseif $code="440a" Then
+		 Return "Spanish_El_Salvador"
+	Elseif $code="480a" Then
+		 Return "Spanish_Honduras"
+	Elseif $code="4c0a" Then
+		 Return "Spanish_Nicaragua"
+	Elseif $code="500a" Then
+		 Return "Spanish_Puerto_Rico"
+	Elseif $code="0441" Then
+		 Return "Swahili"
+	Elseif $code="041d" Then
+		 Return "Swedish"
+	Elseif $code="081d" Then
+		 Return "Swedish_Finland"
+	Elseif $code="0449" Then
+		 Return "Tamil"
+	Elseif $code="0444" Then
+		 Return "Tatar"
+	Elseif $code="041e" Then
+		 Return "Thai"
+	Elseif $code="041f" Then
+		 Return "Turkish"
+	Elseif $code="0422" Then
+		 Return "Ukrainian"
+	Elseif $code="0420" Then
+		 Return "Urdu"
+	Elseif $code="0443" Then
+		 Return "Uzbek_Latin"
+	Elseif $code="0843" Then
+		 Return "Uzbek_Cyrillic"
+	Elseif $code="042a" Then
+		 Return "Vietnamese"
+	 Else
+		 Return "ERROR"
+	EndIf
+EndFunc

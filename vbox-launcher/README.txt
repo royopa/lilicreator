@@ -1,5 +1,5 @@
 -> Change versions in LinuxLive\settings.ini
--> Copy .VirtualBox over the old one
 -> Run one time and : create LinuxLive VM + Add LinuxLive VMDK + Deactivate updates
+-> Copy .VirtualBox over the old one
 -> Modify absolute path in VirtualBox.xml
 -> Supprimer VBoxSDL.exe

@@ -115,6 +115,7 @@ Global $for_winactivate
 Global $current_download
 
 Global $selected_drive,$virtualbox_check,$virtualbox_size,$downloaded_virtualbox_filename
+Global $persistence_file =""
 Global $STEP1_OK, $STEP2_OK, $STEP3_OK
 Global $MD5_ISO, $version_in_file
 Global $variante
@@ -502,7 +503,7 @@ GUICtrlSetColor(-1, 0xFFFFFF)
 
 $combo = GUICtrlCreateCombo("-> " & Translate("Choose a USB Key"), 90 + $offsetx0, 145 + $offsety0, 200, -1, 3)
 GUICtrlSetOnEvent(-1, "GUI_Choose_Drive")
-Refresh_DriveList()
+Refresh_DriveLis()
 
 ; Sending anonymous statistics
 SendStats()

@@ -31,9 +31,8 @@ TraySetClick (16)
 TraySetState ()
 TraySetToolTip ("Portable-VirtualBox")
 
-SplashTextOn ("Portable-VirtualBox", "This is an unofficial version of VirtualBox and is" & @LF & "not supported by Oracle (www.virtualbox.org)!", 400, 60, -1, -1, 1, "arial", 12, 800)
-
-; LinuxLive modifications : No Sleep
+; LinuxLive modifications : No Sleep and no splash screen
+; SplashTextOn ("Portable-VirtualBox", "This is an unofficial version of VirtualBox and is" & @LF & "not supported by Oracle (www.virtualbox.org)!", 400, 60, -1, -1, 1, "arial", 12, 800)
 
 Global $var1 = @ScriptDir&"\data\settings\settings.ini"
 Global $var2 = @ScriptDir&"\data\language\"
@@ -280,13 +279,12 @@ If (FileExists (@ScriptDir&"\app32\virtualbox.exe") OR FileExists (@ScriptDir&"\
         IniWrite ($var1, "startvm", "key", "")
 	 EndIf
 
-      #cs LinuxLive modifications : No splash because messing with text splash
 	  If FileExists (@ScriptDir&"\data\settings\SplashScreen.jpg") Then
         SplashImageOn ("Portable-VirtualBox", @ScriptDir&"\data\settings\SplashScreen.jpg", 480, 360, -1, -1, 1)
       Else
         SplashTextOn ("Portable-VirtualBox", "Start Portable-VirtualBox", 220, 40, -1, -1, 1, "arial", 12)
       EndIf
-	  #ce
+
       Global $lng = IniRead ($var1, "language", "key", "NotFound")
 
       If IniRead ($var1, "hotkeys", "key", "NotFound") = 1 Then
