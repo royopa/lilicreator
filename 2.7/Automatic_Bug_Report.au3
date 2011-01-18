@@ -27,8 +27,8 @@ Global $aMessageQueue[1]=[0]
 Global $last_config, $last_report,$sErrorMsg
 Global  $last_actions[30] = [ "" , "" , "" ,"" , "" , "" ,"" , "" , "" , "","" , "" , "" ,"" , "" , "" ,"" , "" , "" , "","" , "" , "" ,"" , "" , "" ,"" , "" , "" , "" ]
 Global $sending_status
-Global $current_crashlog = @ScriptDir & "\logs\crash-report-" & @MDAY & "-" & @MON & "-" & @YEAR & " (" & @HOUR & "h" & @MIN & "s" & @SEC & ").log"
-Global $current_logfile = @ScriptDir & "\logs\" & @MDAY & "-" & @MON & "-" & @YEAR&".log"
+Global $current_crashlog = @ScriptDir & "\logs\crash-report-" & @YEAR & "-" & @MON & "-" &  @MDAY& " (" & @HOUR & "h" & @MIN & "s" & @SEC & ").log"
+Global $current_logfile = @ScriptDir & "\logs\" & @YEAR & "-" & @MON & "-" & @MDAY&".log"
 Global $user_system
 Global $email_address,$problem_details,$report_gui
 
@@ -93,11 +93,11 @@ Func _OnAutoItError()
     While 1
         $sErrorMsg&=StdoutRead($iPID)
         If @error Then ExitLoop
-		if TimerDiff($timer_check) > 10000 AND $update_checked=0 Then
-			Check_for_compatibility_list_updates()
-			$update_checked=1
-		EndIf
-        Sleep(1000)
+		;if TimerDiff($timer_check) > 5000 AND $update_checked=0 Then
+			;Check_for_compatibility_list_updates()
+			;$update_checked=1
+		;EndIf
+        Sleep(500)
     WEnd
     If StringStripWS($sErrorMsg, 8)="" Then
 		ProcessClose("LiLi USB Creator.exe")
@@ -262,7 +262,7 @@ EndFunc
 Func GUI_Err_Debug()
 	;If @Compiled=0 Then MsgBox(270400,Translate("Show bug report"),ConstructReport())
 	;If @Compiled Then MsgBox(270400,Translate("Show bug report"),ConstructReport())
-	$report_gui=GUICreate("Crash Report",400,300)
+	$report_gui=GUICreate("Crash Report",400,300,-1,-1)
 	GUISetOnEvent($GUI_EVENT_CLOSE,"GUI_Close_Report",$report_gui)
 	GUICtrlCreateEdit(ConstructReport(), 0,0,400,300,$WS_VSCROLL+$ES_READONLY)
 	GUISetState(@SW_SHOW,$report_gui)
@@ -366,16 +366,25 @@ Func _ReceiveReport($report)
 	ElseIf StringLeft($report, 6) = "stats-" Then
 		$stats = StringTrimLeft($report, 6)
 		InetGet("https://www.linuxliveusb.com/stats/?"&$stats,"",3,1)
-	;ElseIf StringLeft($report, 8) = "logfile-" Then
-	;	$current_logfile = StringTrimLeft($report, 6)
 	ElseIf StringLeft($report, 8) = "distrib-" Then
-		$distrib= StringTrimLeft($report, 8)
-		InetGet("https://www.linuxliveusb.com/stats/?distrib="&$distrib&"&id="&$anonymous_id,"",3,1)
-	ElseIf StringLeft($report, 17) = "check_for_updates" Then
-		Check_for_updates()
-		;Check_for_compatibility_list_updates()
+		$distrib=StringTrimLeft($report, 8)
+		$distrib=StringReplace($distrib,"(1)","")
+		$splits=StringSplit($distrib,"#",2)
+		If Ubound($splits)==2 then
+			InetGet("https://www.linuxliveusb.com/stats/?distrib="&$splits[0]&"&md5_hash="&$splits[1],"",3,1)
+		EndIf
+	;ElseIf StringLeft($report, 17) = "check_for_updates" Then
+		;Check_for_updates()
 	ElseIf StringLeft($report, 12) = "End-GUI_Exit" Then
 		Exit
+	ElseIf StringLeft($report, 5) = "ping-" Then
+		$to_ping=StringTrimLeft($report,5)
+		$ping_return=Ping($to_ping)
+			If @error = 0 Then
+				SendReportToMain($report&"="&$ping_return)
+			Else
+				SendReportToMain($report&"=10000")
+			EndIf
 	Else
 		ConsoleWrite($report & @CRLF)
 		$last_report = $report

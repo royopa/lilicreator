@@ -103,6 +103,8 @@ Func _Language()
 			$lang_found = "Russian"
 		Case StringInStr("0413,0813", $use_source)
 			$lang_found = "Dutch"
+		Case StringInStr("0421", $use_source)
+			$lang_found = "Indonesian"
 		Case Else
 			$lang_found = "English"
 	EndSelect

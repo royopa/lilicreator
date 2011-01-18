@@ -14,62 +14,111 @@
 ; ///////////////////////////////// Updates management                            ///////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-; Check for LiLi's updates
-Func Check_for_updates()
+
+Func GetLastUpdateIni()
 	If ReadSetting("Updates", "check_for_updates") <> "yes" Then Return 0
-	$ping = Ping("www.google.com")
-	If $ping Then
-		; check for stable version update
-		$check_result = BinaryToString(INetRead($check_updates_url & "?version"))
 
-		; if Beta version check for beta version update too
-		if (ReadSetting( "Updates", "check_for_beta_versions") = "yes") Then $check_result_beta = BinaryToString(INetRead($check_updates_url & "?beta-version"))
+	FileDelete($updates_ini)
+	; Downloading the info for updates
+	$server_response = INetGet($check_updates_url & "?current="&$current_compatibility_list_version,$updates_ini,3)
 
-		if (ReadSetting( "Updates", "check_for_beta_versions") = "yes") AND VersionCompare($check_result_beta, $software_version) = 1  And Not $check_result_beta = 0 And Not $check_result_beta ="" Then
-			UpdateLog("New beta version available")
-			$return = MsgBox(68, Translate("There is a new Beta version available"), Translate("Your LiLi's version is not up to date.") & @CRLF & @CRLF & Translate("Last beta version is") & " : " & $check_result_beta & @CRLF & Translate("Your version is") & " : " & $software_version & @CRLF & @CRLF & Translate("Do want to download it ?"))
-			If $return = 6 Then ShellExecute("http://www.linuxliveusb.com/")
-		ElseIf Not $check_result = 0 And Not $check_result ="" And VersionCompare($check_result, $software_version) = 1 Then
-			UpdateLog("New stable version available")
-			$return = MsgBox(68, Translate("There is a new version available"), Translate("Your LiLi's version is not up to date.") & @CRLF & @CRLF & Translate("Last version is") & " : " & $check_result & @CRLF & Translate("Your version is") & " : " & $software_version & @CRLF & @CRLF & Translate("Do want to download it ?"))
-			If $return = 6 Then ShellExecute("http://www.linuxliveusb.com/")
+	If Not @error Then
+		$last_stable=IniRead($updates_ini,"Software","last_stable","")
+		$last_stable_update=IniRead($updates_ini,"Software","last_stable_update","")
+		$last_beta=IniRead($updates_ini,"Software","last_beta","")
+		$last_beta_update=IniRead($updates_ini,"Software","last_beta_update","")
+		$what_is_new=StringReplace(IniRead($updates_ini,"Software","what_is_new",""),"/#/",@CRLF&"-> ")
+
+		$virtualbox_pack=IniRead($updates_ini,"VirtualBox","version","")
+		$virtualbox_in_pack=IniRead($updates_ini,"VirtualBox","vbox_version","")
+
+		if $last_stable="" Then
+			UpdateLog("Checking for update, update.ini downloaded but format is incorrect !")
+			Return 0
 		Else
-			UpdateLog("Current software version is up to date")
+			UpdateLog("Checking for update, LiLi's server answer = Last stable : "&$last_stable&" ("&$last_stable_update&") / Last Beta : "&$last_beta&" ("&$last_beta_update&") / Last Virtualbox : "&$virtualbox_pack&" ("&$virtualbox_in_pack&")")
+			Return 1
 		EndIf
 	Else
 		UpdateLog("WARNING : Could not check for updates (no connection ?)")
+		Return 0
+	EndIf
+EndFunc
+
+
+
+; Check for LiLi's updates
+Func CheckForMajorUpdate()
+		if $last_stable="" OR $last_beta="" Then Return 0
+
+	; Checking for major software update
+	if (ReadSetting( "Updates", "check_for_beta_versions") = "yes") AND VersionCompare($last_beta, $software_version) = 1  And Not $last_beta ="" Then
+		UpdateLog("New beta version available")
+		$return = MsgBox(68, Translate("There is a new Beta version available"), Translate("Your LiLi's version is not up to date.") & @CRLF & @CRLF & Translate("Last beta version is") & " : " & $last_beta & @CRLF & Translate("Your version is") & " : " & $software_version & @CRLF & @CRLF & Translate("Do want to download it ?"))
+		If $return = 6 Then
+			ShellExecute("http://www.linuxliveusb.com/")
+			GUI_Exit()
+		EndIf
+		Return 1
+	ElseIf Not $last_stable = 0 And Not $last_stable ="" And VersionCompare($last_stable, $software_version) = 1 Then
+		UpdateLog("New stable version available")
+		$return = MsgBox(68, Translate("There is a new version available"), Translate("Your LiLi's version is not up to date.") & @CRLF & @CRLF & Translate("Last version is") & " : " & $last_stable & @CRLF & Translate("Your version is") & " : " & $software_version & @CRLF & @CRLF & Translate("Do want to download it ?"))
+		If $return = 6 Then
+			ShellExecute("http://www.linuxliveusb.com/")
+			GUI_Exit()
+		EndIf
+		Return 1
+	Else
+		UpdateLog("Current software version is up to date")
+		Return 0
 	EndIf
 EndFunc   ;==>Check_for_updates
 
 ; Check for compatibility list updates (called in Automatic_Bug_Report.au3 in second process)
-Func Check_for_compatibility_list_updates()
+Func CheckForMinorUpdate()
 		; Current version
-		$current_compatibility_list_version=IniRead($compatibility_ini, "Compatibility_List", "Version","none")
-
-		; Check the available version
-		$available_version = BinaryToString(INetRead($check_updates_url & "?last_compatibility_list_of="&$software_version))
 
 		; Compare with the current version
-		if VersionCodeForCompatList($current_compatibility_list_version) < VersionCodeForCompatList($available_version) Then
-			UpdateLog("New compatibility version found : "&$available_version)
+		if VersionCodeForCompatList($current_compatibility_list_version) < VersionCodeForCompatList($last_stable_update) Then
+			UpdateLog("Compatibility list can be updated")
 			; There is a new version => Downloading it to new_compatibility_list.ini
-			InetGet($check_updates_url&"compatibility_lists/"&$available_version, @ScriptDir &"\tools\settings\new_compatibility_list.ini")
+			InetGet($check_updates_url&"compatibility_lists/"&$last_stable_update, @ScriptDir &"\tools\settings\new_compatibility_list.ini",3)
 
 			; if the file downloaded is the same size it means the download should be good => replace the old version by the new one
-			if InetGetSize($check_updates_url&"compatibility_lists/"&$available_version) = FileGetSize(@ScriptDir &"\tools\settings\new_compatibility_list.ini") AND FileGetSize(@ScriptDir &"\tools\settings\new_compatibility_list.ini") > 0 Then
+			if InetGetSize($check_updates_url&"compatibility_lists/"&$last_stable_update,3) = FileGetSize(@ScriptDir &"\tools\settings\new_compatibility_list.ini") AND FileGetSize(@ScriptDir &"\tools\settings\new_compatibility_list.ini") > 0 Then
 				FileMove($compatibility_ini,@ScriptDir &"\tools\settings\old_compatibility_list.ini",1)
 				FileMove(@ScriptDir &"\tools\settings\new_compatibility_list.ini",$compatibility_ini,1)
 				; Send a message to the main process to force reloading the file
-				SendReportToMain("compatibility_updated")
-				$new_linux = BinaryToString(INetRead($check_updates_url & "?new-linux-since="&$current_compatibility_list_version))
-				MsgBox(64, "LinuxLive USB Creator", Translate("The compatibility list has been updated")&"."&@CRLF&@CRLF&Translate("These linuxes are now supported")&" :"&@CRLF&@CRLF&$new_linux);
+				;SendReportToMain("compatibility_updated")
+				MsgBox(64, "LinuxLive USB Creator", Translate("The compatibility list has been updated")&"."&@CRLF&@CRLF&Translate("These linuxes are now supported")&" :"&@CRLF&@CRLF&$what_is_new)
+				return 1
 			Else
 				UpdateLog("WARNING : Could not download new compatibility list version")
+				return 0
 			EndIf
 		Else
 			UpdateLog("Current compatibility list version is up to date")
+			Return 0
 		EndIf
+	EndFunc
 
+Func CheckForVirtualBoxUpdate()
+	; Setting VirtualBox size
+	$current_vbox_version=IniRead(@ScriptDir&"\tools\VirtualBox\Portable-VirtualBox\linuxlive\settings.ini","General","pack_version","ERROR")
+	$lastupdate_vbox_version=IniRead($updates_ini,"VirtualBox","version","0.0.0.0")
+	if $current_vbox_version==$lastupdate_vbox_version Then
+		; Downloaded version is equal to the one described in VirtualBox.ini => using real size set in VirtualBox.ini
+		$virtualbox_realsize=IniRead($updates_ini,"VirtualBox","realsize",$virtualbox_default_realsize)
+		SendReport("VirtualBox folder exists, version is "&$current_vbox_version&" and is the latest. Its size is "&$virtualbox_realsize&"MB")
+	Elseif FileExists(@ScriptDir&"\tools\VirtualBox\") Then
+		; No match, computing size directly
+		$virtualbox_realsize =Round(DirGetSize(@ScriptDir&"\tools\VirtualBox\")/(1024*1024))
+		SendReport("VirtualBox folder exists but does not match version of last update ( "&$current_vbox_version&"!="&$lastupdate_vbox_version&" ). Its size is "&$virtualbox_realsize&"MB")
+	Else
+		; No match and no downloaded version, default size is set to default size
+		$virtualbox_realsize=$virtualbox_default_realsize
+		SendReport("No VirtualBox folder. Default size is "&$virtualbox_realsize&"MB")
+	EndIf
 EndFunc
 
 
@@ -131,6 +180,19 @@ Func isBeta()
 		Return 0
 	EndIf
 EndFunc   ;==>isBeta
+
+Func GetFullVersion()
+	if isBeta() Then
+		return $software_version
+	Else
+		$compat_version = VersionCodeForCompatList($current_compatibility_list_version)
+		if $compat_version > 0 Then
+			return $software_version&" Update "&$compat_version
+		Else
+			return $software_version
+		EndIf
+	EndIf
+EndFunc
 
 ; Return the last number of compatibility list version
 Func VersionCodeForCompatList($version)

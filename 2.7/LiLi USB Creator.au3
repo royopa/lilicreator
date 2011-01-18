@@ -31,17 +31,19 @@
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ; Global constants
-Global Const $software_version = "2.7 Alpha"
+Global Const $software_version = "2.7 RC1"
 Global $lang_folder = @ScriptDir & "\tools\languages\"
 Global $lang_ini
 Global $verbose_logging
 Global Const $settings_ini = @ScriptDir & "\tools\settings\settings.ini"
 Global Const $compatibility_ini = @ScriptDir & "\tools\settings\compatibility_list.ini"
-Global Const $vbox_update_ini = @ScriptDir & "\tools\settings\virtualbox.ini"
+Global Const $updates_ini = @ScriptDir & "\tools\settings\updates.ini"
 Global Const $blacklist_ini = @ScriptDir & "\tools\settings\black_list.ini"
 Global Const $log_dir = @ScriptDir & "\logs\"
-Global $logfile = $log_dir & @MDAY & "-" & @MON & "-" & @YEAR&".log"
-Global Const $check_updates_url = "http://www.linuxliveusb.com/updates/"
+Global $logfile = $log_dir & @YEAR& "-" & @MON & "-" & @MDAY &".log"
+Global Const $check_updates_url = "https://www.linuxliveusb.com/updates/"
+Global Const $virtualbox_default_realsize=140
+
 
 ; Auto-Clean feature (relative to the usb drive path)
 Global Const $autoclean_file = "Remove_LiLi.bat"
@@ -49,6 +51,9 @@ Global Const $autoclean_settings = "SmartClean.ini"
 
 ; Global that will be set up later
 Global $lang, $anonymous_id
+
+; Updater Variables
+Global $last_stable,$last_stable_update,$last_beta,$last_beta_update,$what_is_new
 
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////// Gui Buttons and Label                         ///////////////////////////////////////////////////////////////////////////////
@@ -113,8 +118,9 @@ Global $MD5_ISO = "", $compatible_md5, $compatible_filename, $release_number = -
 Global $foo
 Global $for_winactivate
 Global $current_download
+Global $ping_result=""
 
-Global $selected_drive,$virtualbox_check,$virtualbox_size,$downloaded_virtualbox_filename
+Global $selected_drive,$virtualbox_check,$virtualbox_size,$virtualbox_realsize,$downloaded_virtualbox_filename
 Global $persistence_file =""
 Global $STEP1_OK, $STEP2_OK, $STEP3_OK
 Global $MD5_ISO, $version_in_file
@@ -228,7 +234,16 @@ EndIf
 #include <Options_Menu.au3>
 
 
-SplashImageOn("LiLi Splash Screen", @ScriptDir & "\tools\img\logo.jpg",344, 107, -1, -1, 1)
+$current_compatibility_list_version=IniRead($compatibility_ini,"Compatibility_List","Version",$software_version&".0")
+$full_version = GetFullVersion()
+
+;SplashImageOn("LiLi Splash Screen", @ScriptDir & "\tools\img\logo.jpg",344, 107, -1, -1, 1)
+$splash_gui = GUICreate("Loading LiLi", 348, 130,-1,-1,$WS_POPUP)
+GUISetBkColor(0x000000)
+GUICtrlCreatePic(@ScriptDir & "\tools\img\logo.jpg",2,2,344,107)
+$splash_status = GUICtrlCreateLabel("   "&Translate("Starting LinuxLive USB Creator")&" "&$full_version,2,109,344,19)
+GUICtrlSetBkColor($splash_status,0xFFFFFF)
+GUISetState(@SW_SHOW)
 
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////// Proxy settings                                                            ///////////////////////////////////////////////////
@@ -265,8 +280,32 @@ _SetReceiverFunction("ReceiveFromSecondary")
 $verbose_logging = ReadSetting( "General", "verbose_logging")
 If $verbose_logging = "yes" Then InitLog()
 
-SendReport("Starting LiLi USB Creator " & $software_version)
+SendReport("Starting LiLi USB Creator " & $full_version)
 
+
+If ReadSetting("Updates", "check_for_updates") = "yes" Then
+
+	if GetLastUpdateIni()=1 Then
+		; Checking for new Major version
+		GUICtrlSetData($splash_status,"   "&Translate("Checking for new major version"))
+		CheckForMajorUpdate()
+
+		; Checking for new Minor version (=compatibility list update)
+		GUICtrlSetData($splash_status,"   "&Translate("Checking for new minor version"))
+		if CheckForMinorUpdate()=1 Then
+			$full_version = GetFullVersion()
+			GUICtrlSetData($splash_status,"   "&Translate("Successfully updated to version "&$full_version))
+			Sleep(2000)
+		EndIf
+
+		; Checking for new Portable-VirtualBox version
+		GUICtrlSetData($splash_status,"   "&Translate("Checking for new Portable-VirtualBox version"))
+		CheckForVirtualBoxUpdate()
+
+	EndIf
+EndIf
+
+GUICtrlSetData($splash_status,"   "&Translate("Reading compatibility list"))
 ; initialize list of compatible releases (load the compatibility_list.ini)
 Get_Compatibility_List()
 
@@ -275,6 +314,8 @@ If _GDIPlus_Startup() Then
 Else
 	SendReport("ERROR : GDI+ did not start !!!")
 EndIf
+
+GUICtrlSetData($splash_status,"   "&Translate("Loading interface"))
 
 ; Loading PNG Files
 $EXIT_NORM = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\close.PNG")
@@ -500,12 +541,14 @@ GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
 
 ; Filling the combo box with drive list
-
 $combo = GUICtrlCreateCombo("-> " & Translate("Choose a USB Key"), 90 + $offsetx0, 145 + $offsety0, 200, -1, 3)
 GUICtrlSetOnEvent(-1, "GUI_Choose_Drive")
-Refresh_DriveLis()
+
+GUICtrlSetData($splash_status,"   "&Translate("Get drive list"))
+Refresh_DriveList()
 
 ; Sending anonymous statistics
+GUICtrlSetData($splash_status,"   "&Translate("Logging system configuration"))
 SendStats()
 SendReport(LogSystemConfig())
 
@@ -516,9 +559,11 @@ WinActivate($for_winactivate)
 GUISetState($GUI_SHOW, $CONTROL_GUI)
 
 ; Starting to check for updates in the secondary LiLi's process
-SendReport("check_for_updates")
+;GUICtrlSetData($splash_status,"   "&Translate("Checking for updates"))
+;SendReport("check_for_updates")
 
-SplashOff()
+;SplashOff()
+GUIDelete($splash_gui)
 Sleep(100)
 GUISetState(@SW_SHOW, $GUI)
 GUISetState(@SW_SHOW, $CONTROL_GUI)
@@ -541,7 +586,7 @@ While 1
 		GUICtrlSetData($combo, GUICtrlRead($combo))
 		$combo_updated = 1
 	EndIf
-	Sleep(100)
+	Sleep(10000)
 	;DrawAll()
 WEnd
 
@@ -611,10 +656,8 @@ Func Control_Hover()
 		If Not @error And IsArray($CursorCtrl) Then
 			Switch $previous_hovered_control
 				Case $EXIT_AREA
-					If $CursorCtrl[2] = 1 Then GUI_Exit()
 					$EXIT_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $EXIT_NORM, 0, 0, 20, 20, 335 + $offsetx0, -20 + $offsety0, 20, 20)
 				Case $MIN_AREA
-					If $CursorCtrl[2] = 1 Then GUI_Minimize()
 					$MIN_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $MIN_NORM, 0, 0, 20, 20, 305 + $offsetx0, -20 + $offsety0, 20, 20)
 				Case $ISO_AREA
 					If $step2_display_menu = 0 Then $DRAW_ISO = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $ISO_PNG, 0, 0, 75, 75, 38 + $offsetx0, 231 + $offsety0, 75, 75)
@@ -645,6 +688,7 @@ Func Control_Hover()
 					$DRAW_LAUNCH = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $LAUNCH_HOVER_PNG, 0, 0, 22, 43, 35 + $offsetx0, 600 + $offsety0, 22, 43)
 				Case $BACK_AREA
 					If $step2_display_menu >= 1 Then $DRAW_BACK_HOVER = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $BACK_HOVER_PNG, 0, 0, 32, 32, 5 + $offsetx0, 300 + $offsety0, 32, 32)
+
 			EndSwitch
 			$previous_hovered_control = $CursorCtrl[4]
 		EndIf
@@ -656,13 +700,14 @@ EndFunc   ;==>Control_Hover
 
 ; Received a message from the secondary lili's process
 Func ReceiveFromSecondary($message)
-
 	; Compatibility list has been updated => force reloading
 	If $message ="compatibility_updated" Then
 		; initialize list of compatible releases (load the compatibility_list.ini)
 		Get_Compatibility_List()
 		$prefetched_linux_list = Print_For_ComboBox()
 		UpdateLog("Compatibility list has been successfully updated")
+	Elseif StringLeft($message,5)="ping-" Then
+		$ping_result=$message
 	Else
 		UpdateLog("Received message from secondary process ("&$message&")")
 	EndIf

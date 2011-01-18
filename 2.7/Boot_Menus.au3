@@ -257,11 +257,8 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 				 & @LF & "menu hidden" _
 				 & @LF & "menu hiddenrow 5"
 
-		if StringInStr($codename,"mintdebian") Then
-			$boot_text &= Debian_BootMenu("mint")
-		Else
-			$boot_text &= Ubuntu_BootMenu($initrd_file,"mint")
-		EndIf
+		$boot_text &= Ubuntu_BootMenu($initrd_file,"mint")
+
 		UpdateLog("Creating syslinux.cfg file for Mint :" & @CRLF & $boot_text)
 		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
 		FileWrite($file, $boot_text)
@@ -332,6 +329,48 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 	FileClose($file)
 	SendReport("End-Ubuntu_WriteTextCFG")
 EndFunc   ;==>Ubuntu_WriteTextCFG
+
+
+Func Debian_WriteTextCFG($selected_drive, $release_in_list)
+	SendReport("Start-Debian_WriteTextCFG (Drive : " & $selected_drive & " -  Codename: " & ReleaseGetCodename($release_in_list) & " )")
+	$variant = ReleaseGetVariant($release_in_list)
+	$distrib_version = ReleaseGetDistributionVersion($release_in_list)
+	$features = ReleaseGetSupportedFeatures($release_in_list)
+	$codename = ReleaseGetCodename($release_in_list)
+
+	If $variant="mint" Then
+			$boot_text = "default vesamenu.c32" _
+				 & @LF & "timeout 100" _
+				 & @LF & "menu background splash.jpg" _
+				 & @LF & "menu title Welcome to Linux Mint Debian" _
+				 & @LF & "menu color border 0 #00eeeeee #00000000" _
+				 & @LF & "menu color sel 7 #ffffffff #33eeeeee" _
+				 & @LF & "menu color title 0 #ffeeeeee #00000000" _
+				 & @LF & "menu color tabmsg 0 #ffeeeeee #00000000" _
+				 & @LF & "menu color unsel 0 #ffeeeeee #00000000" _
+				 & @LF & "menu color hotsel 0 #ff000000 #ffffffff" _
+				 & @LF & "menu color hotkey 7 #ffffffff #ff000000" _
+				 & @LF & "menu color timeout_msg 0 #ffffffff #00000000" _
+				 & @LF & "menu color timeout 0 #ffffffff #00000000" _
+				 & @LF & "menu color cmdline 0 #ffffffff #00000000" _
+				 & @LF & "menu hidden" _
+				 & @LF & "menu hiddenrow 6"
+
+		$boot_text &= Debian_BootMenu("mint")
+
+		UpdateLog("Creating syslinux.cfg file for Mint :" & @CRLF & $boot_text)
+		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
+		FileWrite($file, $boot_text)
+		FileClose($file)
+	Else
+		$boot_text = Debian_BootMenu($variant)
+		UpdateLog("Creating live.cfg file for Debian :" & @CRLF & $boot_text)
+		$file = FileOpen($selected_drive & "\syslinux\live.cfg", 2)
+		FileWrite($file, $boot_text)
+		FileClose($file)
+	EndIf
+	SendReport("End-Debian_WriteTextCFG")
+EndFunc
 
 Func AutomaticPreseed($selected_drive,$preseed_variant)
 	SendReport("Start-AutomaticPreseed( "& $selected_drive&" , "& $preseed_variant&" )")

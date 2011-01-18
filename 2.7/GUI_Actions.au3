@@ -59,7 +59,6 @@ EndFunc   ;==>Enable_Hide_Option
 ; Clickable parts of images
 Func GUI_Exit()
 	Global $current_download
-	If WinActive("LinuxLive USB Creator") Or WinActive("LiLi USB Creator") Then
 		SendReport("Start-GUI_Exit")
 		InetClose($current_download)
 		If $foo Then ProcessClose($foo)
@@ -89,7 +88,6 @@ Func GUI_Exit()
 		_GDIPlus_Shutdown()
 		SendReport("End-GUI_Exit")
 		Exit
-	EndIf
 EndFunc   ;==>GUI_Exit
 
 
@@ -398,8 +396,8 @@ Func GUI_Back_Download()
 	SendReport("Start-GUI_Back_Download")
 	Global $label_step2_status,$label_step2_status2
 	Global $current_download,$progress_bar
-	if $progress_bar Then _ProgressDelete($progress_bar)
 	InetClose($current_download)
+	if $progress_bar Then _ProgressDelete($progress_bar)
 	GUI_Hide_Step2_Download_Menu()
 	GUI_Hide_Back_Button()
 	GUICtrlSetState($label_step2_status,$GUI_HIDE)
@@ -474,8 +472,21 @@ Func DownloadRelease($release_in_list, $automatic_download)
 		If StringStripWS($mirror, 8) <> "" Then
 			_ProgressSet($progress_bar, $tested_mirrors * 100 / $available_mirrors)
 			_ProgressSetText($progress_bar, Translate("Testing mirror") & " : " & URLToHostname($mirror))
-			$temp_latency = Ping(URLToHostname($mirror))
+			;$temp_latency = Ping(URLToHostname($mirror))
+
+			$command="ping-"&URLToHostname($mirror)
+			SendReport($command)
 			$tested_mirrors = $tested_mirrors + 1
+			$timeout=TimerInit()
+			While StringInStr($ping_result,$command)<=0 AND TimerDiff($timeout)<10000
+				Sleep(300)
+			Wend
+			$result = StringReplace($ping_result,$command&"=","")
+			SendReport("Result is "&$result&" ms")
+			$temp_latency=Int($result)
+
+
+			#cs
 			If @error = 0 Then
 				$temp_size = Round(InetGetSize($mirror,3) / 1048576)
 				If $temp_size < 5 Or $temp_size > 5000 Then
@@ -484,30 +495,37 @@ Func DownloadRelease($release_in_list, $automatic_download)
 			Else
 				$temp_latency = 10000
 			EndIf
-
+			#ce
 		Else
 			$temp_latency = 10000
 		EndIf
 		$latency[$i] = $temp_latency
-
 	Next
-	If _ArrayMin($latency, 1, $R_MIRROR1, $R_MIRROR10) = 10000 Then
+
+	SendReport("Before _ArrayMin on latencies")
+	$arraymin = _ArrayMin($latency, 1, $R_MIRROR1, $R_MIRROR10)
+	SendReport("After _ArrayMin on latencies")
+
+	If $arraymin = 10000 Then
 		UpdateStatusStep2(Translate("No online mirror found") & " !" & @CRLF & Translate("Please check your internet connection or try with another linux"))
 		_ProgressSet($progress_bar, 100)
 		Sleep(3000)
 	Else
 		_ProgressSet($progress_bar, 100)
-		$best_mirror = $releases[$release_in_list][_ArrayMinIndex($latency, 1, $R_MIRROR1, $R_MIRROR10)]
+		SendReport("Before _ArrayMinIndex on latencies")
+		$arrayminindex = _ArrayMinIndex($latency, 1, $R_MIRROR1, $R_MIRROR10)
+		SendReport("After _ArrayMinIndex on latencies")
+		$best_mirror = $releases[$release_in_list][$arrayminindex]
 		If $automatic_download = 0 Then
 			; Download manually
 			UpdateStatusStep2("Select this file as the source when download will be completed")
 			DisplayMirrorList($latency, $release_in_list)
 		Else
 			; Download automatically
-			$iso_size = InetGetSize($best_mirror)
+			$iso_size = InetGetSize($best_mirror,3)
 			$filename = unix_path_to_name($best_mirror)
 			$temp_filename = StringReplace($filename,get_extension($filename),"temp")
-			$current_download = InetGet($best_mirror, @DesktopDir & "\" & $temp_filename, 1, 1)
+			$current_download = InetGet($best_mirror, @DesktopDir & "\" & $temp_filename, 3, 1)
 			If InetGetInfo($current_download, 4)=0 Then
 				UpdateStatusStep2(Translate("Downloading") & " " & $filename & @CRLF & Translate("from") & " " & URLToHostname($best_mirror))
 				Download_State()
@@ -865,7 +883,7 @@ Func GUI_Launch_Creation()
 		Sleep(1000)
 		; Don't want it to show when using test builds
 		if ReadSetting("General","unique_ID")<>"SVN" OR ReadSetting("Advanced","skip_finalhelp")="no" Then
-			ShellExecute("http://www.linuxliveusb.com/using-lili.html", "", "", "", 7)
+			ShellExecute("http://www.linuxliveusb.com/help/guide/using-lili", "", "", "", 7)
 		EndIf
 
 		; If beta version, asking for feedback
@@ -882,7 +900,10 @@ EndFunc   ;==>GUI_Launch_Creation
 
 Func Ask_For_Feedback()
 	$return = MsgBox(65, Translate("Help me to improve LiLi"), Translate("This is a Beta or Release Candidate version")&"."&@CRLF&Translate("Click OK to leave a feedback or click Cancel to close this window"))
-	If $return = 1 Then ShellExecute("http://www.linuxliveusb.com/feedback/?version="&$software_version, "", "", "", 7)
+	If $return = 1 Then
+		WriteSetting("Advanced","skip_feedback_for_beta","yes")
+		ShellExecute("http://www.linuxliveusb.com/feedback/?version="&$software_version, "", "", "", 7)
+	EndIf
 EndFunc   ;==>Ask_For_Feedback
 
 Func GUI_Events()
@@ -910,9 +931,6 @@ Func GUI_Events2()
 	Select
 		Case @GUI_CtrlId = $GUI_EVENT_CLOSE
 			GUIDelete(@GUI_WinHandle)
-			Sleep(1000)
-			$return = MsgBox(65, "This is a RC Version", "This is a Release Candidate version, click OK to leave a feedback or click Cancel to close this window")
-			If $return = 1 Then ShellExecute("http://www.linuxliveusb.com/feedback/rc1.php", "", "", "", 7)
 		Case @GUI_CtrlId = $GUI_EVENT_MINIMIZE
 			GUISetState(@SW_MINIMIZE, @GUI_WinHandle)
 		Case @GUI_CtrlId = $GUI_EVENT_RESTORE
@@ -924,31 +942,30 @@ EndFunc   ;==>GUI_Events2
 
 Func GUI_Help_Step1()
 	SendReport("Start-GUI_Help_Step1")
-	ShellExecute("http://www.linuxliveusb.com/step1.html")
+	ShellExecute("http://www.linuxliveusb.com/help/guide/step1")
 	SendReport("End-GUI_Help_Step1")
 EndFunc   ;==>GUI_Help_Step1
 
 Func GUI_Help_Step2()
 	SendReport("Start-GUI_Help_Step2")
-	ShellExecute("http://www.linuxliveusb.com/step2.html")
+	ShellExecute("http://www.linuxliveusb.com/help/guide/step2")
 	SendReport("End-GUI_Help_Step2")
 EndFunc   ;==>GUI_Help_Step2
 
 Func GUI_Help_Step3()
 	SendReport("Start-GUI_Help_Step3")
-	ShellExecute("http://www.linuxliveusb.com/step3.html")
+	ShellExecute("http://www.linuxliveusb.com/help/guide/step3")
 	SendReport("End-GUI_Help_Step3")
 EndFunc   ;==>GUI_Help_Step3
 
 Func GUI_Help_Step4()
 	SendReport("Start-GUI_Help_Step4")
-	ShellExecute("http://www.linuxliveusb.com/step4.html")
+	ShellExecute("http://www.linuxliveusb.com/help/guide/step4")
 	SendReport("End-GUI_Help_Step4")
 EndFunc   ;==>GUI_Help_Step4
 
 Func GUI_Help_Step5()
 	SendReport("Start-GUI_Help_Step5")
-	;_About(Translate("About this software"), "LiLi USB Creator", "CopyLeft by Thibaut Lauzière - GPL v3 License", $software_version, Translate("User's Guide"), "http://www.linuxliveusb.com/how-to.html", Translate("Homepage"), "http://www.linuxliveusb.com", Translate("Donate"), "https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=8297661", @AutoItExe, 0x0000FF, 0xFFFFFF, -1, -1, -1, -1, $CONTROL_GUI)
 	GUI_Options_Menu()
 	;DebugOptions()
 	SendReport("End-GUI_Help_Step5")

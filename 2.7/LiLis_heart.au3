@@ -143,17 +143,7 @@ EndFunc
 Func Check_VirtualBox_Update()
 	SendReport("Start-Check_VirtualBox_Update")
 	; Checking online for an update
-	InetGet($check_updates_url&"?virtualbox", $vbox_update_ini,1,0 )
-	$vbox_last_version=IniRead($vbox_update_ini,"VirtualBox","version","NONE")
-
-	if $vbox_last_version<>"NONE" AND $vbox_last_version<>"" Then
-		;MsgBox(0,"Resultat","Mirror1 : "&Iniread($vbox_ini,"VirtualBox","Mirror1",""))
-		SendReport("IN-Download_virtualBox : last version is "&$vbox_last_version)
-	Else
-		;MsgBox(0,"ERROR","Could not check virtualbox update")
-		; Could not check virtualbox update
-		SendReport("IN-Download_virtualBox : Could not check virtualbox update")
-	EndIf
+	$vbox_last_version=IniRead($updates_ini,"VirtualBox","version","")
 	$cached_version=IniRead(@ScriptDir&"\tools\VirtualBox\Portable-VirtualBox\linuxlive\settings.ini","General","pack_version","0")
 	$compare = CompareVersion($vbox_last_version,$cached_version)
 	if $compare=1 Then
@@ -194,7 +184,7 @@ Func Download_virtualBox()
 
 	UpdateStatus("Setting up virtualization software")
 	$no_internet = 0
-	$virtualbox_size = IniRead($vbox_update_ini,"VirtualBox","filesize","ERROR")
+	$virtualbox_size = IniRead($updates_ini,"VirtualBox","filesize","ERROR")
 	If $virtualbox_size="ERROR" Then
 		SendReport("END-Download_virtualBox : could not check update size")
 		Return 2
@@ -205,13 +195,13 @@ Func Download_virtualBox()
 
 	Dim $vbox_mirrors[10]
 	Do
-		$vbox_mirrors[$i-1]=IniRead($vbox_update_ini,"VirtualBox","Mirror"&$i,"")
+		$vbox_mirrors[$i-1]=IniRead($updates_ini,"VirtualBox","Mirror"&$i,"")
 		$i+=1
 	Until $i>$mirrors_nbr
 
 	$i=0
 	Do
-		$size=InetGetSize($vbox_mirrors[$i])
+		$size=InetGetSize($vbox_mirrors[$i],3)
 		$i+=1
 	Until ($size=$virtualbox_size OR $i=10)
 
@@ -232,7 +222,7 @@ Func Download_virtualBox()
 					UpdateStatus("Downloading VirtualBox as a background task")
 					Sleep(700)
 					FileDelete(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename)
-					$current_download = InetGet($online_mirror, @ScriptDir & "\tools\" & $downloaded_virtualbox_filename, 1, 1)
+					$current_download = InetGet($online_mirror, @ScriptDir & "\tools\" & $downloaded_virtualbox_filename, 3, 1)
 					If InetGetInfo($current_download, 4)=0 Then
 						UpdateStatus("Download started succesfully")
 						$check_vbox = 1
@@ -521,9 +511,12 @@ Func Create_boot_menu($drive_letter,$release_in_list)
 		Elseif $variant="XBMC" Then
 			SendReport("IN-Create_boot_menu for XBMC")
 			XBMC_WriteTextCFG($drive_letter,$release_in_list)
-		Elseif $distribution = "ubuntu" OR $variant= "debian" Then
-			SendReport("IN-Create_boot_menu for Ubuntu and Debian")
+		Elseif $distribution = "ubuntu" Then
+			SendReport("IN-Create_boot_menu for Ubuntu")
 			Ubuntu_WriteTextCFG($drive_letter,$release_in_list)
+		Elseif $distribution = "debian" Then
+			SendReport("IN-Create_boot_menu for Debian")
+			Debian_WriteTextCFG($drive_letter,$release_in_list)
 		Elseif $variant="Crunchbang" Then
 			SendReport("IN-Create_boot_menu for CrunchBang")
 			Crunchbang_WriteTextCFG($drive_letter,$release_in_list)
@@ -812,7 +805,7 @@ Func Check_virtualbox_download()
 	Until InetGetInfo($current_download, 2)
 
 	UpdateStatus("Download complete")
-	$control_md5=IniRead($vbox_update_ini,"VirtualBox","file_md5","")
+	$control_md5=IniRead($updates_ini,"VirtualBox","file_md5","")
 	$FileToHash=@ScriptDir & "\tools\" & $downloaded_virtualbox_filename
 
 	Local $filehandle = FileOpen($FileToHash, 16)
@@ -841,6 +834,7 @@ Func Check_virtualbox_download()
 		RunWait3('"' & @ScriptDir & '\tools\7z.exe" x -y "' & @ScriptDir & "\tools\" & $downloaded_virtualbox_filename,@ScriptDir & "\tools\")
 		if IniRead(@ScriptDir&"\tools\VirtualBox\Portable-VirtualBox\linuxlive\settings.ini","General","pack_version","ERROR")<> "ERROR" Then
 			FileDelete(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename)
+			$virtualbox_realsize=IniRead($updates_ini,"VirtualBox","realsize",$virtualbox_default_realsize)
 		EndIf
 	Else
 		UpdateStatus(Translate("VirtualBox archive is corrupted"))
@@ -934,16 +928,19 @@ Func Create_autorun($drive_letter,$release_in_list)
 
 	$icon = "lili.ico"
 
-	IniWrite($drive_letter & "\autorun.inf", "autorun", "icon", $icon)
-	IniWrite($drive_letter & "\autorun.inf", "autorun", "open", "")
-	IniWrite($drive_letter & "\autorun.inf", "autorun", "label", "LinuxLive Key")
+	;Writing autorun to a temporary file to try to fix an odd bug (FS#304)
+	$temp_ini = @ScriptDir&"\tools"
+
+	IniWrite($temp_ini & "\autorun.inf", "autorun", "icon", $icon)
+	IniWrite($temp_ini & "\autorun.inf", "autorun", "open", "")
+	IniWrite($temp_ini & "\autorun.inf", "autorun", "label", "LinuxLive Key")
 
 	; If virtualbox is installed
 	if FileExists($drive_letter & "\VirtualBox\Virtualize_This_Key.exe") OR FileExists($drive_letter & "VirtualBox\VirtualBox.exe") OR GUICtrlRead($virtualbox) = $GUI_CHECKED Then
-		IniWrite($drive_letter & "\autorun.inf", "autorun", "shell\linuxlive", "----> LinuxLive!")
-		IniWrite($drive_letter & "\autorun.inf", "autorun", "shell\linuxlive\command", "VirtualBox\Virtualize_This_Key.exe")
-		IniWrite($drive_letter &"\autorun.inf", "autorun", "shell\linuxlive2", "----> VirtualBox Interface")
-		IniWrite($drive_letter & "\autorun.inf", "autorun", "shell\linuxlive2\command", "VirtualBox\VirtualBox.exe")
+		IniWrite($temp_ini & "\autorun.inf", "autorun", "shell\linuxlive", "----> LinuxLive!")
+		IniWrite($temp_ini & "\autorun.inf", "autorun", "shell\linuxlive\command", "VirtualBox\Virtualize_This_Key.exe")
+		IniWrite($temp_ini &"\autorun.inf", "autorun", "shell\linuxlive2", "----> VirtualBox Interface")
+		IniWrite($temp_ini & "\autorun.inf", "autorun", "shell\linuxlive2\command", "VirtualBox\VirtualBox.exe")
 	EndIf
 
 	$i=3
@@ -951,15 +948,18 @@ Func Create_autorun($drive_letter,$release_in_list)
 		for $file in $files_in_source
 			if get_extension($file) = "exe" Then
 				if $i=3 Then
-					IniWrite($drive_letter  & "\autorun.inf", "autorun", "shell\linuxlive"&$i, "----> CD Menu ("& $file &")")
+					IniWrite($temp_ini  & "\autorun.inf", "autorun", "shell\linuxlive"&$i, "----> CD Menu ("& $file &")")
 				Else
-					IniWrite($drive_letter  & "\autorun.inf", "autorun", "shell\linuxlive"&$i, "----> CD Menu ("& $file &")")
+					IniWrite($temp_ini  & "\autorun.inf", "autorun", "shell\linuxlive"&$i, "----> CD Menu ("& $file &")")
 				EndIf
-				IniWrite($drive_letter & "\autorun.inf", "autorun", "shell\linuxlive"&$i&"\command", $drive_letter&"\"&$file)
+				IniWrite($temp_ini & "\autorun.inf", "autorun", "shell\linuxlive"&$i&"\command", $drive_letter&"\"&$file)
 				$i=$i+1
 			EndIf
 		Next
 	EndIf
+
+	FileMove($temp_ini & "\autorun.inf",$drive_letter& "\autorun.inf")
+
 	SendReport("End-Create_autorun")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

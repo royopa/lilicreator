@@ -16,11 +16,9 @@ Func Check_source_integrity($linux_live_file)
 	GUICtrlSetState($cleaner, $GUI_SHOW)
 	GUICtrlDelete($cleaner)
 
-	$shortname = path_to_name($linux_live_file)
-	SendReport("distrib-" & $shortname)
+	$shortname = CleanFilename(path_to_name($linux_live_file))
 
 	Global $MD5_ISO, $compatible_md5, $compatible_filename,$codenames_list, $release_number = -1
-
 
 	; Pre-Checking
 	If get_extension($linux_live_file) = "img" Then
@@ -93,6 +91,7 @@ Func Check_source_integrity($linux_live_file)
 
 	If ReadSetting( "Advanced", "skip_md5") <> "yes" Then
 		$MD5_ISO = Check_ISO($linux_live_file)
+		SendReport("distrib-" & $shortname&"#"&$MD5_ISO)
 		$temp_index = FindReleaseFromMD5($MD5_ISO)
 	Else
 		$MD5_ISO = "123"
