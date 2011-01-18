@@ -67,8 +67,8 @@ Func SpaceAfterLinuxLiveMB($disk)
 
 
 	If GUICtrlRead($virtualbox) == $GUI_CHECKED Then
-		; Need 140MB for VirtualBox
-		$install_size = $install_size + 140
+		; Need some MB for VirtualBox
+		$install_size = $install_size + $virtualbox_realsize
 	EndIf
 
 	If GUICtrlRead($formater) == $GUI_CHECKED Then

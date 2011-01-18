@@ -24,11 +24,11 @@ Func GUI_Options_Menu()
 	GUICtrlCreateGroup("", -99, -99, 1, 1)
 	$donate = GUICtrlCreateButton(Translate("Make a donation"), 32, 319, 153, 33, $WS_GROUP)
 	$contact = GUICtrlCreateButton(Translate("Contact me"), 212, 319, 153, 33, $WS_GROUP)
-	$copyright = GUICtrlCreateLabel(Translate("CopyLeft by")&" Thibaut Lauzière - ",  84, 380, 200, 17)
-	$licence=GUICtrlCreateLabel(Translate("GPL v3 License"), 236, 379, 360, 17)
+	$copyright = GUICtrlCreateLabel(Translate("CopyLeft by")&" Thibaut Lauzière - ",  15, 380, 185, 17,$SS_RIGHT)
+	$licence=GUICtrlCreateLabel(Translate("GPL v3 License"), 206, 379, 360, 17)
 	GUICtrlSetFont(-1,-1,-1,4)
 	GUICtrlSetColor(-1,0x0000cc)
-	GUICtrlSetCursor(-1,0)
+	GUICtrlSetCursor(-1,4)
 
 	$tab_options = GUICtrlCreateTabItem(Translate("Options"))
 
@@ -80,19 +80,19 @@ Func GUI_Options_Menu()
 
 	$label_proxy_url = GUICtrlCreateLabel(Translate("Proxy URL")&" : ", 30, 173, 110, 21, $WS_GROUP+$SS_RIGHT)
 
-	$proxy_url_input = GUICtrlCreateInput(ReadSetting( "Proxy", "proxy_url"), 150, 170, 217, 22, $WS_GROUP)
+	$proxy_url_input = GUICtrlCreateInput(ReadSetting( "Proxy", "proxy_url"), 150, 170, 217, 22, $WS_GROUP+$ES_AUTOHSCROLL)
 
 	$label_proxy_port = GUICtrlCreateLabel(Translate("Port")&" : ", 30, 206, 110, 21, $WS_GROUP+$SS_RIGHT)
 
-	$proxy_port_input = GUICtrlCreateInput(ReadSetting( "Proxy", "proxy_port"), 150, 203, 49, 22, $WS_GROUP+$ES_NUMBER)
+	$proxy_port_input = GUICtrlCreateInput(ReadSetting( "Proxy", "proxy_port"), 150, 203, 49, 22, $WS_GROUP+$ES_NUMBER+$ES_AUTOHSCROLL)
 
 	$label_proxy_user = GUICtrlCreateLabel(Translate("Username")&" : ", 30, 236, 110, 21, $WS_GROUP+$SS_RIGHT)
 
-	$proxy_username_input = GUICtrlCreateInput(ReadSetting( "Proxy", "proxy_username"), 150, 233, 160, 22, $WS_GROUP)
+	$proxy_username_input = GUICtrlCreateInput(ReadSetting( "Proxy", "proxy_username"), 150, 233, 160, 22, $WS_GROUP+$ES_AUTOHSCROLL)
 
 	$label_proxy_password = GUICtrlCreateLabel(Translate("Password")&" : ", 30, 272, 110, 21, $WS_GROUP+$SS_RIGHT)
 
-	$proxy_password_input = GUICtrlCreateInput(ReadSetting( "Proxy", "proxy_password"), 150, 269, 160, 22, $WS_GROUP+$ES_PASSWORD)
+	$proxy_password_input = GUICtrlCreateInput(ReadSetting( "Proxy", "proxy_password"), 150, 269, 160, 22, $WS_GROUP+$ES_PASSWORD+$ES_AUTOHSCROLL)
 
 
 	$group_status = GUICtrlCreateGroup(Translate("Status"), 22, 323, 353, 65)
@@ -188,9 +188,9 @@ Func GUI_Options_Menu()
 				GUISwitch($CONTROL_GUI)
 				Return ""
 			Case $contact
-				ShellExecute("http://www.linuxliveusb.com/contact-me")
+				ShellExecute("http://www.linuxliveusb.com/contact")
 			Case $licence
-				ShellExecute("http://www.linuxliveusb.com/license")
+				ShellExecute("http://www.linuxliveusb.com/about/license")
 			Case $donate
 				ShellExecute("https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=8297661")
 			Case $language_list
@@ -441,7 +441,7 @@ EndFunc
 Func OnlineStatus()
 	GUICtrlSetColor($proxy_status,0xFF9104)
 	GUICtrlSetData($proxy_status,Translate("Testing"))
-	$inet = InetGet("http://www.google.com", @TempDir & "\connectivity-test.tmp",1,0)
+	$inet = InetGet("http://www.google.com", @TempDir & "\connectivity-test.tmp",3,0)
     If @error OR $inet=0 Then
 		return 0
     Else

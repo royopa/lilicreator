@@ -291,6 +291,7 @@ EndFunc   ;==>_ProgressDelete
 ;===============================================================================
 ;
 Func _ProgressSetColors(ByRef $ID, $Col = -1, $GradCol = -1, $BG = -1, $GradBG = -1)
+
 	If Not IsArray($_Progress_Bars) Or UBound($_Progress_Bars, 2) <> 15 Or $ID > (UBound($_Progress_Bars)-1) Then Return SetError(1, 0, 0)
 	If Execute($Col) > -1 And Execute($GradCol) > -1 Then
 		_WinAPI_DeleteObject($_Progress_Bars[$ID][6])
@@ -309,6 +310,7 @@ Func _ProgressSetColors(ByRef $ID, $Col = -1, $GradCol = -1, $BG = -1, $GradBG =
 		$_Progress_Bars[$ID][14] = $_Progress_Bars[$ID][2]
 	EndIf
 ;~ 	_ProgressSet($ID, $_Progress_Bars[$ID][8])
+
 	Return SetError(@error, 0, @error = 0)
 EndFunc   ;==>_ProgressSetColors
 
@@ -466,10 +468,12 @@ EndFunc   ;==>_ProgressSetFont
 ;===============================================================================
 ;
 Func _ProgressSet(ByRef $ID, $prc)
+	AdlibUnRegister("Control_Hover")
 	If Not IsArray($_Progress_Bars) Or UBound($_Progress_Bars, 2) <> 15 Or $ID > (UBound($_Progress_Bars)-1) Then Return SetError(1, 0, 0)
 	If $prc > 100 Then $prc = 100
 	If $prc < 0 Then $prc = 0
 	$_Progress_Bars[$ID][8] = $prc
+	AdlibRegister("Control_Hover", 150)
 	Return 1
 EndFunc   ;==>_ProgressSet
 
@@ -509,6 +513,7 @@ EndFunc   ;==>_ProgressMarquee
 
 ; Author(s):       Prog@ndy
 Func _ProgressRefresh(ByRef $ID, $prc = Default)
+	AdlibUnRegister("Control_Hover")
 	If Not IsArray($_Progress_Bars) Or UBound($_Progress_Bars, 2) <> 15 Or $ID > (UBound($_Progress_Bars)-1) Then Return SetError(1, 0, 0)
 	If $_Progress_Bars[$ID][1] < 1 Then Return SetError(2, 0, 0)
 	Local $bar_height = $_Progress_Bars[$ID][2]
@@ -559,6 +564,7 @@ Func _ProgressRefresh(ByRef $ID, $prc = Default)
 	_GDIPlus_GraphicsDrawImage($_Progress_Bars[$ID][3], $_Progress_Bars[$ID][4], 0, 0)
 	GUISetState($GUI_SHOW, $GUI)
 	GUISetState($GUI_SHOW, $CONTROL_GUI)
+	AdlibRegister("Control_Hover",150)
 	;GUIRegisterMsg($WM_PAINT, "DrawAll")
 	;ControlFocus("LinuxLive USB Creator", "", $REFRESH_AREA)
 EndFunc   ;==>_ProgressRefresh
@@ -599,7 +605,6 @@ Func _ProgressRefreshMarquee(ByRef $ID, $prc = Default)
 	EndIf
 ;~ 	_GDIPlus_GraphicsDrawString($_Progress_Bars[$ID][5],$prc & " %",Ceiling(($bar_width/2)-15),Ceiling(($bar_height/2)-5))
 	_GDIPlus_GraphicsDrawImage($_Progress_Bars[$ID][3], $_Progress_Bars[$ID][4], 0, 0)
-
 EndFunc   ;==>_ProgressRefreshMarquee
 
 

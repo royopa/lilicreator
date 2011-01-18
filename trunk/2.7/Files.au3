@@ -248,3 +248,10 @@ Func InitializeFilesInCD($searchdir)
 	_ArrayDelete($files, 0)
 	$files_in_source = $files
 EndFunc   ;==>InitializeFilesInCD
+
+Func CleanFilename($filename_to_clean)
+	$filename_to_clean = StringRegExpReplace($filename_to_clean, '(?i)\(.\)|\[.\]',"")
+	$filename_to_clean = StringRegExpReplace($filename_to_clean, "(?i)\s*\.iso",".iso")
+	$filename_to_clean = StringRegExpReplace($filename_to_clean, "(?i)\s*-\s*Cópia|"&"\s*-\s*Copie|"&"\s*-\s*Copy|"&"\s*-\s*Kopie|"&"\s*-\s*Copia|"&"\s*-\s*êîïèÿ","")
+	return $filename_to_clean
+EndFunc
