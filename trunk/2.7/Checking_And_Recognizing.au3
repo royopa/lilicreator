@@ -449,6 +449,16 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "xbmc") Then
 				; XBMC
 				$release_number = FindReleaseFromCodeName( "xbmc-last")
+			ElseIf StringInStr($shortname, "backbox") Then
+				; BackBox
+				$release_number = FindReleaseFromCodeName( "backbox-last")
+			ElseIf StringInStr($shortname, "puppeee") OR StringInStr($shortname, "fluppy") Then
+				; Puppeee
+				if StringInStr($shortname,"atom") Then
+					$release_number = FindReleaseFromCodeName( "puppeee-atom-last")
+				Else
+					$release_number = FindReleaseFromCodeName( "puppeee-celeron-last")
+				EndIf
 			ElseIf StringInStr($shortname, "livehacking") Then
 				; Live Hacking CD
 				if StringInStr($shortname, "mini") Then
@@ -456,6 +466,9 @@ Func Check_source_integrity($linux_live_file)
 				Else
 					$release_number = FindReleaseFromCodeName( "livehacking-last")
 				EndIf
+			ElseIf StringInStr($shortname, "vmware") OR StringInStr($shortname, "VMvisor")  OR StringInStr($shortname, "esx") Then
+				; VMware vSphere Hypervisor (ESXi)
+				$release_number = FindReleaseFromCodeName( "esxi-last")
 			Else
 				; Any Linux, except those known not to work in Live mode
 				$release_number = FindReleaseFromCodeName( "default")
@@ -491,13 +504,16 @@ Func Check_If_Default_Should_Be_Used($release_in_list)
 
 	if StringInStr($features,"persistence") Then
 		if StringInStr($features,"builtin") Then
-			BuiltIn_Persistent_Mode()
+			Disable_Persistent_Mode("Built-in Persistency")
 			SendReport("IN-Check_If_Default_Should_Be_Used ( builtin persistency for " & $codename& " )")
 		Else
 			Enable_Persistent_Mode()
 			SendReport("IN-Check_If_Default_Should_Be_Used ( Enable persistency for " & $codename& " )")
 		EndIf
 		Step2_Check("good")
+	ElseIf StringInStr($features,"install-only") Then
+		Disable_Persistent_Mode("Install only (no Live)")
+		SendReport("IN-Check_If_Default_Should_Be_Used ( builtin persistency for " & $codename& " )")
 	Else
 		Disable_Persistent_Mode()
 		Step2_Check("good")
@@ -523,7 +539,7 @@ Func Check_if_version_non_grata($version_name)
 	Next
 
 	If $non_grata = 1 Then
-		MsgBox(48, Translate("Please read"), Translate("This ISO is not compatible.") & @CRLF & Translate("Please read the compatibility list in user guide"))
+		GUI_Show_Check_status(Translate("This ISO is not compatible.") & @CRLF & Translate("Please read the compatibility list in user guide"))
 		Step2_Check("warning")
 		SendReport("End-Check_if_version_non_grata (is Non grata)")
 		Return 1

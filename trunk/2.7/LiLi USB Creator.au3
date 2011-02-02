@@ -2,11 +2,11 @@
 #RequireAdmin
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_icon=tools\img\lili.ico
-#AutoIt3Wrapper_Compression=3
+#AutoIt3Wrapper_Compression=0
 #AutoIt3Wrapper_UseUpx=n
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.7.88.45
+#AutoIt3Wrapper_Res_Fileversion=2.7.88.46
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_SaveSource=y
@@ -114,10 +114,10 @@ Global $step2_display_menu = 0
 
 ; Others Global vars
 Global $best_mirror, $iso_size, $filename, $temp_filename
-Global $MD5_ISO = "", $compatible_md5, $compatible_filename, $release_number = -1, $files_in_source, $prefetched_linux_list,$current_compatibility_list_version
+Global $MD5_ISO = "", $compatible_md5, $compatible_filename, $release_number = -1, $files_in_source, $prefetched_linux_list,$prefetched_linux_list_full,$current_compatibility_list_version
 Global $foo
 Global $for_winactivate
-Global $current_download
+Global $current_download, $temp_filename
 Global $ping_result=""
 
 Global $selected_drive,$virtualbox_check,$virtualbox_size,$virtualbox_realsize,$downloaded_virtualbox_filename
@@ -307,7 +307,10 @@ EndIf
 
 GUICtrlSetData($splash_status,"   "&Translate("Reading compatibility list"))
 ; initialize list of compatible releases (load the compatibility_list.ini)
+
 Get_Compatibility_List()
+$prefetched_linux_list = Print_For_ComboBox()
+$prefetched_linux_list_full = Print_For_ComboBox_Full()
 
 If _GDIPlus_Startup() Then
 	SendReport("GDI+ started up successfully")
@@ -544,15 +547,13 @@ GUICtrlSetColor(-1, 0xFFFFFF)
 $combo = GUICtrlCreateCombo("-> " & Translate("Choose a USB Key"), 90 + $offsetx0, 145 + $offsety0, 200, -1, 3)
 GUICtrlSetOnEvent(-1, "GUI_Choose_Drive")
 
-GUICtrlSetData($splash_status,"   "&Translate("Get drive list"))
+GUICtrlSetData($splash_status,"   "&Translate("Getting drive list"))
 Refresh_DriveList()
 
 ; Sending anonymous statistics
 GUICtrlSetData($splash_status,"   "&Translate("Logging system configuration"))
 SendStats()
 SendReport(LogSystemConfig())
-
-$prefetched_linux_list = Print_For_ComboBox()
 
 GUIRegisterMsg($WM_PAINT, "DrawAll")
 WinActivate($for_winactivate)
@@ -673,11 +674,11 @@ Func Control_Hover()
 
 			Switch $CursorCtrl[4]
 				Case $EXIT_AREA
-					If $CursorCtrl[2] = 1 Then GUI_Exit()
 					$EXIT_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $EXIT_OVER, 0, 0, 20, 20, 335 + $offsetx0, -20 + $offsety0, 20, 20)
+					If $CursorCtrl[2] = 1 Then GUI_Exit()
 				Case $MIN_AREA
-					If $CursorCtrl[2] = 1 Then GUI_Minimize()
 					$MIN_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $MIN_OVER, 0, 0, 20, 20, 305 + $offsetx0, -20 + $offsety0, 20, 20)
+					If $CursorCtrl[2] = 1 Then GUI_Minimize()
 				Case $ISO_AREA
 					If $step2_display_menu = 0 Then $DRAW_ISO = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $ISO_HOVER_PNG, 0, 0, 75, 75, 38 + $offsetx0, 231 + $offsety0, 75, 75)
 				Case $CD_AREA
@@ -688,7 +689,6 @@ Func Control_Hover()
 					$DRAW_LAUNCH = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $LAUNCH_HOVER_PNG, 0, 0, 22, 43, 35 + $offsetx0, 600 + $offsety0, 22, 43)
 				Case $BACK_AREA
 					If $step2_display_menu >= 1 Then $DRAW_BACK_HOVER = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $BACK_HOVER_PNG, 0, 0, 32, 32, 5 + $offsetx0, 300 + $offsety0, 32, 32)
-
 			EndSwitch
 			$previous_hovered_control = $CursorCtrl[4]
 		EndIf

@@ -2,14 +2,14 @@
 ; ///////////////////////////////// Gui Buttons handling                        ///////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Func Disable_Persistent_Mode()
+Func Disable_Persistent_Mode($mode="Live Mode")
 	GUICtrlSetState($slider, $GUI_HIDE)
 	GUICtrlSetState($slider_visual, $GUI_HIDE)
 	GUICtrlSetState($label_max, $GUI_HIDE)
 	GUICtrlSetState($label_min, $GUI_HIDE)
 	GUICtrlSetState($slider_visual_Mo, $GUI_HIDE)
 	GUICtrlSetState($slider_visual_mode, $GUI_HIDE)
-	GUICtrlSetData($live_mode_label,Translate("Live Mode"))
+	GUICtrlSetData($live_mode_label,Translate($mode))
 	GUICtrlSetState($live_mode_label,$GUI_SHOW)
 	Step3_Check("good")
 EndFunc   ;==>Disable_Persistent_Mode
@@ -23,18 +23,6 @@ Func Enable_Persistent_Mode()
 	GUICtrlSetState($slider_visual_Mo, $GUI_SHOW)
 	GUICtrlSetState($slider_visual_mode, $GUI_SHOW)
 EndFunc   ;==>Enable_Persistent_Mode
-
-Func BuiltIn_Persistent_Mode()
-	GUICtrlSetState($slider, $GUI_HIDE)
-	GUICtrlSetState($slider_visual, $GUI_HIDE)
-	GUICtrlSetState($label_max, $GUI_HIDE)
-	GUICtrlSetState($label_min, $GUI_HIDE)
-	GUICtrlSetState($slider_visual_Mo, $GUI_HIDE)
-	GUICtrlSetState($slider_visual_mode, $GUI_HIDE)
-	GUICtrlSetData($live_mode_label,Translate("Built-in Persistency"))
-	GUICtrlSetState($live_mode_label,$GUI_SHOW)
-	Step3_Check("good")
-EndFunc   ;==>DBuiltIn_Persistent_Mode
 
 Func Disable_VirtualBox_Option()
 	GUICtrlSetState($virtualbox, $GUI_UNCHECKED)
@@ -145,8 +133,8 @@ Func GUI_Minimize()
 EndFunc   ;==>GUI_Minimize
 
 Func GUI_Restore()
-	GUISetState($GUI_SHOW, $GUI)
-	GUISetState($GUI_SHOW, $CONTROL_GUI)
+	GUISetState(@SW_SHOW, $GUI)
+	GUISetState(@SW_SHOW, $CONTROL_GUI)
 	GUIRegisterMsg($WM_PAINT, "DrawAll")
 	ControlFocus("LinuxLive USB Creator", "", $REFRESH_AREA)
 EndFunc   ;==>GUI_Restore
@@ -474,28 +462,19 @@ Func DownloadRelease($release_in_list, $automatic_download)
 			_ProgressSetText($progress_bar, Translate("Testing mirror") & " : " & URLToHostname($mirror))
 			;$temp_latency = Ping(URLToHostname($mirror))
 
-			$command="ping-"&URLToHostname($mirror)
+			$command="ping-"&$mirror
 			SendReport($command)
 			$tested_mirrors = $tested_mirrors + 1
 			$timeout=TimerInit()
-			While StringInStr($ping_result,$command)<=0 AND TimerDiff($timeout)<10000
-				Sleep(300)
+			While StringInStr($ping_result,$command)<=0 AND TimerDiff($timeout)<12000
+				Sleep(30)
 			Wend
-			$result = StringReplace($ping_result,$command&"=","")
-			SendReport("Result is "&$result&" ms")
-			$temp_latency=Int($result)
-
-
-			#cs
-			If @error = 0 Then
-				$temp_size = Round(InetGetSize($mirror,3) / 1048576)
-				If $temp_size < 5 Or $temp_size > 5000 Then
-					$temp_latency = 10000
-				EndIf
-			Else
+			if StringInStr($ping_result,$command)<=0 Then
 				$temp_latency = 10000
-			EndIf
-			#ce
+			Else
+				$result = StringReplace($ping_result,$command&"=","")
+				$temp_latency=Int($result)
+			Endif
 		Else
 			$temp_latency = 10000
 		EndIf
@@ -524,8 +503,18 @@ Func DownloadRelease($release_in_list, $automatic_download)
 			; Download automatically
 			$iso_size = InetGetSize($best_mirror,3)
 			$filename = unix_path_to_name($best_mirror)
-			$temp_filename = StringReplace($filename,get_extension($filename),"temp")
-			$current_download = InetGet($best_mirror, @DesktopDir & "\" & $temp_filename, 3, 1)
+
+			Do
+				$download_folder = FileSelectFolder ( "Please select destination folder for this download", "",-1,"",$CONTROL_GUI)
+				if Not @error AND StringInStr(FileGetAttrib($download_folder),"D")>0 then ExitLoop
+			Until 0
+
+			;AND StringInStr($download_folder,":")>0
+
+			$temp_filename = $download_folder&"\"&$filename&".lili-download"
+			SendReport("Downloading Linux to "&$download_folder&"\"&$filename)
+
+			$current_download = InetGet($best_mirror, $temp_filename, 3, 1)
 			If InetGetInfo($current_download, 4)=0 Then
 				UpdateStatusStep2(Translate("Downloading") & " " & $filename & @CRLF & Translate("from") & " " & URLToHostname($best_mirror))
 				Download_State()
@@ -661,7 +650,8 @@ Func Download_State()
 		_ProgressSetText($progress_bar, $percent_downloaded & "% ( " & RoundForceDecimal($newgetbytesread / (1024 * 1024)) & " / " & $iso_size_mb & " " & "MB" & " ) " & $estimated_time)
 		Sleep(300)
 	Until InetGetInfo($current_download, 2)
-	FileMove(@DesktopDir & "\" & $temp_filename,@DesktopDir & "\" & $filename)
+	$file_set = StringReplace($temp_filename,".lili-download","")
+	FileMove($temp_filename,$file_set)
 	_ProgressSet($progress_bar, 100)
 	_ProgressSetText($progress_bar, "100% ( " & Round($iso_size / (1024 * 1024)) & " / " & Round($iso_size / (1024 * 1024)) & " " & "MB" & " )")
 
@@ -670,7 +660,7 @@ Func Download_State()
 	_ProgressDelete($progress_bar)
 	GUI_Hide_Step2_Download_Menu()
 
-	$file_set = @DesktopDir & "\" & $filename
+
 	Check_source_integrity($file_set)
 	SendReport("End-Download_State")
 EndFunc   ;==>Download_State

@@ -6,7 +6,7 @@ Global $proxy_modes[3],$proxy_status,$available_languages[50]
 
 Global $check_for_updates,$stable_only,$all_release,$hTreeView,$treeview_items
 
-Global $automatic_recognition,$force_install_parameters,$combo_use_setting
+Global $tab_options,$automatic_recognition,$force_install_parameters,$combo_use_setting,$force_default_mode
 
 Func GUI_Options_Menu()
 	Opt("GUIOnEventMode", 0)
@@ -32,12 +32,13 @@ Func GUI_Options_Menu()
 
 	$tab_options = GUICtrlCreateTabItem(Translate("Options"))
 
-	$Group3 = GUICtrlCreateGroup(Translate("Install parameters"), 24, 48, 353, 129)
+	$Group3 = GUICtrlCreateGroup(Translate("Install parameters"), 24, 48, 353, 160)
 
 	$automatic_recognition = GUICtrlCreateRadio(Translate("Use LiLi automatic recognition")&" ("&Translate("highly recommended")&")", 44, 72, 330, 17)
-	$force_install_parameters = GUICtrlCreateRadio(Translate("Force using same parameters as")&" :", 44, 104, 265, 17)
-	$combo_use_setting = GUICtrlCreateCombo(">> " & Translate("Select a Linux"), 88, 136, 250, -1, BitOR($CBS_DROPDOWNLIST, $WS_VSCROLL))
-	GUICtrlSetData($combo_use_setting, $prefetched_linux_list)
+	$force_default_mode = GUICtrlCreateRadio(Translate("Force using default mode (works with most Linuxes)"), 44, 104, 265, 17)
+	$force_install_parameters = GUICtrlCreateRadio(Translate("Force using same parameters as")&" :", 44, 136, 265, 17)
+	$combo_use_setting = GUICtrlCreateCombo("", 88, 168, 250, -1, BitOR($CBS_DROPDOWNLIST, $WS_VSCROLL))
+	GUICtrlSetData($combo_use_setting, ">> " & Translate("Select a Linux")&$prefetched_linux_list_full)
 	UpdateRecognition()
 
 	$tab_language = GUICtrlCreateTabItem(Translate("Language"))
@@ -134,7 +135,7 @@ Func GUI_Options_Menu()
 	InitUpdateTab()
 
 
-	$tab_options = GUICtrlCreateTabItem(Translate("Advanced"))
+	$tab_advanced = GUICtrlCreateTabItem(Translate("Advanced"))
 	$label_warning = GUICtrlCreateLabel(Translate("Do not modify these options unless you know what you are doing")&" !",20, 43, 350, 30)
 	GUICtrlSetColor($label_warning,0xAA0000)
 	;Display_Options()
@@ -149,8 +150,9 @@ Func GUI_Options_Menu()
 
 	;-----------------------
 
-	;$tab_help = GUICtrlCreateTabItem("Help")
-	;GUICtrlCreateTabItem("")
+	;$tab_help = GUICtrlCreateTabItem(Translate("Help")°
+
+	GUICtrlCreateTabItem("")
 
 	;$tab_credits = GUICtrlCreateTabItem("Credits")
 	;GUICtrlCreateTabItem("")
@@ -171,22 +173,26 @@ Func GUI_Options_Menu()
 		Switch $nMsg
 			Case $GUI_EVENT_CLOSE
 				WriteAdvancedSettings()
-				Opt("GUIOnEventMode", 1)
-				GUIDelete($main_menu)
-				AdlibRegister("Control_Hover", 150)
-				GUISetState(@SW_ENABLE, $CONTROL_GUI)
-				ControlFocus("LinuxLive USB Creator", "", $REFRESH_AREA)
-				GUISwitch($CONTROL_GUI)
-				Return ""
+				if CheckCustomRecognition() Then
+					Opt("GUIOnEventMode", 1)
+					GUIDelete($main_menu)
+					AdlibRegister("Control_Hover", 150)
+					GUISetState(@SW_ENABLE, $CONTROL_GUI)
+					ControlFocus("LinuxLive USB Creator", "", $REFRESH_AREA)
+					GUISwitch($CONTROL_GUI)
+					Return ""
+				EndIf
 			Case $ok_button
 				WriteAdvancedSettings()
-				Opt("GUIOnEventMode", 1)
-				GUIDelete($main_menu)
-				AdlibRegister("Control_Hover", 150)
-				GUISetState(@SW_ENABLE, $CONTROL_GUI)
-				ControlFocus("LinuxLive USB Creator", "", $REFRESH_AREA)
-				GUISwitch($CONTROL_GUI)
-				Return ""
+				if CheckCustomRecognition() Then
+					Opt("GUIOnEventMode", 1)
+					GUIDelete($main_menu)
+					AdlibRegister("Control_Hover", 150)
+					GUISetState(@SW_ENABLE, $CONTROL_GUI)
+					ControlFocus("LinuxLive USB Creator", "", $REFRESH_AREA)
+					GUISwitch($CONTROL_GUI)
+					Return ""
+				EndIf
 			Case $contact
 				ShellExecute("http://www.linuxliveusb.com/contact")
 			Case $licence
@@ -277,40 +283,61 @@ Func GUI_Options_Menu()
 			Case $automatic_recognition
 				WriteSetting("Install_Parameters","automatic_recognition","yes")
 				UpdateRecognition()
+			Case $force_default_mode
+				WriteSetting("Install_Parameters","automatic_recognition","no")
+				WriteSetting("Install_Parameters","use_same_parameter_as","Regular Linux (works with most linuxes)")
+				UpdateRecognition()
 			Case $force_install_parameters
 				WriteSetting("Install_Parameters","automatic_recognition","no")
+				WriteSetting("Install_Parameters","use_same_parameter_as","")
 				UpdateRecognition()
 			Case $combo_use_setting
-				$forced_linux_selected=GUICtrlRead($combo_use_setting)
-				If StringInStr($forced_linux_selected, ">>") = 0 Then
-					WriteSetting("Install_Parameters","use_same_parameter_as",$forced_linux_selected)
-					UpdateRecognition()
-				Else
-					WriteSetting("Install_Parameters","use_same_parameter_as","")
-					MsgBox(48, Translate("Please read"), Translate("Please select a linux to continue"))
-				EndIf
-
+				CheckCustomRecognition()
 		EndSwitch
 		Sleep(10)
 	WEnd
 	GUIDelete($main_menu)
 EndFunc
 
-Func UpdateRecognition()
 
-	If ReadSetting("Install_Parameters","automatic_recognition")<>"no" Then
+Func CheckCustomRecognition()
+	If ReadSetting("Install_Parameters","automatic_recognition")="no" AND ReadSetting("Install_Parameters","use_same_parameter_as")<>"Regular Linux (works with most linuxes)" Then
+		$forced_linux_selected=GUICtrlRead($combo_use_setting)
+		If StringInStr($forced_linux_selected, ">>") = 0 Then
+			WriteSetting("Install_Parameters","use_same_parameter_as",$forced_linux_selected)
+			UpdateRecognition()
+			Return 1
+		Else
+			WriteSetting("Install_Parameters","use_same_parameter_as","")
+			GUICtrlSetState($tab_options,$GUI_SHOW)
+			MsgBox(48, Translate("Please read"), Translate("Please select a linux to continue"))
+			Return 0
+		EndIf
+	Else
+		Return 1
+	EndIf
+EndFunc
+
+Func UpdateRecognition()
+	If ReadSetting("Install_Parameters","automatic_recognition")="no" Then
+		if ReadSetting("Install_Parameters","use_same_parameter_as")<>"Regular Linux (works with most linuxes)" Then
+			GUICtrlSetState($force_install_parameters,$GUI_CHECKED)
+			GUICtrlSetState($combo_use_setting,$GUI_ENABLE)
+				if ReadSetting("Install_Parameters","use_same_parameter_as") Then
+					GUICtrlSetData($combo_use_setting,ReadSetting("Install_Parameters","use_same_parameter_as"))
+				Else
+					GUICtrlSetData($combo_use_setting,">> " & Translate("Select a Linux"))
+				EndIf
+		Else
+			GUICtrlSetState($force_default_mode,$GUI_CHECKED)
+			GUICtrlSetState($combo_use_setting,$GUI_DISABLE)
+		EndIf
+	Else
 		GUICtrlSetState($automatic_recognition,$GUI_CHECKED)
 		GUICtrlSetState($combo_use_setting,$GUI_DISABLE)
-	Else
-		GUICtrlSetState($force_install_parameters,$GUI_CHECKED)
-		GUICtrlSetState($combo_use_setting,$GUI_ENABLE)
 	EndIf
 
-	if ReadSetting("Install_Parameters","use_same_parameter_as") Then
-		GUICtrlSetData($combo_use_setting,ReadSetting("Install_Parameters","use_same_parameter_as"))
-	Else
-		GUICtrlSetData($combo_use_setting,">> " & Translate("Select a Linux"))
-	EndIf
+
 EndFunc
 
 Func WriteAdvancedSettings()

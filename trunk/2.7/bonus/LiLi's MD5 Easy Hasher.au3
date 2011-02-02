@@ -2,10 +2,9 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_icon=..\tools\img\lili.ico
 #AutoIt3Wrapper_Compression=3
-#AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.0.88.8
+#AutoIt3Wrapper_Res_Fileversion=2.0.88.9
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_Language=1033
