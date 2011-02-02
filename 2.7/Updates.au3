@@ -76,7 +76,8 @@ EndFunc   ;==>Check_for_updates
 
 ; Check for compatibility list updates (called in Automatic_Bug_Report.au3 in second process)
 Func CheckForMinorUpdate()
-		; Current version
+
+		if isBeta() Then Return 0
 
 		; Compare with the current version
 		if VersionCodeForCompatList($current_compatibility_list_version) < VersionCodeForCompatList($last_stable_update) Then

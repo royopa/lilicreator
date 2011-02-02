@@ -135,9 +135,22 @@ Func Print_For_ComboBox()
 	Return $temp
 EndFunc
 
+Func Print_For_ComboBox_Full()
+	Global $releases
+	Local $temp=""
+	$sections = IniReadSectionNames($compatibility_ini)
+	For $release_in_list=1 to $sections[0]
+		$temp &=  ReleaseGetDescription($release_in_list)&"|"
+			;& "// Size : " & $releases[$release_in_list][$R_DOWNLOAD_SIZE] _
+			;& " (" & $releases[$release_in_list][$R_RELEASE_DATE] & ") |"
+		Next
+	Return $temp
+EndFunc
+
 Func FindReleaseFromDescription($description)
 	Global $releases
 	Local $found=-1
+	If StringInStr($description,"Regular Linux") Then Return FindReleaseFromCodeName("default")
 	$sections = IniReadSectionNames($compatibility_ini)
 	For $i=1 to $sections[0]
 		If ReleaseGetDescription($i) = $description Then $found = $i

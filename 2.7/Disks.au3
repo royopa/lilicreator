@@ -179,7 +179,7 @@ Func Get_MBR_ID($drive_letter)
 		UpdateLog("WMI seems to work")
 
 		$colItems = $objWMIService.ExecQuery("SELECT Caption, DeviceID, Signature FROM Win32_DiskDrive", "WQL", $wbemFlagReturnImmediately + $wbemFlagForwardOnly)
-
+		$found=0
 		For $objItem In $colItems
 
 			$colItems2 = $objWMIService.ExecQuery("ASSOCIATORS OF {Win32_DiskDrive.DeviceID='" & $objItem.DeviceID & "'} WHERE AssocClass = Win32_DiskDriveToDiskPartition", "WQL", $wbemFlagReturnImmediately + $wbemFlagForwardOnly)
@@ -188,6 +188,7 @@ Func Get_MBR_ID($drive_letter)
 				For $objItem3 In $colItems3
 					If $objItem3.DeviceID = $drive_letter Then
 						$mbr_signature = $objItem.Signature
+						$found=1
 					EndIf
 				Next
 			Next
@@ -198,10 +199,19 @@ Func Get_MBR_ID($drive_letter)
 		UpdateLog("ERROR with WMI : object not created, cannot find MBR identifier")
 	endif
 
-	if $mbr_signature Then
+	if $found=1 Then
 		UpdateLog("MBR identifier of "&$drive_letter&" is : "& $mbr_signature&" (0x"&$mbr_signature&")")
-		Return StringLower(Hex($mbr_signature))
+		$mbr_hex = 	StringLower(Hex($mbr_signature))
+		;Signature can be 0 when formatted using a Macintosh
+		if $mbr_signature <> "0" Then
+			; Trimming left trailing zeroes
+			While StringLeft($mbr_hex,1)="0"
+				$mbr_hex=StringTrimLeft($mbr_hex,1)
+			WEnd
+		EndIf
+		Return $mbr_hex
 	Else
+		UpdateLog("MBR identifier could not be found : no match in WMI")
 		Return "ERROR"
 	EndIf
 EndFunc

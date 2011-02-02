@@ -1,5 +1,4 @@
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 #cs
 	Description : Format a specified drive letter to FAT32
@@ -359,7 +358,7 @@ Func Create_Stick_From_IMG($drive_letter,$img_file)
 	WEnd
 	UpdateLog($lines&$errors)
 	if StringInStr($errors,"error") Then
-		UpdateStatus("An error occurred."&@CRLF&"Please close any application accessing your key and try again.")
+		UpdateStatus(Translate("An error occurred.")&@CRLF&Translate("Please close any application accessing your key and try again")&".")
 		Return -1
 	EndIf
 	SendReport("End-Create_Stick_From_IMG")
@@ -368,19 +367,38 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Func isolinux2syslinux($syslinux_path)
-	$syslinux_cfg = FileOpen($syslinux_path&"isolinux.cfg",0)
-	If $syslinux_cfg <> -1 Then
-		$lines=""
+
+
+	; Replacing references to isolinux/ by syslinux/ in *.cfg files
+	$search = FileFindFirstFile($syslinux_path&"*.cfg")
+	If $search <> -1 Then
 		While 1
-			$lines &= FileReadLine($syslinux_cfg)& @CRLF
-			If @error = -1 Then ExitLoop
-		Wend
-		FileClose($syslinux_cfg)
-		$lines = StringReplace($lines,"isolinux/","syslinux/")
-		$syslinux_cfg = FileOpen($syslinux_path&"syslinux.cfg",2)
-		FileWrite ( $syslinux_cfg , $lines )
-		FileClose($syslinux_cfg)
+			$file = FileFindNextFile($search)
+			If @error Then ExitLoop
+			$content = FileRead($syslinux_path&$file)
+			if StringInStr($content,"isolinux/")>0 Then
+				SendReport("Found a file ("&$syslinux_path&$file&") with a reference to 'isolinux/' => replacing with 'syslinux/'")
+				FileOverwrite($syslinux_path&$file,StringReplace($content,"isolinux/","syslinux/"))
+			EndIf
+		WEnd
+		FileClose($search)
 	EndIf
+
+	; Replacing references to isolinux/ by syslinux/ in *.txt files
+	$search = FileFindFirstFile($syslinux_path&"*.txt")
+	If $search <> -1 Then
+		While 1
+			$file = FileFindNextFile($search)
+			If @error Then ExitLoop
+			$content = FileRead($syslinux_path&$file)
+			if StringInStr($content,"isolinux/")>0 Then
+				SendReport("Found a file ("&$syslinux_path&$file&") with a reference to 'isolinux/' => replacing with 'syslinux/'")
+				FileOverwrite($syslinux_path&$file,StringReplace($content,"isolinux/","syslinux/"))
+			EndIf
+		WEnd
+		FileClose($search)
+	EndIf
+	FileCopy($syslinux_path&"isolinux.cfg",$syslinux_path&"syslinux.cfg")
 EndFunc
 
 
@@ -401,13 +419,16 @@ Func Rename_and_move_files($drive_letter, $release_in_list)
 	SendReport("Start-Rename_and_move_files")
 	UpdateStatus(Translate("Renaming some files"))
 
-	DirMove($drive_letter & "\isolinux",$drive_letter & "\syslinux",1)
+
 	;RunWait3("cmd /c rename " & $drive_letter & "\isolinux syslinux", @ScriptDir, @SW_HIDE)
 	FileCopy2( $drive_letter & "\syslinux\text.cfg", $drive_letter & "\syslinux\text-orig.cfg")
 
 		; Default Linux processing, no intelligence
-		DirMove($drive_letter & "\boot\isolinux",$drive_letter & "\boot\syslinux",1)
-		DirMove($drive_letter & "\HBCD\isolinux",$drive_letter & "\HBCD\syslinux",1)
+		if Not FileExists($drive_letter & "\boot\syslinux") AND Not FileExists($drive_letter & "\syslinux") then
+			DirMove($drive_letter & "\isolinux",$drive_letter & "\syslinux",1)
+			DirMove($drive_letter & "\boot\isolinux",$drive_letter & "\boot\syslinux",1)
+			DirMove($drive_letter & "\HBCD\isolinux",$drive_letter & "\HBCD\syslinux",1)
+		EndIf
 
 
 		;RunWait3("cmd /c rename " & $drive_letter & "\boot\isolinux syslinux", @ScriptDir, @SW_HIDE)
@@ -767,12 +788,20 @@ Func Install_boot_sectors($drive_letter,$release_in_list,$hide_it)
 		EndIf
 	EndIf
 
-	; Installing the syslinux boot sectors using Syslinux 4 if feature is set.
-	if StringInStr($features,"syslinux4") > 0 Then
-		InstallSyslinux($drive_letter,4)
+	$syslinux_version = AutoDetectSyslinuxVersion($drive_letter)
+
+	; AutoDetection for syslinux 3/4
+	if $syslinux_version >= 3 Then
+		InstallSyslinux($drive_letter,$syslinux_version)
 	Else
-		InstallSyslinux($drive_letter,3)
+		; Installing the syslinux boot sectors using Syslinux 4 if feature is set.
+		if StringInStr($features,"syslinux4") > 0 Then
+			InstallSyslinux($drive_letter,4)
+		Else
+			InstallSyslinux($drive_letter,3)
+		EndIf
 	EndIf
+
 	;RunWait3('"' & @ScriptDir & '\tools\syslinux.exe" -maf -d ' & $drive_letter & '\syslinux ' & $drive_letter, @ScriptDir, @SW_HIDE)
 
 	If ( $hide_it <> $GUI_CHECKED) Then ShowFile($drive_letter & '\ldlinux.sys')

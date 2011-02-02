@@ -172,11 +172,20 @@ Func Default_WriteTextCFG($selected_drive)
 	SendReport("Start-Default_WriteTextCFG ( Drive : " & $selected_drive & " )")
 	Local $uuid
 
-	$file = FileOpen($selected_drive & "\boot\syslinux\syslinux.cfg", 0)
+	if FileExists($selected_drive & "\boot\syslinux\syslinux.cfg") Then
+		$syslinux_file = $selected_drive & "\boot\syslinux\syslinux.cfg"
+	Elseif FileExists($selected_drive & "\syslinux\syslinux.cfg") Then
+		$syslinux_file = $selected_drive & "\syslinux\syslinux.cfg"
+	Else
+		Return 0
+	EndIf
+
+	$file = FileOpen($syslinux_file, 0)
 	If $file = -1 Then
 		SendReport("End-Default_WriteTextCFG : could not open syslinux.cfg")
-		Return ""
+		Return 0
 	EndIf
+
 	$content=FileRead($file)
 	FileClose($file)
 
@@ -187,7 +196,7 @@ Func Default_WriteTextCFG($selected_drive)
 		SendReport("IN-Default_WriteTextCFG => ArchLinux detected")
 		$uuid = Get_Disk_UUID($selected_drive)
 		$new_content=StringReplace($content,'archisolabel='&$array1[0],"archisodevice=/dev/disk/by-uuid/"&$uuid)
-		$file = FileOpen($selected_drive & "\boot\syslinux\syslinux.cfg", 2)
+		$file = FileOpen($syslinux_file, 2)
 		; Check if file opened for writing OK
 		If $file = -1 Then
 			SendReport("IN-Default_WriteTextCFG => ERROR : cannot write to syslinux.cfg")
@@ -197,6 +206,23 @@ Func Default_WriteTextCFG($selected_drive)
 			FileClose($file)
 		EndIf
 	EndIf
+
+	; Modifying Boot menu for ArchLinux only
+	; setting boot device UUID
+
+	if StringInStr($content,"cdroot_type=udf" )>0 Then
+		SendReport("IN-Default_WriteTextCFG => Gentoo/Sabayon variant detected")
+		$file = FileOpen($syslinux_file, 2)
+		; Check if file opened for writing OK
+		If $file = -1 Then
+			SendReport("IN-Default_WriteTextCFG => ERROR : cannot write to syslinux.cfg")
+		Else
+			SendReport("IN-Default_WriteTextCFG => setting cdroot_type=vfat slowusb "&$uuid)
+			FileWrite($file,StringReplace($content,"cdroot_type=udf","cdroot_type=vfat slowusb"))
+			FileClose($file)
+		EndIf
+	EndIf
+
 	SendReport("End-Default_WriteTextCFG")
 EndFunc
 
@@ -363,11 +389,19 @@ Func Debian_WriteTextCFG($selected_drive, $release_in_list)
 		FileWrite($file, $boot_text)
 		FileClose($file)
 	Else
-		$boot_text = Debian_BootMenu($variant)
-		UpdateLog("Creating live.cfg file for Debian :" & @CRLF & $boot_text)
-		$file = FileOpen($selected_drive & "\syslinux\live.cfg", 2)
-		FileWrite($file, $boot_text)
-		FileClose($file)
+		Local $kbd_code,$boot_text="",$append_debian
+		$append_debian="boot=live initrd=/casper/initrd.lz live-media-path=/casper quiet splash --"
+		If FileExists($selected_drive&"\live-rw") Then
+			$prepend = @LF& "label persist" & @LF & "menu label ^Persistent" _
+				& @LF & "  kernel /live/vmlinuz" _
+				& @LF & "  append initrd=/live/initrd.img boot=live config persistent quiet"
+			EndIf
+
+		$boot_menu=FileRead($selected_drive & "\syslinux\live.cfg")
+		FileMove($selected_drive & "\syslinux\live.cfg",$selected_drive & "\syslinux\live-orig.cfg")
+		FileWrite($selected_drive & "\syslinux\live.cfg",$prepend& @LF & @LF &$boot_menu)
+
+		UpdateLog("Creating live.cfg file for Debian :" &@CRLF& $prepend& @LF & @LF &$boot_menu)
 	EndIf
 	SendReport("End-Debian_WriteTextCFG")
 EndFunc
@@ -659,6 +693,6 @@ Func Set_OpenSuse_MBR_ID($drive_letter)
 		Return "ERROR"
 	EndIf
 	FileWrite($drive_letter&"\boot\grub\mbrid",$mbr_id)
-	SendReport("Stop-Set_OpenSuse_MBR_ID : Successfully set MBR ID file to "&$mbr_id)
+	SendReport("End-Set_OpenSuse_MBR_ID : Successfully set MBR ID file to "&$mbr_id)
 EndFunc
 

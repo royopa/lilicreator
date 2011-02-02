@@ -204,7 +204,7 @@ Func _OnAutoItError()
 	$group_welcome = GUICtrlCreateGroup("Welcome to the automatic crash reporter", 18, 12, 425, 89)
 	GUICtrlCreateGroup("", -99, -99, 1, 1)
 	GUICtrlCreateIcon("user32.dll", 103, 35, 45, 32, 32)
-	GUICtrlCreateLabel(Translate("I'm sorry for the inconvenience but LiLi has crashed")&"."&@CRLF&@CRLF&Translate("Please enter an email address and a detailed comment about this crash."&@CRLF&"I will contact you as soon as I can."),90,35,340,60)
+	GUICtrlCreateLabel(Translate("I'm sorry for the inconvenience but LiLi has crashed")&"."&@CRLF&@CRLF&Translate("Please enter an email address and a detailed comment about this crash")&"."&@CRLF&Translate("I will contact you as soon as I can")&".",90,35,340,60)
 
 	$group_email = GUICtrlCreateGroup("Your Email address", 18, 112, 425, 57)
 	GUICtrlCreateGroup("", -99, -99, 1, 1)
@@ -379,9 +379,14 @@ Func _ReceiveReport($report)
 		Exit
 	ElseIf StringLeft($report, 5) = "ping-" Then
 		$to_ping=StringTrimLeft($report,5)
-		$ping_return=Ping($to_ping)
-			If @error = 0 Then
-				SendReportToMain($report&"="&$ping_return)
+		$ping_return=Ping(URLToHostname($to_ping))
+		If @error = 0 Then
+				$temp_size = Round(InetGetSize($to_ping,3) / 1048576)
+				If $temp_size < 5 Or $temp_size > 5000 Then
+					SendReportToMain($report&"=10000")
+				Else
+					SendReportToMain($report&"="&$ping_return)
+				EndIf
 			Else
 				SendReportToMain($report&"=10000")
 			EndIf
