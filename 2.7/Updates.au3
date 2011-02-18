@@ -54,15 +54,15 @@ Func CheckForMajorUpdate()
 	; Checking for major software update
 	if (ReadSetting( "Updates", "check_for_beta_versions") = "yes") AND VersionCompare($last_beta, $software_version) = 1  And Not $last_beta ="" Then
 		UpdateLog("New beta version available")
-		$return = MsgBox(68, Translate("There is a new Beta version available"), Translate("Your LiLi's version is not up to date.") & @CRLF & @CRLF & Translate("Last beta version is") & " : " & $last_beta & @CRLF & Translate("Your version is") & " : " & $software_version & @CRLF & @CRLF & Translate("Do want to download it ?"))
+		$return = MsgBox(68, Translate("There is a new Beta version available"), Translate("Your LiLi's version is not up to date")&"." & @CRLF & @CRLF & Translate("Last beta version is") & " : " & $last_beta & @CRLF & Translate("Your version is") & " : " & $software_version & @CRLF & @CRLF & Translate("Do want to download it")&" ?")
 		If $return = 6 Then
-			ShellExecute("http://www.linuxliveusb.com/")
+			ShellExecute("http://www.linuxliveusb.com/more-downloads")
 			GUI_Exit()
 		EndIf
 		Return 1
 	ElseIf Not $last_stable = 0 And Not $last_stable ="" And VersionCompare($last_stable, $software_version) = 1 Then
 		UpdateLog("New stable version available")
-		$return = MsgBox(68, Translate("There is a new version available"), Translate("Your LiLi's version is not up to date.") & @CRLF & @CRLF & Translate("Last version is") & " : " & $last_stable & @CRLF & Translate("Your version is") & " : " & $software_version & @CRLF & @CRLF & Translate("Do want to download it ?"))
+		$return = MsgBox(68, Translate("There is a new version available"), Translate("Your LiLi's version is not up to date") &"."& @CRLF & @CRLF & Translate("Last version is") & " : " & $last_stable & @CRLF & Translate("Your version is") & " : " & $software_version & @CRLF & @CRLF & Translate("Do want to download it")&" ?")
 		If $return = 6 Then
 			ShellExecute("http://www.linuxliveusb.com/")
 			GUI_Exit()

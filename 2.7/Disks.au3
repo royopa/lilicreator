@@ -73,11 +73,11 @@ Func SpaceAfterLinuxLiveMB($disk)
 
 	If GUICtrlRead($formater) == $GUI_CHECKED Then
 		$spacefree = DriveSpaceTotal($disk) - $install_size
-		If $spacefree >= 0 And $spacefree <= 3950 Then
+		If $spacefree >= 0 And $spacefree <= $max_persistent_size Then
 			Return Round($spacefree / 100, 0) * 100
-		ElseIf $spacefree >= 0 And $spacefree > 3950 Then
-			SendReport("End-SpaceAfterLinuxLiveGB (Free : 3950MB )")
-			Return 3950
+		ElseIf $spacefree >= 0 And $spacefree > $max_persistent_size Then
+			SendReport("End-SpaceAfterLinuxLiveGB (Free : "&$max_persistent_size&"MB )")
+			Return $max_persistent_size
 		Else
 			SendReport("End-SpaceAfterLinuxLiveGB (Free : 0MB )")
 			Return 0
@@ -85,13 +85,13 @@ Func SpaceAfterLinuxLiveMB($disk)
 	Else
 		$previous_installsize=GetPreviousInstallSizeMB($disk)
 		$spacefree = DriveSpaceFree($disk) + $previous_installsize - $install_size
-		If $spacefree >= 0 And $spacefree <= 3950 Then
+		If $spacefree >= 0 And $spacefree <= $max_persistent_size Then
 			$rounded=Round($spacefree / 100, 0) * 100
 			SendReport("End-SpaceAfterLinuxLiveGB (Free : "&$rounded&"MB - Previous install : "&$previous_installsize&"MB)")
 			Return $rounded
-		ElseIf $spacefree >= 0 And $spacefree > 3950 Then
-			SendReport("End-SpaceAfterLinuxLiveGB (Free : 3950MB )")
-			Return 3950
+		ElseIf $spacefree >= 0 And $spacefree > $max_persistent_size Then
+			SendReport("End-SpaceAfterLinuxLiveGB (Free : "&$max_persistent_size&"MB )")
+			Return $max_persistent_size
 		Else
 			SendReport("End-SpaceAfterLinuxLiveMB (Free : 0MB )")
 			Return 0

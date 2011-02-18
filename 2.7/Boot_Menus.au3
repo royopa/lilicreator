@@ -389,7 +389,7 @@ Func Debian_WriteTextCFG($selected_drive, $release_in_list)
 		FileWrite($file, $boot_text)
 		FileClose($file)
 	Else
-		Local $kbd_code,$boot_text="",$append_debian
+		Local $kbd_code,$boot_text="",$append_debian="",$prepend="",$boot_menu=""
 		$append_debian="boot=live initrd=/casper/initrd.lz live-media-path=/casper quiet splash --"
 		If FileExists($selected_drive&"\live-rw") Then
 			$prepend = @LF& "label persist" & @LF & "menu label ^Persistent" _
