@@ -31,7 +31,7 @@
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ; Global constants
-Global Const $software_version = "2.7 RC1"
+Global Const $software_version = "2.7 RC2"
 Global $lang_folder = @ScriptDir & "\tools\languages\"
 Global $lang_ini
 Global $verbose_logging
@@ -43,7 +43,7 @@ Global Const $log_dir = @ScriptDir & "\logs\"
 Global $logfile = $log_dir & @YEAR& "-" & @MON & "-" & @MDAY &".log"
 Global Const $check_updates_url = "https://www.linuxliveusb.com/updates/"
 Global Const $virtualbox_default_realsize=140
-
+Global Const $max_persistent_size=4090
 
 ; Auto-Clean feature (relative to the usb drive path)
 Global Const $autoclean_file = "Remove_LiLi.bat"

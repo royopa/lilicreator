@@ -51,7 +51,7 @@ Func InitializeFilesInISO($iso_to_list)
 				UpdateLog($output[1])
 				Return -1
 			Else
-				UpdateStatus(Translate("Your file is corrupted")&@CRLF&Translate("Read the log for more information."))
+				UpdateStatus(Translate("Your file is corrupted")&@CRLF&Translate("Read the log for more information")&".")
 				UpdateLog($output[1])
 				Return -1
 			EndIf

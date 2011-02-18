@@ -358,7 +358,7 @@ Func Create_Stick_From_IMG($drive_letter,$img_file)
 	WEnd
 	UpdateLog($lines&$errors)
 	if StringInStr($errors,"error") Then
-		UpdateStatus(Translate("An error occurred.")&@CRLF&Translate("Please close any application accessing your key and try again")&".")
+		UpdateStatus(Translate("An error occurred")&"."&@CRLF&Translate("Please close any application accessing your key and try again")&".")
 		Return -1
 	EndIf
 	SendReport("End-Create_Stick_From_IMG")
@@ -1174,7 +1174,7 @@ Func Final_check()
 	$mem = MemGetStats()
 
 	; If not enough RAM => WARNING
-	If Round($mem[2] / 1024) < $recommended_ram Then $avert_mem = Translate("Free memory is below the recommended value for your Linux to run in Windows") & "( "&$recommended_ram & Translate("MB")&" )" & @CRLF & Translate("This is not enough to launch LinuxLive in Windows.")
+	If Round($mem[2] / 1024) < $recommended_ram Then $avert_mem = Translate("Free memory is below the recommended value for your Linux to run in Windows") & "( "&$recommended_ram & Translate("MB")&" )" & @CRLF & Translate("This is not enough to launch LinuxLive in Windows")&"."
 
 	If $avert_mem <> "" Then MsgBox(64, Translate("Please read"), $avert_mem)
 	SendReport("End-Final_check : "&@CRLF&$avert_mem)

@@ -72,13 +72,22 @@ Func LogSystemConfig()
 EndFunc   ;==>LogSystemConfig
 
 Func PreviousInstallReport()
+	; Getting Portable VirtualBox infos
+	if FileExists($selected_drive&"\VirtualBox\Portable-VirtualBox\linuxlive\settings.ini") Then
+		$vbox_report=" and Portable-VirtualBox pack "&IniRead($selected_drive&"\VirtualBox\Portable-VirtualBox\linuxlive\settings.ini","General","pack_version","NotFound") _
+		& " ( "&IniRead($selected_drive&"\VirtualBox\Portable-VirtualBox\linuxlive\settings.ini","General","virtualbox_version","NotFound")&" )"
+	Else
+		$vbox_report=" and no Portable-VirtualBox installed"
+	EndIf
+
+	; Getting Live USB infos
 	if FileExists($selected_drive&"\"&$autoclean_settings) Then
 		$installed_linux=IniRead($selected_drive&"\"&$autoclean_settings,"General","Installed_Linux","NotFound")
 		$linux_codename=IniRead($selected_drive&"\"&$autoclean_settings,"General","Installed_Linux_Codename","NotFound")
 		$install_size=GetPreviousInstallSizeMB($selected_drive)
-		Return $installed_linux&" ("&$linux_codename&") using "&$install_size&"MB"
+		Return $installed_linux&" ("&$linux_codename&") using "&$install_size&"MB"&$vbox_report
 	Else
-		Return "No previous install found on key"
+		Return "No previous install found on key"&$vbox_report
 	EndIf
 EndFunc
 

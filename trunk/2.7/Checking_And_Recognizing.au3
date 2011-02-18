@@ -110,7 +110,7 @@ Func Check_source_integrity($linux_live_file)
 		If $temp_index > 0 Then
 			; Filename is known but MD5 not OK -> COMPATIBLE BUT ERROR
 			$release_number = $temp_index
-			GUI_Show_Check_status(Translate("You have the right ISO file but it is corrupted or was altered.") &" "&Translate("Please download it again.")&@CRLF&Translate("However, LinuxLive USB Creator will try to use same install parameters as for") & @CRLF & @TAB & @TAB& ReleaseGetDescription($release_number))
+			GUI_Show_Check_status(Translate("You have the right ISO file but it is corrupted or was altered") &". "&Translate("Please download it again")&"."&@CRLF&Translate("However, LinuxLive USB Creator will try to use same install parameters as for") & @CRLF & @TAB & @TAB& ReleaseGetDescription($release_number))
 			Step2_Check("warning")
 			SendReport("IN-Check_source_integrity (MD5 not found but filename found : " & ReleaseGetFilename($release_number) & " )")
 		Else
@@ -272,7 +272,7 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "mint") Then
 				; Mint variants
 				if StringInStr($shortname, "KDE") Then
-					$release_number = FindReleaseFromCodeName( "mintkde-last")
+					$release_number = FindReleaseFromCodeName( "mintkdedvd-last")
 				elseif StringInStr($shortname, "LXDE") Then
 					$release_number = FindReleaseFromCodeName( "mintlxde-last")
 				elseif StringInStr($shortname, "Xfce") Then
@@ -294,8 +294,45 @@ Func Check_source_integrity($linux_live_file)
 				; Gparted
 				$release_number = FindReleaseFromCodeName( "gpartedlive-last")
 			ElseIf StringInStr($shortname, "debian") Then
-				; Debian
-				$release_number = FindReleaseFromCodeName( "debiangnome-last")
+				; Debian Variants
+				if StringInStr($shortname,"6.") OR StringInStr($shortname,"sq") AND StringInStr($shortname, "live") Then
+					; Debian Live 6.X => Persistence
+					if StringInStr($shortname, "KDE") Then
+						$release_number = FindReleaseFromCodeName( "debianlivekde6-last")
+					elseif StringInStr($shortname, "LXDE") Then
+						$release_number = FindReleaseFromCodeName( "debianlivelxde6-last")
+					elseif StringInStr($shortname, "Xfce") Then
+						$release_number = FindReleaseFromCodeName( "debianlivexfce6-last")
+					elseif StringInStr($shortname, "gnome") Then
+						$release_number = FindReleaseFromCodeName( "debianlivegnome6-last")
+					elseif StringInStr($shortname, "standard") Then
+						$release_number = FindReleaseFromCodeName( "debianlivestandard6-last")
+					else
+						$release_number = FindReleaseFromCodeName( "debianlivegnome6-last")
+					EndIf
+				Elseif Not StringInStr($shortname, "live") Then
+					; Debian Non Live 6.X => No Persistence
+					if StringInStr($shortname, "KDE") Then
+						$release_number = FindReleaseFromCodeName( "debiankde6-last")
+					elseif StringInStr($shortname, "LXDE") Then
+						$release_number = FindReleaseFromCodeName( "debianlxde6-last")
+					elseif StringInStr($shortname, "Xfce") Then
+						$release_number = FindReleaseFromCodeName( "debianxfce6-last")
+					elseif StringInStr($shortname, "gnome") Then
+						$release_number = FindReleaseFromCodeName( "debiangnome6-last")
+					elseif StringInStr($shortname, "standard") Then
+						$release_number = FindReleaseFromCodeName( "debianstandard6-last")
+					else
+						$release_number = FindReleaseFromCodeName( "debiangnome6-last")
+					EndIf
+
+				Elseif (Not StringInStr($shortname, "sq") AND Not StringInStr($shortname, "6.") ) OR StringInStr($shortname, "CD") OR StringInStr($shortname, "DVD") then
+					; Debian Live or Non-Live 5.X and others => No Persistence
+					$release_number = FindReleaseFromCodeName( "debiangeneric5-last")
+				Else
+					; Default mode
+					$release_number = FindReleaseFromCodeName( "default")
+				EndIf
 			ElseIf StringInStr($shortname, "toutou") Then
 				; Toutou Linux
 				$release_number = FindReleaseFromCodeName( "toutou-last")
@@ -353,7 +390,6 @@ Func Check_source_integrity($linux_live_file)
 				Else
 					$release_number = FindReleaseFromCodeName( "crunchbang-xfce-last")
 				EndIf
-
 			ElseIf StringInStr($shortname, "sabayon") Then
 				; Sabayon Linux
 				if StringInStr($shortname, "_K") OR StringInStr($shortname, "KDE") Then
@@ -539,7 +575,7 @@ Func Check_if_version_non_grata($version_name)
 	Next
 
 	If $non_grata = 1 Then
-		GUI_Show_Check_status(Translate("This ISO is not compatible.") & @CRLF & Translate("Please read the compatibility list in user guide"))
+		GUI_Show_Check_status(Translate("This ISO is not compatible") &"."& @CRLF & Translate("Please read the compatibility list in user guide"))
 		Step2_Check("warning")
 		SendReport("End-Check_if_version_non_grata (is Non grata)")
 		Return 1
@@ -699,7 +735,7 @@ EndFunc
 	Sleep(500)
 	ProgressOff()
 	If $corrupt = 0 Then
-	MsgBox(4096, Translate("Check completed"), Translate("All files have been successfully checked."))
+	MsgBox(4096, Translate("Check completed"), Translate("All files have been successfully checked")&".")
 	Step2_Check("good")
 	$MD5_FOLDER = "Good"
 	EndIf

@@ -116,7 +116,7 @@ Func _OnAutoItError()
         GUICtrlSetBkColor(GUICtrlCreateLabel("",1,1,1,88),0x41689E)
         GUICtrlSetBkColor(GUICtrlCreateLabel("",398,1,1,88),0x41689E)
         GUICtrlCreateIcon("user32.dll",103,11,21,32,32)
-        GUICtrlSetBkColor(GUICtrlCreateLabel(Translate("An error occurred.") & @CRLF & Translate("An anonymous report was sent in order to fix this error as soon as possible")&"." ,52,8,190,60),-2)
+        GUICtrlSetBkColor(GUICtrlCreateLabel(Translate("An error occurred") &"."& @CRLF & Translate("An anonymous report was sent in order to fix this error as soon as possible")&"." ,52,8,190,60),-2)
 		$sending_status = GUICtrlCreateLabel(Translate("Report status")& " : " & Translate("Pending"),52,58,195,20)
 		GUICtrlSetBkColor($sending_status,-2)
 		#cs
