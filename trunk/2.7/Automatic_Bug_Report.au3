@@ -108,128 +108,48 @@ Func _OnAutoItError()
 	_FileWriteLog($current_logfile,"!!!!!! Crash Detected : "&$sErrorMsg)
 	_FileWriteLog($current_crashlog,$report)
 
-	#cs
-	GUICreate("LiLi USB Creator Automatic Bug Report",400,90,Default,Default,-2134376448);BitOR($WS_CAPTION,$WS_POPUP,$WS_SYSMENU)
-    GUISetBkColor(0xE0DFE2)
-        GUICtrlSetBkColor(GUICtrlCreateLabel("",1,1,398,1),0x41689E)
-        GUICtrlSetBkColor(GUICtrlCreateLabel("",1,88,398,1),0x41689E)
-        GUICtrlSetBkColor(GUICtrlCreateLabel("",1,1,1,88),0x41689E)
-        GUICtrlSetBkColor(GUICtrlCreateLabel("",398,1,1,88),0x41689E)
-        GUICtrlCreateIcon("user32.dll",103,11,21,32,32)
-        GUICtrlSetBkColor(GUICtrlCreateLabel(Translate("An error occurred") &"."& @CRLF & Translate("An anonymous report was sent in order to fix this error as soon as possible")&"." ,52,8,190,60),-2)
-		$sending_status = GUICtrlCreateLabel(Translate("Report status")& " : " & Translate("Pending"),52,58,195,20)
-		GUICtrlSetBkColor($sending_status,-2)
-		#cs
-		GUICtrlSetBkColor(GUICtrlCreateLabel($last_report,52,41,175,15),-2)
-        GUICtrlSetBkColor(GUICtrlCreateLabel("",10,60,110,22),0x706E63)
-            GUICtrlSetState(-1,128)
-        $send=GUICtrlCreateLabel("   send bug report",28,64,92,15)
-            GUICtrlSetBkColor(-1,-2)
-            GUICtrlSetColor(-1,0xFFFFFF)
-            GUICtrlSetCursor(-1,0)
-        $sen=GUICtrlCreateIcon("explorer.exe",254,13,63,16,16)
-            GUICtrlSetCursor(-1,0)
-
-		GUICtrlSetBkColor(GUICtrlCreateLabel("",246,8,141,22),0xEFEEF2)
-            GUICtrlSetState(-1,128)
-        $show=GUICtrlCreateLabel("    "& Translate("Show bug report"),265,12,115,15)
-            If @Compiled=0 Then GUICtrlSetData(-1,"    Debugger")
-            GUICtrlSetBkColor(-1,-2)
-            GUICtrlSetCursor(-1,0)
-			GUICtrlSetOnEvent(-1, "GUI_Err_Debug")
-        $sho=GUICtrlCreateIcon("shell32.dll",290,249,11,16,16)
-            If @Compiled=0 Then GUICtrlSetImage(-1,"shell32.dll",-81)
-            GUICtrlSetCursor(-1,0)
-
-		GUICtrlSetBkColor(GUICtrlCreateLabel("",246,34,141,22),0xEFEEF2)
-            GUICtrlSetState(-1,128)
-        $rest=GUICtrlCreateLabel("    "& Translate("Restart application"),265,38,115,15)
-            GUICtrlSetBkColor(-1,-2)
-            GUICtrlSetCursor(-1,0)
-			GUICtrlSetOnEvent(-1, "GUI_Err_RunAgain")
-
-        $res=GUICtrlCreateIcon("shell32.dll",255,249,37,16,16)
-            GUICtrlSetCursor(-1,0)
-		#ce
-
-		GUICtrlSetBkColor(GUICtrlCreateLabel("",246,34,141,22),0xEFEEF2)
-            GUICtrlSetState(-1,128)
-        $show=GUICtrlCreateLabel("    "& Translate("Show bug report"),265,38,115,15)
-            If @Compiled=0 Then GUICtrlSetData(-1,"    Debugger")
-            GUICtrlSetBkColor(-1,-2)
-            GUICtrlSetCursor(-1,0)
-			GUICtrlSetOnEvent(-1, "GUI_Err_Debug")
-        $sho=GUICtrlCreateIcon("shell32.dll",255,249,37,16,16)
-            If @Compiled=0 Then GUICtrlSetImage(-1,"shell32.dll",-81)
-            GUICtrlSetCursor(-1,0)
-
-
-        GUICtrlSetBkColor(GUICtrlCreateLabel("",246,60,141,22),0xEFEEF2)
-            GUICtrlSetState(-1,128)
-        $close=GUICtrlCreateLabel("     "& Translate("Close application"),265,64,115,15)
-            GUICtrlSetBkColor(-1,-2)
-            GUICtrlSetCursor(-1,0)
-			GUICtrlSetOnEvent(-1, "GUI_Err_Stop")
-        $clos=GUICtrlCreateIcon("shell32.dll",240,249,63,16,16)
-            GUICtrlSetCursor(-1,0)
-
-    Opt("TrayIconHide",0)
-    Opt("TrayAutoPause",0)
-
-    TraySetToolTip("LiLi Creator Automatic Bug Report")
-	TraySetIcon(@ScriptDir&"\tools\img\lili.ico")
-    GUISetState()
-    WinSetOnTop("LiLi USB Creator Automatic Bug Report","",1)
-    ;   choose action to be taken
-	If ReadSetting("Advanced", "skip_autoreport")<>"yes" Then
-		If SendBug() <> "OK" Then
-			GUICtrlSetData($sending_status,Translate("Report status")& " : " & Translate("Error (not sent)"))
-		Else
-			GUICtrlSetData($sending_status,Translate("Report status")& " : " & Translate("Sent"))
-		EndIf
-
-	Endif
-
-    While 1
-		Sleep(60000)
-    Wend
-	#ce
 	Opt("TrayIconHide",0)
     Opt("TrayAutoPause",0)
 	Opt("GUIOnEventMode",1)
 
-	GUICreate("LiLi USB Creator Automatic Crash Report",461,401)
+	GUICreate("LiLi USB Creator Automatic Crash Report",511,421)
+	if $font_size>=12 Then
+		GUISetFont($font_size)
+	Else
+		GUISetFont($font_size+1.5)
+	EndIf
 	GUISetOnEvent($GUI_EVENT_CLOSE,"GUI_Err_Stop")
 
-	$group_welcome = GUICtrlCreateGroup("Welcome to the automatic crash reporter", 18, 12, 425, 89)
+	$group_welcome = GUICtrlCreateGroup(Translate("Welcome to the automatic crash reporter"), 18, 12, 475, 109)
 	GUICtrlCreateGroup("", -99, -99, 1, 1)
-	GUICtrlCreateIcon("user32.dll", 103, 35, 45, 32, 32)
-	GUICtrlCreateLabel(Translate("I'm sorry for the inconvenience but LiLi has crashed")&"."&@CRLF&@CRLF&Translate("Please enter an email address and a detailed comment about this crash")&"."&@CRLF&Translate("I will contact you as soon as I can")&".",90,35,340,60)
+	GUICtrlCreateIcon("user32.dll", 103, 30, 45, 32, 32)
+	GUICtrlCreateLabel(Translate("I'm sorry for the inconvenience but LiLi has crashed")&"."&@CRLF&Translate("Please enter an email address and a detailed comment about this crash")&"."&@CRLF&Translate("I will contact you as soon as I can")&".",80,37,410,70)
 
-	$group_email = GUICtrlCreateGroup("Your Email address", 18, 112, 425, 57)
+	$group_email = GUICtrlCreateGroup(Translate("Your Email address"), 18, 132, 475, 57)
 	GUICtrlCreateGroup("", -99, -99, 1, 1)
-	$email_address = GUICtrlCreateInput("", 108, 136, 249, 21)
+	$email_address = GUICtrlCreateInput("", 108, 156, 280, 21)
 
-	$group_details = GUICtrlCreateGroup("Problem Details", 18, 184, 425, 177)
+	$group_details = GUICtrlCreateGroup(Translate("Problem Details"), 18, 204, 475, 177)
 	GUICtrlCreateGroup("", -99, -99, 1, 1)
-	$problem_details = GUICtrlCreateEdit("", 34, 208, 393, 137, BitOR($ES_AUTOVSCROLL,$ES_WANTRETURN,$WS_VSCROLL))
+	$problem_details = GUICtrlCreateEdit("", 34, 228, 443, 137, BitOR($ES_AUTOVSCROLL,$ES_WANTRETURN,$WS_VSCROLL))
 
-	$offx_b1=17
-	$offy_b1=370
+	$offx_b1=7
+	$offy_b1=390
 
-	GUICtrlCreateButton("  "&Translate("Show crash report"),  $offx_b1,$offy_b1, 120, 24)
+	GUICtrlCreateButton("  "&Translate("Show crash report"),  $offx_b1,$offy_b1, 150, 24)
 	GUICtrlSetOnEvent(-1, "GUI_Err_Debug")
 	GUICtrlSetImage(-1, "shell32.dll", -210,0)
+	GUICtrlSetFont(-1,$font_size)
 
-
-	GUICtrlCreateButton("  "&Translate("Close (don't send)"),  $offx_b1+155,$offy_b1, 120, 24)
+	GUICtrlCreateButton("  "&Translate("Close (don't send)"),  $offx_b1+175,$offy_b1, 150, 24)
 	GUICtrlSetOnEvent(-1,"GUI_Err_Stop")
 	GUICtrlSetImage(-1, "shell32.dll", -132,0)
+	GUICtrlSetFont(-1,$font_size)
 
-
-	GUICtrlCreateButton("  "&Translate("Send Report"),  $offx_b1+310,$offy_b1, 120, 24)
+	GUICtrlCreateButton("  "&Translate("Send Report"),  $offx_b1+350,$offy_b1, 150, 24)
 	GUICtrlSetOnEvent(-1,"SendCrashReport")
 	GUICtrlSetImage(-1, "shell32.dll", -177,0)
+	GUICtrlSetFont(-1,$font_size)
 
 
 

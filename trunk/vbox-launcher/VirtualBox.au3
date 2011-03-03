@@ -1,8 +1,9 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_icon=VirtualBox.ico
+#AutoIt3Wrapper_UseUpx=n
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Launch VirtualBox for LiLi
-#AutoIt3Wrapper_Res_Fileversion=2.0.0.27
+#AutoIt3Wrapper_Res_Fileversion=2.0.0.30
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_Field=AutoIt Version|%AutoItVer%
