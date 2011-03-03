@@ -447,7 +447,7 @@ Func Rename_and_move_files($drive_letter, $release_in_list)
 			$syslinux_path = $drive_letter & "\BOOT\SYSLINUX\"
 		Elseif FileExists($drive_letter & "\HBCD\isolinux.cfg") Then
 			$syslinux_path = $drive_letter & "\HBCD\"
-		Elseif FileExists($drive_letter & "\boot\i386\loader\isolinux.cfg") AND ReleaseGetVariant($release_in_list)="opensuse" Then
+		Elseif FileExists($drive_letter & "\boot\i386\loader\isolinux.cfg") AND (ReleaseGetVariant($release_in_list)="opensuse" OR StringInStr(ReleaseGetSupportedFeatures($release_in_list),"opensuse-mbrid")>0 )Then
 			FileDelete($drive_letter&"\syslinux.cfg")
 			DirMove($drive_letter & "\boot\i386\loader", $drive_letter & "\boot\syslinux",1)
 			$syslinux_path = $drive_letter & "\boot\syslinux\"
@@ -543,7 +543,10 @@ Func Create_boot_menu($drive_letter,$release_in_list)
 			Crunchbang_WriteTextCFG($drive_letter,$release_in_list)
 		EndIf
 	Elseif $variant = "opensuse" Then
-			SendReport("IN-Create_boot_menu for OpenSuse")
+			SendReport("IN-Create_boot_menu for OpenSuse : Setting MBR ID")
+			Set_OpenSuse_MBR_ID($drive_letter)
+	ElseIf StringInStr($features,"opensuse-mbrid")>0 then
+			SendReport("IN-Create_boot_menu for OpenSuse variant: Setting MBR ID")
 			Set_OpenSuse_MBR_ID($drive_letter)
 	Else
 		SendReport("IN-Create_boot_menu for Regular Linux")
@@ -1128,10 +1131,15 @@ EndFunc   ;==>DeleteFilesInDir
 
 Func Setup_RAM_for_VM($drive_letter,$release_in_list)
 	SendReport("Start-Setup_RAM_for_VM")
-	$linuxlive_settings_file = $drive_letter&"\VirtualBox\Portable-VirtualBox\data\.VirtualBox\Machines\LinuxLive\LinuxLive.xml"
+	$linuxlive_settings_file = $drive_letter&"\VirtualBox\Portable-VirtualBox\data\.VirtualBox\Machines\LinuxLive\LinuxLive.vbox"
+
+	if Not FileExists($linuxlive_settings_file) Then
+		UpdateLog("End-Setup_RAM_for_VM : Warning, Could not automatically set RAM (File "&$linuxlive_settings_file&" does not exist)")
+	EndIf
+
     $file = FileOpen ($linuxlive_settings_file, 128)
 	if $file = -1 Then
-		UpdateLog("Error while opening for reading (mode 128)" &$drive_letter&"\VirtualBox\Portable-VirtualBox\data\.VirtualBox\Machines\LinuxLive\LinuxLive.xml" &@CRLF & "Cannot automatically set RAM")
+		UpdateLog("End-Setup_RAM_for_VM : Warning, Could not automatically set RAM (Unable to open file "&$linuxlive_settings_file&" in read mode )")
 		Return 0
 	EndIf
 	$line    = FileRead ($file)
@@ -1146,13 +1154,13 @@ Func Setup_RAM_for_VM($drive_letter,$release_in_list)
 		$new_line=StringReplace ($line, 'Memory RAMSize="' & $old_value[0] & '"', 'Memory RAMSize="' & $recommended_ram & '"')
 		$file = FileOpen ($linuxlive_settings_file, 2)
 		if $file = -1 Then
-			UpdateLog("Error while opening for writing (mode 2)" &$drive_letter&"\VirtualBox\Portable-VirtualBox\data\.VirtualBox\Machines\LinuxLive\LinuxLive.xml" &@CRLF & "Cannot automatically set RAM")
+			UpdateLog("End-Setup_RAM_for_VM : Warning, Could not automatically set RAM (Unable to open file "&$linuxlive_settings_file&" in write mode )")
 			Return 0
 		EndIf
 		FileWrite ($file, $new_line)
 		FileClose ($file)
 	EndIf
-	SendReport("End-Setup_RAM_for_VM")
+	SendReport("End-Setup_RAM_for_VM : RAM has been successfully set")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

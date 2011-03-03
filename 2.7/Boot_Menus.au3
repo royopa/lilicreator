@@ -260,7 +260,7 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 	If $ubuntu_variant = "mint" Then
 
 		; Mint KDE uses a splash.png image
-		if StringInStr($codename,"mintkde") Then
+		if StringInStr($codename,"mintkde") AND $distrib_version = 9 Then
 			$splash_img="splash.png"
 		Else
 			$splash_img="splash.jpg"

@@ -33,20 +33,29 @@ Func CheckIfInstalled()
 
 	If $version_new <> "" Then
 		UpdateLog("Found an Oracle VM VirtualBox installed, version is "&$version_new)
-	Elseif $version_old <> "" Then
-		UpdateLog("Found an old Sun VM VirtualBox installed, version is "&$version_old&", portable mode should be used instead.")
+		if Int(StringLeft($version_new,1))>=4 Then UpdateLog("It's a VirtualBox 4.X.X or superior installed => can be used instead of portable one.")
 	Else
-		UpdateLog("No VirtualBox installed, portable mode should be used.")
+		UpdateLog("No Oracle VM VirtualBox installed.")
 	EndIf
 
-	$version=$version_old&$version_new
+	if $version_old <> "" Then
+		UpdateLog("Found an old Sun VM VirtualBox installed, version is "&$version_old&", portable mode should be used instead.")
+	Else
+		UpdateLog("No Sun xVM VirtualBox installed.")
+	EndIf
+
+	if ($version_new <> "" AND Int(StringLeft($version_new,1))<4 ) OR $version_old <> "" Then
+		MsgBox(16,"Sorry","Please update your version of VirtualBox to 4.X or uninstall it from your computer to be able to run this portable version"&@CRLF&@CRLF&"This is a security in order to avoid corrupting your current installed version."&@CRLF&@CRLF &"Thank you for your comprehension.")
+		Exit
+	EndIf
+
 	$portable_mode = IniRead($settings_ini,"Others","force_portable","no")
 
 	UpdateLog("Portable mode forced : "&$portable_mode)
 	UpdateLog("Setting Environment variable VBOX_USER_HOME="&@ScriptDir&"\data\.VirtualBox")
 	EnvSet("VBOX_USER_HOME",@ScriptDir&"\data\.VirtualBox")
 
-	If $version <> "" AND $portable_mode<>"yes" Then
+	If $version_new <> ""AND StringLeft($version_new,1)>=4 AND $portable_mode<>"yes" Then
 		;MsgBox(16, "Found an installed VirtualBox", "Please uninstall VirtualBox "&$version&" in order to use the portable version.")
 		;$iMsgBoxAnswer=MsgBox(65, "Found an installed VirtualBox", "This is a beta feature."&@CRLF&"LinuxLive USB will try to run in your non-portable VirtualBox."&@CRLF&"Click OK to continue or Cancel to abandon.")
 		;Select
@@ -91,16 +100,15 @@ Func PrepareForLinuxLive($installdir="")
 	UpdateLog("Start-PrepareForLinuxLive")
 	$oMyError = ObjEvent("AutoIt.Error", "MyErrFunc") ; Install a custom error handler
 
-	$vmdkfile = @ScriptDir & "\data\.VirtualBox\HardDisks\LinuxLive.vmdk"
+	$vmdkfile = @ScriptDir & "\data\.VirtualBox\Machines\LinuxLive\HardDisks\LinuxLive.vmdk"
 	; To be sure it exists
-	DirCreate(@ScriptDir & "\data\.VirtualBox\HardDisks\")
+	DirCreate(@ScriptDir & "\data\.VirtualBox\Machines\LinuxLive\HardDisks\")
 	; deleting old VMDK, Creating new one and changing back its uuid
 	If FileExists($vmdkfile) Then FileDelete($vmdkfile)
 
 	UpdateLog("VMDK File is "&$vmdkfile)
 
 	$physical_drive=GiveMePhysicalDisk()
-	UpdateLog("biou")
 	  If FileExists (@ScriptDir&"\app32\") AND FileExists (@ScriptDir&"\app64\") Then
 			If @OSArch = "x86" Then
 			  Global $arch = "app32"
@@ -116,16 +124,15 @@ Func PrepareForLinuxLive($installdir="")
 			  Global $arch = "app64"
 			EndIf
 		EndIf
-UpdateLog("biou2")
+
+	RelativePathMichael()
+
 	; recreating LinuxLive virtual Disk
 	if $installdir="" Then
-		UpdateLog("biou3")
 		$biou='"'&$arch & '\VBoxManage.exe" internalcommands createrawvmdk -filename "' & $vmdkfile & '" -rawdisk ' & $physical_drive
 	Else
-		UpdateLog("biou3-2")
 		$biou='"'&$installdir & 'VBoxManage.exe" internalcommands createrawvmdk -filename "' & $vmdkfile & '" -rawdisk ' & $physical_drive
 	EndIf
-UpdateLog("biou4")
 	UpdateLog("Updating VMDK File using CLI : "&$biou)
 	RunWait3($biou)
 
@@ -140,8 +147,8 @@ UpdateLog("biou4")
 		ChangeUUID()
 		;to avoid the bug with vbox tools
 		;DetachDVD()
-		RelativePaths()
-		ThreeSecLegalNotice()
+		;RelativePaths()
+		;ThreeSecLegalNotice()
 	Else
 		SplashOff()
 		MsgBox(16, "WARNING", "There was a problem recreating Linux Live virtual disk." & @CRLF & "Please send log file (Portable-VirtualBox\linuxlive\launcher.log) to vbox-debug@linuxliveusb.com")
@@ -287,11 +294,13 @@ EndFunc   ;==>GiveMePhysicalDisk
 ; Change the UUID in order to match with the one originally affected to the disk
 Func ChangeUUID()
 	UpdateLog("Start-ChangeUUID")
-	If FileExists(@ScriptDir & "\data\.VirtualBox\VirtualBox.xml") Then
-		UpdateLog("Changing UUID of virtual disk to match the one in VirtualBox.xml and LinuxLive.xml")
+	$linuxlive_config_file=@ScriptDir & "\data\.VirtualBox\Machines\LinuxLive\LinuxLive.vbox"
+
+	If FileExists($linuxlive_config_file) Then
+		UpdateLog("Changing UUID of virtual disk to match the one in LinuxLive.vbox")
 		; read content from VirtualBox.xml
-		$file = FileOpen(@ScriptDir & "\data\.VirtualBox\VirtualBox.xml", 128)
-		if @error Then MsgBox(0,"kjk","Error while trying to open VirtualBox.xml")
+		$file = FileOpen($linuxlive_config_file, 128)
+		if @error Then MsgBox(0,"kjk","Error while trying to open LinuxLive.vbox")
 		$lines = FileRead($file)
 		FileClose($file)
 
@@ -326,8 +335,8 @@ Func ChangeUUID()
 		EndIf
 		UpdateLog("END-ChangeUUID")
 	Else
-		UpdateLog("ERROR : Portable-VirtualBox\data\.VirtualBox\VirtualBox.xml not found !")
-		MsgBox(4096, "ERROR", "File Portable-VirtualBox\data\.VirtualBox\VirtualBox.xml not found !")
+		UpdateLog("ERROR : .VirtualBox\Machines\LinuxLive\LinuxLive.vbox not found !")
+		MsgBox(4096, "ERROR", "File .VirtualBox\Machines\LinuxLive\LinuxLive.vbox not found !")
 		UpdateLog("END-ChangeUUID : FATAL, exiting now")
 		Exit
 	EndIf
@@ -365,6 +374,97 @@ Func RelativePaths()
 		Exit
 	EndIf
 EndFunc   ;==>RelativePaths
+
+Func RelativePathMichael()
+  If FileExists (@ScriptDir&"\data\.VirtualBox\VirtualBox.xml") OR (FileExists (@ScriptDir&"\data\.VirtualBox\Machines\") AND FileExists (@ScriptDir&"\data\.VirtualBox\HardDisks\")) Then
+		Local $line, $i, $j, $k, $l, $m
+		Local $values0, $values1, $values2, $values3, $values4, $values5, $values6, $values7, $values8, $values9, $values10, $values11, $values12
+		Local $file = FileOpen (@ScriptDir&"\data\.VirtualBox\VirtualBox.xml", 128)
+		If $file <> -1 Then
+		  $line    = FileRead ($file)
+		  $values0 = _StringBetween ($line, '<MachineRegistry>', '</MachineRegistry>')
+		  If $values0 = 0 Then
+			$values1 = 0
+		  Else
+			$values1 = _StringBetween ($values0[0], 'src="', '"')
+		  EndIf
+		  $values2 = _StringBetween ($line, '<HardDisks>', '</HardDisks>')
+		  If $values2 = 0 Then
+			$values3 = 0
+		  Else
+			$values3 = _StringBetween ($values2[0], 'location="', '"')
+		  EndIf
+		  $values4 = _StringBetween ($line, '<DVDImages>', '</DVDImages>')
+		  If $values4 = 0 Then
+			$values5 = 0
+		  Else
+			$values5 = _StringBetween ($values4[0], '<Image', '/>')
+		  EndIf
+		  $values10 = _StringBetween ($line, '<Global>', '</Global>')
+		  If $values10 = 0 Then
+			$values11 = 0
+		  Else
+			$values11 = _StringBetween ($values10[0], '<SystemProperties', '/>')
+		  EndIf
+
+		  For $i = 0 To UBound ($values1) - 1
+			$values6 = _StringBetween ($values1[$i], 'Machines', '.xml')
+			If $values6 <> 0 Then
+			  $content = FileRead (FileOpen (@ScriptDir&"\data\.VirtualBox\VirtualBox.xml", 128))
+			  $file    = FileOpen (@ScriptDir&"\data\.VirtualBox\VirtualBox.xml", 2)
+			  FileWrite ($file, StringReplace ($content, $values1[$i], @ScriptDir&"\data\.VirtualBox\Machines" & $values6[0] & ".xml"))
+			  FileClose ($file)
+			EndIf
+		  Next
+
+		  For $j = 0 To UBound ($values3) - 1
+			$values7 = _StringBetween ($values3[$j], 'HardDisks', '.vdi')
+			If $values7 <> 0 Then
+			  $content = FileRead (FileOpen (@ScriptDir&"\data\.VirtualBox\VirtualBox.xml", 128))
+			  $file    = FileOpen (@ScriptDir&"\data\.VirtualBox\VirtualBox.xml", 2)
+			  FileWrite ($file, StringReplace ($content, $values3[$j], "HardDisks" & $values7[0] & ".vdi"))
+			  FileClose ($file)
+			EndIf
+		  Next
+
+		  For $k = 0 To UBound ($values3) - 1
+			$values8 = _StringBetween ($values3[$k], 'Machines', '.vdi')
+			If $values8 <> 0 Then
+			  $content = FileRead (FileOpen (@ScriptDir&"\data\.VirtualBox\VirtualBox.xml", 128))
+			  $file    = FileOpen (@ScriptDir&"\data\.VirtualBox\VirtualBox.xml", 2)
+			  FileWrite ($file, StringReplace ($content, $values3[$k], "Machines" & $values8[0] & ".vdi"))
+			  FileClose ($file)
+			EndIf
+		  Next
+
+		  For $l = 0 To UBound ($values5) - 1
+			$values9 = _StringBetween ($values5[$l], 'location="', '"')
+			If $values9 <> 0 Then
+			  If NOT FileExists ($values9[0]) Then
+				$content = FileRead (FileOpen (@ScriptDir&"\data\.VirtualBox\VirtualBox.xml", 128))
+				$file    = FileOpen (@ScriptDir&"\data\.VirtualBox\VirtualBox.xml", 2)
+				FileWrite ($file, StringReplace ($content, "<Image" & $values5[$l] & "/>", ""))
+				FileClose ($file)
+			  EndIf
+			EndIf
+		  Next
+
+		  For $m = 0 To UBound ($values11) - 1
+			$values12 = _StringBetween ($values11[$m], 'defaultMachineFolder="', '"')
+			If $values12 <> 0 Then
+			  If NOT FileExists ($values10[0]) Then
+				$content = FileRead (FileOpen (@ScriptDir&"\data\.VirtualBox\VirtualBox.xml", 128))
+				$file    = FileOpen (@ScriptDir&"\data\.VirtualBox\VirtualBox.xml", 2)
+				FileWrite ($file, StringReplace ($content, $values12[0], @ScriptDir&"\data\.VirtualBox\Machines"))
+				FileClose ($file)
+			  EndIf
+			EndIf
+		  Next
+
+		  FileClose ($file)
+	  EndIf
+  EndIf
+EndFunc
 
 Func DetachDVD()
 	UpdateLog("Detaching CD/DVDs of LinuxLive VM")

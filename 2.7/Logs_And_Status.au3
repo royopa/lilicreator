@@ -43,6 +43,7 @@ Func LogSystemConfig()
 	$line &= @CRLF & "OS Service Pack : " & @OSServicePack
 	$line &= @CRLF & "OS Lang :  " & HumanOSLang(@OSLang) & " ("& @OSLang&")"
 	$line &= @CRLF & "Language : " & HumanOSLang(@MUILang) & " ("& @MUILang&")"
+	$line &= @CRLF & "Font size : " & $font_size
 	$line &= @CRLF & "Architecture : " & @OSArch
 	$line &= @CRLF & "Memory : " & $mem_stats
 

@@ -488,6 +488,9 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "backbox") Then
 				; BackBox
 				$release_number = FindReleaseFromCodeName( "backbox-last")
+			ElseIf StringInStr($shortname, "finnix") Then
+				; Finnix
+				$release_number = FindReleaseFromCodeName( "finnix-last")
 			ElseIf StringInStr($shortname, "puppeee") OR StringInStr($shortname, "fluppy") Then
 				; Puppeee
 				if StringInStr($shortname,"atom") Then
@@ -505,6 +508,10 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "vmware") OR StringInStr($shortname, "VMvisor")  OR StringInStr($shortname, "esx") Then
 				; VMware vSphere Hypervisor (ESXi)
 				$release_number = FindReleaseFromCodeName( "esxi-last")
+			ElseIf StringInStr($shortname, "Gnome_3") Then
+				; Gnome 3
+				$release_number = FindReleaseFromCodeName( "gnome3-last")
+
 			Else
 				; Any Linux, except those known not to work in Live mode
 				$release_number = FindReleaseFromCodeName( "default")
