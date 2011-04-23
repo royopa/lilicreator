@@ -205,7 +205,7 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "kuki") Then
 				; Kuki based (Ubuntu)
 				$release_number = FindReleaseFromCodeName( "kuki-last")
-			ElseIf StringInStr($shortname, "jolicloud") Then
+			ElseIf StringInStr($shortname, "jolicloud") OR StringInStr($shortname, "joli-os") Then
 				; Jolicloud (Ubuntu)
 				$release_number = FindReleaseFromCodeName( "jolicloud-last")
 			ElseIf StringInStr($shortname, "element") Then
@@ -467,6 +467,9 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "avira") Then
 				; Avira Antivir
 				$release_number = FindReleaseFromCodeName( "antivir-last")
+			ElseIf StringInStr($shortname, "bodhi") Then
+				; Bodhi Linux
+				$release_number = FindReleaseFromCodeName( "bodhi-last")
 			ElseIf StringInStr($shortname, "tangostudio") Then
 				; TangoStudio
 				$release_number = FindReleaseFromCodeName( "tangostudio-last")
@@ -479,6 +482,9 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "vortexbox") Then
 				; Vortexbox
 				$release_number = FindReleaseFromCodeName( "vortexbox-last")
+			ElseIf StringInStr($shortname, "zorin") Then
+				; Zorin OS
+				$release_number = FindReleaseFromCodeName( "zorin-last")
 			ElseIf StringInStr($shortname, "xpud") Then
 				; xPUD
 				$release_number = FindReleaseFromCodeName( "xpud-last")
@@ -508,10 +514,12 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "vmware") OR StringInStr($shortname, "VMvisor")  OR StringInStr($shortname, "esx") Then
 				; VMware vSphere Hypervisor (ESXi)
 				$release_number = FindReleaseFromCodeName( "esxi-last")
+			ElseIf StringInStr($shortname, "dban") Then
+				; Darik's Boot And Nuke (DBAN)
+				$release_number = FindReleaseFromCodeName( "dban-last")
 			ElseIf StringInStr($shortname, "Gnome_3") Then
 				; Gnome 3
 				$release_number = FindReleaseFromCodeName( "gnome3-last")
-
 			Else
 				; Any Linux, except those known not to work in Live mode
 				$release_number = FindReleaseFromCodeName( "default")
