@@ -174,73 +174,100 @@ Func Default_WriteTextCFG($selected_drive)
 
 	if FileExists($selected_drive & "\boot\syslinux\syslinux.cfg") Then
 		$syslinux_file = $selected_drive & "\boot\syslinux\syslinux.cfg"
+		$syslinux_folder=$selected_drive & "\boot\syslinux\"
 	Elseif FileExists($selected_drive & "\syslinux\syslinux.cfg") Then
 		$syslinux_file = $selected_drive & "\syslinux\syslinux.cfg"
+		$syslinux_folder=$selected_drive & "\syslinux\"
+	Elseif FileExists($selected_drive & "\syslinux.cfg") Then
+		$syslinux_file = $selected_drive & "\syslinux.cfg"
+		$syslinux_folder=$selected_drive & "\"
 	Else
 		Return 0
+		SendReport("End-Default_WriteTextCFG (No syslinux file found)")
+	EndIf
+	SendReport("IN-Default_WriteTextCFG (syslinux file found at "&$syslinux_file&", start scanning folder to apply default tweaks)")
+
+	$search = FileFindFirstFile($syslinux_folder&"*.cfg")
+	If $search <> -1 Then
+		While 1
+			$foundfile = FileFindNextFile($search)
+			If @error Then ExitLoop
+			DefaultBootTweaks($syslinux_folder&$foundfile)
+		WEnd
+		FileClose($search)
 	EndIf
 
-	$file = FileOpen($syslinux_file, 0)
+	$search = FileFindFirstFile($syslinux_folder&"*.txt")
+	If $search <> -1 Then
+		While 1
+			$foundfile = FileFindNextFile($search)
+			If @error Then ExitLoop
+			DefaultBootTweaks($syslinux_folder&$foundfile)
+		WEnd
+		FileClose($search)
+	EndIf
+
+
+
+EndFunc
+
+Func DefaultBootTweaks($filename)
+	$file = FileOpen($filename, 0)
 	If $file = -1 Then
-		SendReport("End-Default_WriteTextCFG : could not open syslinux.cfg")
+		SendReport("End-DefaultBootTweaks : could not open file "&$filename)
 		Return 0
 	EndIf
 
 	$content=FileRead($file)
 	FileClose($file)
 
-	; Modifying Boot menu for ArchLinux
-	; setting boot device UUID
-	$array1 = _StringBetween($content, 'archisolabel=', ' ')
-	if NOT @error Then
-		SendReport("IN-Default_WriteTextCFG => ArchLinux detected")
-		$uuid = Get_Disk_UUID($selected_drive)
-		$new_content=StringReplace($content,'archisolabel='&$array1[0],"archisodevice=/dev/disk/by-uuid/"&$uuid)
-		$file = FileOpen($syslinux_file, 2)
-		; Check if file opened for writing OK
-		If $file = -1 Then
-			SendReport("IN-Default_WriteTextCFG => ERROR : cannot write to syslinux.cfg")
-		Else
-			SendReport("IN-Default_WriteTextCFG => archisodevice UUID set to "&$uuid)
-			FileWrite($file,$new_content)
-			FileClose($file)
-		EndIf
-	EndIf
-
-	; Modifying Boot menu for Gentoo/Sabayo
-	; changing root type from UDF (DVD) to vfat (USB)
-
 	if StringInStr($content,"cdroot_type=udf" )>0 Then
-		SendReport("IN-Default_WriteTextCFG => Gentoo/Sabayon variant detected")
-		$file = FileOpen($syslinux_file, 2)
+		; Modifying Boot menu for Gentoo/Sabayon
+		; changing root type from UDF (DVD) to vfat (USB)
+		SendReport("IN-DefaultBootTweaks => Gentoo/Sabayon variant detected in file "&$filename)
+		$file = FileOpen($filename, 2)
 		; Check if file opened for writing OK
 		If $file = -1 Then
-			SendReport("IN-Default_WriteTextCFG => ERROR : cannot write to syslinux.cfg")
+			SendReport("IN-DefaultBootTweaks => ERROR : cannot write to file "&$filename)
 		Else
-			SendReport("IN-Default_WriteTextCFG => setting cdroot_type=vfat slowusb ")
+			SendReport("IN-DefaultBootTweaks => setting cdroot_type=vfat slowusb in file "&$filename)
 			FileWrite($file,StringReplace($content,"cdroot_type=udf","cdroot_type=vfat slowusb"))
 			FileClose($file)
 		EndIf
-	EndIf
-
-	; Modifying Boot menu for Puppy Variants
-	; changing media from CD to USB
-
-	if StringInStr($content,"pmedia=cd" )>0 Then
-		SendReport("IN-Default_WriteTextCFG => Puppy variant detected")
-		$file = FileOpen($syslinux_file, 2)
+	Elseif StringInStr($content,"pmedia=cd" )>0 Then
+		; Modifying Boot menu for Puppy Variants
+		; changing media from CD to USB
+		SendReport("IN-DefaultBootTweaks => Puppy variant detected in file "&$filename)
+		$file = FileOpen($filename, 2)
 		; Check if file opened for writing OK
 		If $file = -1 Then
-			SendReport("IN-Default_WriteTextCFG => ERROR : cannot write to syslinux.cfg")
+			SendReport("IN-DefaultBootTweaks => ERROR : cannot write to file "&$filename)
 		Else
-			SendReport("IN-Default_WriteTextCFG => setting pmedia=usb")
+			SendReport("IN-DefaultBootTweaks => setting pmedia=usb in file "&$filename)
 			FileWrite($file,StringReplace($content,"pmedia=cd","pmedia=usb"))
 			FileClose($file)
 		EndIf
+	Else
+		; Modifying Boot menu for ArchLinux
+		; setting boot device UUID
+		$array1 = _StringBetween($content, 'archisolabel=', ' ')
+		if NOT @error Then
+			SendReport("IN-DefaultBootTweaks => ArchLinux detected in file "&$filename)
+			$uuid = Get_Disk_UUID($selected_drive)
+			$new_content=StringReplace($content,'archisolabel='&$array1[0],"archisodevice=/dev/disk/by-uuid/"&$uuid)
+			$file = FileOpen($filename, 2)
+			; Check if file opened for writing OK
+			If $file = -1 Then
+				SendReport("IN-DefaultBootTweaks => ERROR : cannot write to file "&$filename)
+			Else
+				SendReport("IN-DefaultBootTweaks => archisodevice UUID set to "&$uuid&" in file "&$filename)
+				FileWrite($file,$new_content)
+				FileClose($file)
+			EndIf
+		EndIf
 	EndIf
-
-	SendReport("End-Default_WriteTextCFG")
 EndFunc
+
 
 Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 	SendReport("Start-Ubuntu_WriteTextCFG (Drive : " & $selected_drive & " -  Codename: " & ReleaseGetCodename($release_in_list) & " )")

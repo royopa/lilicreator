@@ -772,6 +772,15 @@ EndFunc   ;==>GUI_Format_Key
 
 Func GUI_Launch_Creation()
 	Local $return=""
+
+	$selected_drive = StringLeft(GUICtrlRead($combo), 2)
+
+	if Not FileExists($selected_drive&"\") Then
+		MsgBox(64,Translate("Please read"),Translate("Please insert your USB key back or select another one")&".")
+		Return ""
+	EndIf
+
+
 	; to avoid to create the key twice in a row
 	if $already_create_a_key >0 Then
 		$return = MsgBox(33,Translate("Please read"),Translate("You have already created a key")&"."&@CRLF&Translate("Are you sure that you want to recreate one")&" ?")
@@ -782,7 +791,7 @@ Func GUI_Launch_Creation()
 	SendReport(LogSystemConfig())
 	; Disable the controls and re-enable after creation
 
-	$selected_drive = StringLeft(GUICtrlRead($combo), 2)
+
 
 	; force cleaning old status (little bug fix)
 	UpdateStatus("")
@@ -873,7 +882,7 @@ Func GUI_Launch_Creation()
 
 		Sleep(1000)
 		; Don't want it to show when using test builds
-		if ReadSetting("General","unique_ID")<>"SVN" OR ReadSetting("Advanced","skip_finalhelp")="no" Then
+		if ReadSetting("General","unique_ID")<>"SVN" AND ReadSetting("Advanced","skip_finalhelp")="no" Then
 			ShellExecute("http://www.linuxliveusb.com/help/guide/using-lili", "", "", "", 7)
 		EndIf
 

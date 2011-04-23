@@ -80,7 +80,7 @@ Func CheckForMinorUpdate()
 		if isBeta() Then Return 0
 
 		; Compare with the current version
-		if VersionCodeForCompatList($current_compatibility_list_version) < VersionCodeForCompatList($last_stable_update) AND MajorVersionCode($current_compatibility_list_version)<MajorVersionCode($last_stable_update) Then
+		if VersionCodeForCompatList($current_compatibility_list_version) < VersionCodeForCompatList($last_stable_update) AND MajorVersionCode($current_compatibility_list_version)=MajorVersionCode($last_stable_update) Then
 			UpdateLog("Compatibility list can be updated")
 			; There is a new version => Downloading it to new_compatibility_list.ini
 			InetGet($check_updates_url&"compatibility_lists/"&$last_stable_update, @ScriptDir &"\tools\settings\new_compatibility_list.ini",3)
@@ -183,9 +183,11 @@ Func isBeta()
 EndFunc   ;==>isBeta
 
 Func GetFullVersion()
+	Global $current_compatibility_list_version
 	if isBeta() Then
 		return $software_version
 	Else
+		$current_compatibility_list_version = IniRead($compatibility_ini, "Compatibility_List", "Version", $software_version & ".0")
 		$compat_version = VersionCodeForCompatList($current_compatibility_list_version)
 		if $compat_version > 0 Then
 			return $software_version&" Update "&$compat_version
