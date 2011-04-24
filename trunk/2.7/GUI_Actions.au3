@@ -142,18 +142,19 @@ EndFunc   ;==>GUI_Restore
 Func GUI_Choose_Drive()
 	SendReport("Start-GUI_Choose_Drive")
 	$selected_drive = StringLeft(GUICtrlRead($combo), 2)
-	If (StringInStr(DriveGetFileSystem($selected_drive), "FAT") >= 1 And SpaceAfterLinuxLiveMB($selected_drive) > 0) Then
+	$space_after_linux_live_MB=SpaceAfterLinuxLiveMB($selected_drive)
+	If (StringInStr(DriveGetFileSystem($selected_drive), "FAT") >= 1 And $space_after_linux_live_MB > 0) Then
 		; State is OK ( FAT32 or FAT format and 700MB+ free)
 		Step1_Check("good")
 
 		If GUICtrlRead($slider) > 0 Then
-			GUICtrlSetData($label_max, SpaceAfterLinuxLiveMB($selected_drive) & " " & Translate("MB"))
-			GUICtrlSetLimit($slider, Round(SpaceAfterLinuxLiveMB($selected_drive) / 10), 0)
+			GUICtrlSetData($label_max, $space_after_linux_live_MB & " " & Translate("MB"))
+			GUICtrlSetLimit($slider, Round($space_after_linux_live_MB / 10), 0)
 			; State is OK ( FAT32 or FAT format and 700MB+ free) and warning for live mode only on step 3
 			Step3_Check("good")
 		Else
-			GUICtrlSetData($label_max, SpaceAfterLinuxLiveMB($selected_drive) & " " & Translate("MB"))
-			GUICtrlSetLimit($slider, Round(SpaceAfterLinuxLiveMB($selected_drive) / 10), 0)
+			GUICtrlSetData($label_max, $space_after_linux_live_MB & " " & Translate("MB"))
+			GUICtrlSetLimit($slider, Round($space_after_linux_live_MB / 10), 0)
 			; State is OK but warning for live mode only on step 3
 			Step3_Check("warning")
 		EndIf
@@ -738,14 +739,14 @@ EndFunc   ;==>GUI_Persistence_Input
 
 Func GUI_Format_Key()
 	SendReport("Start-GUI_Format_Key")
+	$space_after_linux_live_MB=SpaceAfterLinuxLiveMB($selected_drive)
+	GUICtrlSetData($label_max, $space_after_linux_live_MB & " " & Translate("MB"))
+	GUICtrlSetLimit($slider, $space_after_linux_live_MB / 10, 0)
 
-	GUICtrlSetData($label_max, SpaceAfterLinuxLiveMB($selected_drive) & " " & Translate("MB"))
-	GUICtrlSetLimit($slider, SpaceAfterLinuxLiveMB($selected_drive) / 10, 0)
-
-	If ((StringInStr(DriveGetFileSystem($selected_drive), "FAT") >= 1 Or GUICtrlRead($formater) == $GUI_CHECKED) And SpaceAfterLinuxLiveMB($selected_drive) > 0) Then
+	If ((StringInStr(DriveGetFileSystem($selected_drive), "FAT") >= 1 Or GUICtrlRead($formater) == $GUI_CHECKED) And $space_after_linux_live_MB > 0) Then
 		; State is OK ( FAT32 or FAT format and 700MB+ free)
-		GUICtrlSetData($label_max, SpaceAfterLinuxLiveMB($selected_drive) & " " & Translate("MB"))
-		GUICtrlSetLimit($slider, Round(SpaceAfterLinuxLiveMB($selected_drive) / 10), 0)
+		GUICtrlSetData($label_max, $space_after_linux_live_MB & " " & Translate("MB"))
+		GUICtrlSetLimit($slider, Round($space_after_linux_live_MB / 10), 0)
 		Step1_Check("good")
 
 	ElseIf (StringInStr(DriveGetFileSystem($selected_drive), "FAT") <= 0 And GUICtrlRead($formater) <> $GUI_CHECKED) Then
@@ -872,7 +873,7 @@ Func GUI_Launch_Creation()
 
 		Sleep(1000)
 		; Don't want it to show when using test builds
-		if ReadSetting("General","unique_ID")<>"SVN" OR ReadSetting("Advanced","skip_finalhelp")="no" Then
+		if ReadSetting("General","unique_ID")<>"SVN" AND ReadSetting("Advanced","skip_finalhelp")="no" Then
 			ShellExecute("http://www.linuxliveusb.com/help/guide/using-lili", "", "", "", 7)
 		EndIf
 

@@ -178,6 +178,12 @@ Func GiveMePhysicalDisk()
 	$drive_letter = StringLeft(@ScriptDir, 2)
 	UpdateLog("GiveMePhysicalDisk of : " & $drive_letter)
 
+	$windows_drive_letter = StringLeft(@WindowsDir, 2)
+	if $drive_letter = $windows_drive_letter Then
+		$return = MsgBox(262144+52+256,"Warning !", "You are trying to virtualize your Windows drive."&@crlf&@crlf&"Please be aware that this could lead to data corruption !!"&@CRLF&@CRLF&"If you know what you are doing and accept the risk, click YES."&@CRLF&"If you are not sure then click NO (recommended).")
+		if $return=7 or $return=-1 then Exit
+	EndIf
+
 	Local $wbemFlagReturnImmediately, $wbemFlagForwardOnly, $objWMIService, $colItems, $objItem, $found_usb, $usb_model, $usb_size
 	$wbemFlagReturnImmediately = 0x10
 	$wbemFlagForwardOnly = 0x20
@@ -300,15 +306,23 @@ Func ChangeUUID()
 		UpdateLog("Changing UUID of virtual disk to match the one in LinuxLive.vbox")
 		; read content from VirtualBox.xml
 		$file = FileOpen($linuxlive_config_file, 128)
-		if @error Then MsgBox(0,"kjk","Error while trying to open LinuxLive.vbox")
+		if @error Then
+			UpdateLog("ERROR : Could not open LinuxLive.vbox file.")
+			MsgBox(0,"Error","ERROR : Could not open LinuxLive.vbox file.")
+			return ""
+		EndIf
 		$lines = FileRead($file)
 		FileClose($file)
 
 		;UpdateLog("VirtualBox.xml content :" & @CRLF & @CRLF & $lines)
 
 		$current_uuid = StringRegExp($lines,'(?i)<HardDisk uuid="{(.*)}".*LinuxLive.vmdk',3)
-		If StringLen($current_uuid[0]) < 10 Then
+		if @error Then
 			UpdateLog("ERROR : LinuxLive VMDK was not found in VirtualBox config.")
+			Return ""
+		EndIf
+		If StringLen($current_uuid[0]) < 10 Then
+			UpdateLog("ERROR : LinuxLive VMDK was found but length is invalid in VirtualBox config.")
 		Else
 			UpdateLog("Current UUID found : " & $current_uuid[0])
 
