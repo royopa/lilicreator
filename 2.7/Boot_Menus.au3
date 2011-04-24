@@ -176,6 +176,8 @@ Func Default_WriteTextCFG($selected_drive)
 		$syslinux_file = $selected_drive & "\boot\syslinux\syslinux.cfg"
 	Elseif FileExists($selected_drive & "\syslinux\syslinux.cfg") Then
 		$syslinux_file = $selected_drive & "\syslinux\syslinux.cfg"
+	Elseif FileExists($selected_drive & "\syslinux.cfg") Then
+		$syslinux_file = $selected_drive & "\syslinux.cfg"
 	Else
 		Return 0
 	EndIf
@@ -189,7 +191,7 @@ Func Default_WriteTextCFG($selected_drive)
 	$content=FileRead($file)
 	FileClose($file)
 
-	; Modifying Boot menu for ArchLinux only
+	; Modifying Boot menu for ArchLinux
 	; setting boot device UUID
 	$array1 = _StringBetween($content, 'archisolabel=', ' ')
 	if NOT @error Then
@@ -207,8 +209,8 @@ Func Default_WriteTextCFG($selected_drive)
 		EndIf
 	EndIf
 
-	; Modifying Boot menu for ArchLinux only
-	; setting boot device UUID
+	; Modifying Boot menu for Gentoo/Sabayo
+	; changing root type from UDF (DVD) to vfat (USB)
 
 	if StringInStr($content,"cdroot_type=udf" )>0 Then
 		SendReport("IN-Default_WriteTextCFG => Gentoo/Sabayon variant detected")
@@ -217,8 +219,24 @@ Func Default_WriteTextCFG($selected_drive)
 		If $file = -1 Then
 			SendReport("IN-Default_WriteTextCFG => ERROR : cannot write to syslinux.cfg")
 		Else
-			SendReport("IN-Default_WriteTextCFG => setting cdroot_type=vfat slowusb "&$uuid)
+			SendReport("IN-Default_WriteTextCFG => setting cdroot_type=vfat slowusb ")
 			FileWrite($file,StringReplace($content,"cdroot_type=udf","cdroot_type=vfat slowusb"))
+			FileClose($file)
+		EndIf
+	EndIf
+
+	; Modifying Boot menu for Puppy Variants
+	; changing media from CD to USB
+
+	if StringInStr($content,"pmedia=cd" )>0 Then
+		SendReport("IN-Default_WriteTextCFG => Puppy variant detected")
+		$file = FileOpen($syslinux_file, 2)
+		; Check if file opened for writing OK
+		If $file = -1 Then
+			SendReport("IN-Default_WriteTextCFG => ERROR : cannot write to syslinux.cfg")
+		Else
+			SendReport("IN-Default_WriteTextCFG => setting pmedia=usb")
+			FileWrite($file,StringReplace($content,"pmedia=cd","pmedia=usb"))
 			FileClose($file)
 		EndIf
 	EndIf

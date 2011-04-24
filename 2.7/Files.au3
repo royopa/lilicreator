@@ -129,23 +129,25 @@ EndFunc   ;==>_FileCopy2
 
 Func GetPreviousInstallSizeMB($drive_letter)
 	SendReport("Start-GetPreviousInstallSizeMB for drive "&$drive_letter)
-	Local $array,$array2
+	Local $array,$array2,$chrono=TimerInit()
 	if FileExists($drive_letter&"\"&$autoclean_settings) Then
 		$array=IniReadSection($drive_letter&"\"&$autoclean_settings,"Files")
 		$total=0
 		if Ubound($array) > 1 Then
 			for $i=1 To Ubound($array)-1
-				$total+=FileGetSize($drive_letter&"\"&$array[$i][0])
+				$total+=IniRead($drive_letter&"\"&$autoclean_settings,"Files",$array[$i][0],"0")
+				; Real size is too long to be computed  FileGetSize($drive_letter&"\"&$array[$i][0])
 			Next
 		EndIf
 
 		$array2=IniReadSection($drive_letter&"\"&$autoclean_settings,"Folders")
 		if Ubound($array2) > 1 Then
 			for $i=1 To Ubound($array2)-1
-				$total+=DirGetSize($drive_letter&"\"&$array2[$i][0]&"\")
+				$total+=IniRead($drive_letter&"\"&$autoclean_settings,"Folders",$array2[$i][0],"0")
+				; Real size is too long to be computed DirGetSize($drive_letter&"\"&$array2[$i][0]&"\")
 			Next
 		EndIf
-		SendReport("End-GetPreviousInstallSizeMB ( Previous install : "&Round($total/(1024*1024),1)& " MB")
+		SendReport("End-GetPreviousInstallSizeMB ( Previous install : "&Round($total/(1024*1024),1)& " MB computed in "&Round(TimerDiff($chrono)/1000,1)&"sec) ")
 		Return Round($total/(1024*1024),0)
 	Else
 		Return 0

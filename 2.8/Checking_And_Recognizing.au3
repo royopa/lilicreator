@@ -564,6 +564,7 @@ Func Check_If_Default_Should_Be_Used($release_in_list)
 		Step2_Check("good")
 	ElseIf StringInStr($features,"install-only") Then
 		Disable_Persistent_Mode("Install only (no Live)")
+		Step2_Check("good")
 		SendReport("IN-Check_If_Default_Should_Be_Used ( builtin persistency for " & $codename& " )")
 	Else
 		Disable_Persistent_Mode()

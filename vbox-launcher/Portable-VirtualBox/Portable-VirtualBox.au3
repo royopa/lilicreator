@@ -10,7 +10,7 @@
 ; Author         : Michael Meyer (michaelm_007)
 ; e-Mail         : email.address@gmx.de
 ; License        : http://creativecommons.org/licenses/by-nc-sa/3.0/
-; Version        : 6.4.4
+; Version        : 6.4.5
 ; Download       : http://www.vbox.me
 ; Support        : http://www.win-lite.de/wbb/index.php?page=Board&boardID=153
 ; Modified by Thibaut lauziere for LinuxLive USB Creator
@@ -37,7 +37,7 @@ TraySetState ()
 TraySetToolTip ("Portable-VirtualBox")
 #ce
 
-Global $version = "6.4.4"
+Global $version = "6.4.5"
 Global $var1 = @ScriptDir&"\data\settings\settings.ini"
 Global $var2 = @ScriptDir&"\data\language\"
 Global $lng = IniRead ($var1, "language", "key", "NotFound")
@@ -637,6 +637,8 @@ If (FileExists (@ScriptDir&"\app32\virtualbox.exe") OR FileExists (@ScriptDir&"\
       RunWait ($arch&"\VBoxSVC.exe /reregserver", @ScriptDir, @SW_HIDE)
       RunWait ("regsvr32.exe /S "& $arch &"\VBoxC.dll", @ScriptDir, @SW_HIDE)
       DllCall ($arch&"\VBoxRT.dll", "hwnd", "RTR3Init")
+	  ; LinuxLive Modifications : splash off after
+      ;SplashOff ()
 
       If RegRead ("HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\VBoxDRV", "DisplayName") <> "VirtualBox Service" Then
         RunWait ("cmd /c sc create VBoxDRV binpath= ""%CD%\"& $arch &"\drivers\VBoxDrv\VBoxDrv.sys"" type= kernel start= auto error= normal displayname= PortableVBoxDRV", @ScriptDir, @SW_HIDE)
@@ -744,7 +746,7 @@ If (FileExists (@ScriptDir&"\app32\virtualbox.exe") OR FileExists (@ScriptDir&"\
           RunWait ("cmd /c set VBOX_USER_HOME=%CD%\data\.VirtualBox & .\"& $arch &"\VirtualBox.exe", @ScriptDir, @SW_HIDE)
         EndIf
 
-		ProcessWaitClose ("VirtualBox.exe")
+        ProcessWaitClose ("VirtualBox.exe")
         ProcessWaitClose ("VBoxManage.exe")
       Else
         If FileExists (@ScriptDir&"\data\.VirtualBox") Then
@@ -1619,7 +1621,7 @@ Func UseSettings ()
       RunWait ("cmd /c upx vboxwebsrv.exe", @ScriptDir&"\app32", @SW_HIDE)
       RunWait ("cmd /c upx VBoxVRDP.dll", @ScriptDir&"\app32", @SW_HIDE)
       RunWait ("cmd /c upx VBoxVMM.dll", @ScriptDir&"\app32", @SW_HIDE)
-      RunWait ("cmd /c upx VBoxTestOGL.exe", @ScriptDir&"\app32", @SW_HIDE)
+      ;RunWait ("cmd /c upx VBoxTestOGL.exe", @ScriptDir&"\app32", @SW_HIDE)
       RunWait ("cmd /c upx VBoxSVC.exe", @ScriptDir&"\app32", @SW_HIDE)
       RunWait ("cmd /c upx VBoxSharedFolders.dll", @ScriptDir&"\app32", @SW_HIDE)
       RunWait ("cmd /c upx VBoxSharedCrOpenGL.dll", @ScriptDir&"\app32", @SW_HIDE)
@@ -1632,8 +1634,8 @@ Func UseSettings ()
       RunWait ("cmd /c upx VBoxOGLrenderspu.dll", @ScriptDir&"\app32", @SW_HIDE)
       RunWait ("cmd /c upx VBoxOGLhosterrorspu.dll", @ScriptDir&"\app32", @SW_HIDE)
       RunWait ("cmd /c upx VBoxOGLhostcrutil.dll", @ScriptDir&"\app32", @SW_HIDE)
-      RunWait ("cmd /c upx VBoxNetDHCP.exe", @ScriptDir&"\app32", @SW_HIDE)
-      RunWait ("cmd /c upx VBoxManage.exe", @ScriptDir&"\app32", @SW_HIDE)
+      ;RunWait ("cmd /c upx VBoxNetDHCP.exe", @ScriptDir&"\app32", @SW_HIDE)
+      ;RunWait ("cmd /c upx VBoxManage.exe", @ScriptDir&"\app32", @SW_HIDE)
       RunWait ("cmd /c upx VBoxHeadless.exe", @ScriptDir&"\app32", @SW_HIDE)
       RunWait ("cmd /c upx VBoxGuestPropSvc.dll", @ScriptDir&"\app32", @SW_HIDE)
       RunWait ("cmd /c upx VBoxDDU.dll", @ScriptDir&"\app32", @SW_HIDE)
@@ -1658,7 +1660,8 @@ Func UseSettings ()
       RunWait ("cmd /c mpress vboxwebsrv.exe", @ScriptDir&"\app64", @SW_HIDE)
       RunWait ("cmd /c mpress VBoxVRDP.dll", @ScriptDir&"\app64", @SW_HIDE)
       RunWait ("cmd /c mpress VBoxVMM.dll", @ScriptDir&"\app64", @SW_HIDE)
-      RunWait ("cmd /c mpress VBoxTestOGL.exe", @ScriptDir&"\app64", @SW_HIDE)
+      ; LiLi : avoid virus alert
+	  ;RunWait ("cmd /c mpress VBoxTestOGL.exe", @ScriptDir&"\app64", @SW_HIDE)
       RunWait ("cmd /c mpress VBoxSVC.exe", @ScriptDir&"\app64", @SW_HIDE)
       RunWait ("cmd /c mpress VBoxSharedFolders.dll", @ScriptDir&"\app64", @SW_HIDE)
       RunWait ("cmd /c mpress VBoxSharedCrOpenGL.dll", @ScriptDir&"\app64", @SW_HIDE)
@@ -1669,8 +1672,9 @@ Func UseSettings ()
       RunWait ("cmd /c mpress VBoxOGLrenderspu.dll", @ScriptDir&"\app64", @SW_HIDE)
       RunWait ("cmd /c mpress VBoxOGLhosterrorspu.dll", @ScriptDir&"\app64", @SW_HIDE)
       RunWait ("cmd /c mpress VBoxOGLhostcrutil.dll", @ScriptDir&"\app64", @SW_HIDE)
-      RunWait ("cmd /c mpress VBoxNetDHCP.exe", @ScriptDir&"\app64", @SW_HIDE)
-      RunWait ("cmd /c mpress VBoxManage.exe", @ScriptDir&"\app64", @SW_HIDE)
+	  ; LiLi : avoid virus alert
+      ;RunWait ("cmd /c mpress VBoxNetDHCP.exe", @ScriptDir&"\app64", @SW_HIDE)
+      ;RunWait ("cmd /c mpress VBoxManage.exe", @ScriptDir&"\app64", @SW_HIDE)
       RunWait ("cmd /c mpress VBoxHeadless.exe", @ScriptDir&"\app64", @SW_HIDE)
       RunWait ("cmd /c mpress VBoxGuestPropSvc.dll", @ScriptDir&"\app64", @SW_HIDE)
       RunWait ("cmd /c mpress VBoxDDU.dll", @ScriptDir&"\app64", @SW_HIDE)
@@ -1692,7 +1696,8 @@ Func UseSettings ()
     GUICtrlSetData ($Input200, @LF & "Please wait, delete files and folders.")
     DirCopy (@ScriptDir&"\temp\x86\PFiles\Oracle VM VirtualBox\", @ScriptDir&"\vboxadditions", 1)
     DirCopy (@ScriptDir&"\temp\ExtensionPacks\", @ScriptDir&"\vboxadditions\ExtensionPacks", 1)
-    FileCopy (@ScriptDir&"\temp\x86\PFiles\Oracle VM VirtualBox\*.iso", @ScriptDir&"\vboxadditions\guestadditions\*.iso", 9)
+	; LiLi : lighter pack, useless on Vista and Seven.
+    ;FileCopy (@ScriptDir&"\temp\x86\PFiles\Oracle VM VirtualBox\*.iso", @ScriptDir&"\vboxadditions\guestadditions\*.iso", 9)
     DirRemove (@ScriptDir&"\vboxadditions\accessible", 1)
     DirRemove (@ScriptDir&"\vboxadditions\drivers", 1)
     DirRemove (@ScriptDir&"\vboxadditions\sdk", 1)
@@ -1764,6 +1769,10 @@ Func UpdateYes ()
   If $new2 = 1 Then
     DirCreate (@ScriptDir&"\update\")
     GUICtrlSetData ($Input300, IniRead ($var2 & $lng &".ini", "status", "10", "NotFound"))
+
+    Local $vboxdown = IniRead ("http://www.vbox.me/update/download.ini", "download", "key", "NotFound")
+    IniWrite ("http://www.vbox.me/update/download.ini", "download", "key", $vboxdown + 1)
+
     Local $hDownload = InetGet ("http://www.vbox.me/update/vbox.7z", @ScriptDir&"\update\vbox.7z", 1, 1)
     Do
       Sleep (250)

@@ -192,7 +192,7 @@ Func Default_WriteTextCFG($selected_drive)
 		While 1
 			$foundfile = FileFindNextFile($search)
 			If @error Then ExitLoop
-			DefaultBootTweaks($syslinux_folder&$foundfile)
+			DefaultBootTweaks($selected_drive,$syslinux_folder&$foundfile)
 		WEnd
 		FileClose($search)
 	EndIf
@@ -202,7 +202,7 @@ Func Default_WriteTextCFG($selected_drive)
 		While 1
 			$foundfile = FileFindNextFile($search)
 			If @error Then ExitLoop
-			DefaultBootTweaks($syslinux_folder&$foundfile)
+			DefaultBootTweaks($selected_drive,$syslinux_folder&$foundfile)
 		WEnd
 		FileClose($search)
 	EndIf
@@ -211,7 +211,7 @@ Func Default_WriteTextCFG($selected_drive)
 
 EndFunc
 
-Func DefaultBootTweaks($filename)
+Func DefaultBootTweaks($selected_drive,$filename)
 	$file = FileOpen($filename, 0)
 	If $file = -1 Then
 		SendReport("End-DefaultBootTweaks : could not open file "&$filename)
@@ -247,6 +247,20 @@ Func DefaultBootTweaks($filename)
 			FileWrite($file,StringReplace($content,"pmedia=cd","pmedia=usb"))
 			FileClose($file)
 		EndIf
+	Elseif StringInStr($content,"vmkboot.gz" )>0 Then
+		; Modifying Boot menu for VMware vSphere ESXi > 4.1
+		; adding a ks=usb
+		SendReport("IN-DefaultBootTweaks => ESXi variant detected in file "&$filename)
+		$file = FileOpen($filename, 2)
+		; Check if file opened for writing OK
+		If $file = -1 Then
+			SendReport("IN-DefaultBootTweaks => ERROR : cannot write to file "&$filename)
+		Else
+			SendReport("IN-DefaultBootTweaks => setting vmkboot.gz in file "&$filename)
+			FileWrite($file,StringReplace($content,"vmkboot.gz","vmkboot.gz ks=usb "))
+			FileClose($file)
+		EndIf
+		FileCopy(@ScriptDir&"\tools\boot-menus\esxi-ks.cfg",$selected_drive&"\ks.cfg")
 	Else
 		; Modifying Boot menu for ArchLinux
 		; setting boot device UUID
