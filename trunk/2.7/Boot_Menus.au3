@@ -367,6 +367,7 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 	Else
 		$text_file="text.cfg"
 	EndIf
+	SendReport("IN-Ubuntu_WriteTextCFG : writing to "&$text_file)
 
 	$file = FileOpen($selected_drive & "\syslinux\"&$text_file, 2)
 	FileWrite($file, $boot_text)

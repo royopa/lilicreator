@@ -33,7 +33,7 @@ Func LogSystemConfig()
 	$line &= @CRLF & "Unique ID : " & ReadSetting("General","unique_id")
 
 	if FileExists("Z:/bin/uname") Then
-		$realOS=_RunReadStd("Z:/bin/uname -s")
+		$realOS=_RunReadStd("Z:/bin/uname -a")
 		$line &= @CRLF & "Wine Detected : "&$realOS[1]
 	EndIf
 

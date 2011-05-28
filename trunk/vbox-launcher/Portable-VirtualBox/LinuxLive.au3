@@ -27,8 +27,11 @@ Func CheckIfInstalled()
 		$append_arch=""
 	EndIf
 
-
 	$version_new = RegRead("HKLM"&$append_arch&"\SOFTWARE\Oracle\VirtualBox","Version")
+	if $version_new = "%VER%" Then
+		$version_new = RegRead("HKLM"&$append_arch&"\SOFTWARE\Oracle\VirtualBox","VersionExt")
+	EndIf
+
 	$version_old = RegRead("HKLM"&$append_arch&"\SOFTWARE\Sun\VirtualBox","Version")
 
 	If $version_new <> "" Then
