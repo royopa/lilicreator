@@ -6,7 +6,7 @@
 #AutoIt3Wrapper_UseUpx=n
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.7.88.46
+#AutoIt3Wrapper_Res_Fileversion=2.8.88.46
 #AutoIt3Wrapper_Res_FileVersion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_SaveSource=y
@@ -420,11 +420,13 @@ GUICtrlSetOnEvent(-1, "GUI_Help_Step4")
 ;GUICtrlSetOnEvent(-1, "GUI_Help_Step5")
 
 GUISetBkColor(0x121314)
+
 _WinAPI_SetLayeredWindowAttributes($CONTROL_GUI, 0x121314)
 
 $ZEROGraphic = _GDIPlus_GraphicsCreateFromHWND($CONTROL_GUI)
 
 ; Firt display (initialization) of images
+$PNG_DISPLAY = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $PNG_GUI, 0, 0, 450, 750, 0, 0, 450, 750)
 $EXIT_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $EXIT_NORM, 0, 0, 20, 20, 335 + $offsetx0, -20 + $offsety0, 20, 20)
 $MIN_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $MIN_NORM, 0, 0, 20, 20, 305 + $offsetx0, -20 + $offsety0, 20, 20)
 $DRAW_REFRESH = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $REFRESH_PNG, 0, 0, 20, 20, 300 + $offsetx0, 145 + $offsety0, 20, 20)
@@ -516,6 +518,9 @@ $hide_files = GUICtrlCreateCheckbox("", 30 + $offsetx4 + $offsetx0, 285 + $offse
 GUICtrlSetState(-1, $GUI_CHECKED)
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
+SetLastStateHideFiles()
+GUICtrlSetOnEvent(-1, "GUI_Check_HideFiles")
+
 $hide_files_label = GUICtrlCreateLabel(Translate("Hide created files on key"), 50 + $offsetx4 + $offsetx0, 285 + $offsety4 + $offsety0, 300, 20)
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
@@ -524,14 +529,18 @@ $formater = GUICtrlCreateCheckbox("", 30 + $offsetx4 + $offsetx0, 305 + $offsety
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
 GUICtrlSetOnEvent(-1, "GUI_Format_Key")
+
 $formater_label = GUICtrlCreateLabel(Translate("Format the key in FAT32 (this will erase your data !!)"), 50 + $offsetx4 + $offsetx0, 305 + $offsety4 + $offsety0, 320, 20)
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
+
 $virtualbox = GUICtrlCreateCheckbox("", 30 + $offsetx4 + $offsetx0, 325 + $offsety4 + $offsety0, 13, 13)
-GUICtrlSetState(-1, $GUI_CHECKED)
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
 GUICtrlSetOnEvent(-1, "GUI_Check_VirtualBox")
+; Setting back last state
+SetLastStateVirtualization()
+
 $virtualbox_label = GUICtrlCreateLabel(Translate("Enable launching LinuxLive in Windows (requires internet to install)"), 50 + $offsetx4 + $offsetx0, 325 + $offsety4 + $offsety0, 300, 50)
 GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 GUICtrlSetColor(-1, 0xFFFFFF)
@@ -577,6 +586,7 @@ GUIDelete($splash_gui)
 Sleep(100)
 GUISetState(@SW_SHOW, $GUI)
 GUISetState(@SW_SHOW, $CONTROL_GUI)
+
 Sleep(100)
 ; LiLi has been restarted due to a language change
 If ReadSetting("Internal", "restart_language") = "yes" Then
@@ -607,6 +617,7 @@ EndFunc   ;==>MoveGUI
 
 Func DrawAll()
 	_WinAPI_RedrawWindow($CONTROL_GUI, 0, 0, $RDW_UPDATENOW)
+
 	$EXIT_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $EXIT_NORM, 0, 0, 20, 20, 335 + $offsetx0, -20 + $offsety0, 20, 20)
 	$MIN_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $MIN_NORM, 0, 0, 20, 20, 305 + $offsetx0, -20 + $offsety0, 20, 20)
 	$DRAW_REFRESH = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $REFRESH_PNG, 0, 0, 20, 20, 300 + $offsetx0, 145 + $offsety0, 20, 20)

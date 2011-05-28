@@ -239,7 +239,7 @@ Func ReleaseGetDescription($release_in_list)
 	if $release_in_list <=0 Then Return "NotFound"
 	if StringInStr(ReleaseGetCodename($release_in_list),"separator")>0 Then
 		; This is a separator description
-		Return ">>>>>>>>>>>>>>> "&Translate(StringStripWS($releases[$release_in_list][$R_DESCRIPTION],3))&" <<<<<<<<<<<<<<<"
+		Return ">>>>>>>>>> "&Translate(StringStripWS($releases[$release_in_list][$R_DESCRIPTION],3))&" <<<<<<<<<<"
 	Else
 		; This is Linux description
 		Return Translate(StringStripWS($releases[$release_in_list][$R_DESCRIPTION],3))

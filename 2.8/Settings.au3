@@ -16,6 +16,7 @@ Func ReadSetting($category,$key)
 		$val=IniRead($settings_ini, $category, $key,"")
 	Else
 		$val=RegRead("HKEY_CURRENT_USER\SOFTWARE\LinuxLive\"&$category, $key)
+		IniWrite($settings_ini, $category, $key, $val)
 	EndIf
 	Return StringStripWS($val,3)
 EndFunc

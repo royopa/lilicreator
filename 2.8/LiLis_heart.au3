@@ -532,6 +532,9 @@ Func Create_boot_menu($drive_letter,$release_in_list)
 		Elseif $variant="XBMC" Then
 			SendReport("IN-Create_boot_menu for XBMC")
 			XBMC_WriteTextCFG($drive_letter,$release_in_list)
+		Elseif $variant = "backtrack" Then
+			SendReport("IN-Create_boot_menu for BackTrack")
+			BackTrack_WriteTextCFG($drive_letter,$release_in_list)
 		Elseif $distribution = "ubuntu" Then
 			SendReport("IN-Create_boot_menu for Ubuntu")
 			Ubuntu_WriteTextCFG($drive_letter,$release_in_list)
@@ -685,6 +688,10 @@ Func Create_persistence_file($drive_letter,$release_in_list,$persistence_size,$h
 			; Ubuntu
 			$persistence_file= 'casper-rw'
 			UpdateLog("Found feature ubuntu-persistence, persistence file will be "&$persistence_file)
+		Elseif StringInStr($features,"backtrack-persistence")<>0 Then
+			; BackTrack > v5
+			$persistence_file= 'casper-rw'
+			UpdateLog("Found feature backtrack-persistence, persistence file will be "&$persistence_file)
 		Elseif StringInStr($features,"sidux-persistence")<>0 Then
 			; Sidux
 			$persistence_file= "sidux\sidux-rw"
@@ -804,6 +811,41 @@ Func Install_boot_sectors($drive_letter,$release_in_list,$hide_it)
 			InstallSyslinux($drive_letter,3)
 		EndIf
 	EndIf
+
+	if FileExists($drive_letter & "\boot\syslinux\syslinux.cfg") Then
+		$syslinux_folder=$drive_letter & "\boot\syslinux\"
+	Elseif FileExists($drive_letter & "\syslinux\syslinux.cfg") Then
+		$syslinux_folder=$drive_letter & "\syslinux\"
+	Elseif FileExists($drive_letter & "\syslinux.cfg") Then
+		$syslinux_folder=$drive_letter & "\"
+	EndIf
+
+	; Replacing Syslinux modules by the good ones
+	$search = FileFindFirstFile($syslinux_folder&"*.c32")
+	; Check if the search was successful
+	If $search <> -1 Then
+		$found_modules=""
+		While 1
+			$file = FileFindNextFile($search)
+			If @error Then ExitLoop
+			$found_modules&=$file&"|"
+		WEnd
+
+		$found_modules=StringSplit(StringTrimRight($found_modules,1),"|",2)
+
+		For $module IN $found_modules
+			$new_module=@ScriptDir&"\tools\syslinux-modules\v"&$syslinux_version&"\"&$module
+			If FileExists($new_module) Then
+				SendReport("IN-Install_boot_sectors : Replacing syslinux "&$syslinux_version&" module "&$module&" by the matching one")
+				FileCopy($new_module,$syslinux_folder,1)
+			Else
+				SendReport("IN-Install_boot_sectors : WARNING, Could not replace syslinux "&$syslinux_version&" module "&$module&" by the matching one")
+			EndIf
+		Next
+	EndIf
+	FileClose($search)
+
+
 
 	;RunWait3('"' & @ScriptDir & '\tools\syslinux.exe" -maf -d ' & $drive_letter & '\syslinux ' & $drive_letter, @ScriptDir, @SW_HIDE)
 

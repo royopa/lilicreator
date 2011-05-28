@@ -25,24 +25,41 @@ Func Enable_Persistent_Mode()
 EndFunc   ;==>Enable_Persistent_Mode
 
 Func Disable_VirtualBox_Option()
-	GUICtrlSetState($virtualbox, $GUI_UNCHECKED)
+	SetLastStateVirtualization()
 	GUICtrlSetState($virtualbox, $GUI_DISABLE)
 EndFunc   ;==>Disable_VirtualBox_Option
 
 Func Enable_VirtualBox_Option()
-	GUICtrlSetState($virtualbox, $GUI_CHECKED)
+	SetLastStateVirtualization()
 	GUICtrlSetState($virtualbox, $GUI_ENABLE)
 EndFunc   ;==>Enable_VirtualBox_Option
 
 Func Disable_Hide_Option()
-	GUICtrlSetState($hide_files, $GUI_UNCHECKED)
+	SetLastStateHideFiles()
 	GUICtrlSetState($hide_files, $GUI_DISABLE)
 EndFunc   ;==>Disable_Hide_Option
 
 Func Enable_Hide_Option()
-	GUICtrlSetState($hide_files, $GUI_CHECKED)
+	SetLastStateHideFiles()
 	GUICtrlSetState($hide_files, $GUI_ENABLE)
 EndFunc   ;==>Enable_Hide_Option
+
+Func SetLastStateHideFiles()
+	if ReadSetting("Last_State","hide_files")="yes" Then
+		GUICtrlSetState($hide_files, $GUI_CHECKED)
+	Else
+		GUICtrlSetState($hide_files, $GUI_UNCHECKED)
+	EndIf
+EndFunc
+
+Func SetLastStateVirtualization()
+	if ReadSetting("Last_State","virtualization")="yes" Then
+		GUICtrlSetState($virtualbox, $GUI_CHECKED)
+	Else
+		GUICtrlSetState($virtualbox, $GUI_UNCHECKED)
+	EndIf
+EndFunc
+
 
 ; Clickable parts of images
 Func GUI_Exit()
@@ -718,8 +735,16 @@ EndFunc   ;==>GUI_Persistence_Slider
 Func GUI_Persistence_Input()
 	SendReport("Start-GUI_Persistence_Input")
 	$selected_drive = StringLeft(GUICtrlRead($combo), 2)
-	If StringIsInt(GUICtrlRead($slider_visual)) And GUICtrlRead($slider_visual) <= SpaceAfterLinuxLiveMB($selected_drive) And GUICtrlRead($slider_visual) > 0 Then
+	$space_after_linux_live_MB=SpaceAfterLinuxLiveMB($selected_drive)
+	If StringIsInt(GUICtrlRead($slider_visual)) And GUICtrlRead($slider_visual) <= $space_after_linux_live_MB And GUICtrlRead($slider_visual) > 0 Then
 		GUICtrlSetData($slider, Round(GUICtrlRead($slider_visual) / 10))
+		GUICtrlSetData($slider_visual_mode, Translate("(Persistent Mode)"))
+		; State is  OK (persistent mode)
+		Step3_Check("good")
+
+	ElseIf StringIsInt(GUICtrlRead($slider_visual)) And GUICtrlRead($slider_visual) > $space_after_linux_live_MB And GUICtrlRead($slider_visual) > 0 Then
+		GUICtrlSetData($slider_visual, $space_after_linux_live_MB)
+		GUICtrlSetData($slider, $slider_visual)
 		GUICtrlSetData($slider_visual_mode, Translate("(Persistent Mode)"))
 		; State is  OK (persistent mode)
 		Step3_Check("good")
@@ -751,7 +776,7 @@ Func GUI_Format_Key()
 
 	ElseIf (StringInStr(DriveGetFileSystem($selected_drive), "FAT") <= 0 And GUICtrlRead($formater) <> $GUI_CHECKED) Then
 		MsgBox(4096, "", Translate("Please choose a FAT32 or FAT formated key or check the formating option"))
-		GUICtrlSetData($label_max, "?? Mo")
+		GUICtrlSetData($label_max, "?? "&Translate("MB"))
 		Step1_Check("bad")
 
 	Else
@@ -766,9 +791,38 @@ Func GUI_Format_Key()
 	SendReport("End-GUI_Format_Key")
 EndFunc   ;==>GUI_Format_Key
 
+Func Refresh_Persistence()
+	$space_after_linux_live_MB=SpaceAfterLinuxLiveMB($selected_drive)
+
+	If ((StringInStr(DriveGetFileSystem($selected_drive), "FAT") >= 1 Or GUICtrlRead($formater) == $GUI_CHECKED) And $space_after_linux_live_MB > 0) Then
+		; State is OK ( FAT32 or FAT format and 700MB+ free)
+		GUICtrlSetData($label_max, $space_after_linux_live_MB & " " & Translate("MB"))
+		GUICtrlSetLimit($slider, Round($space_after_linux_live_MB / 10), 0)
+
+	ElseIf (StringInStr(DriveGetFileSystem($selected_drive), "FAT") <= 0 And GUICtrlRead($formater) <> $GUI_CHECKED) Then
+		GUICtrlSetData($label_max, "?? " & Translate("MB"))
+	Else
+		GUICtrlSetData($label_max, "?? " & Translate("MB"))
+	EndIf
+	GUI_Persistence_Slider()
+EndFunc
+
 Func GUI_Check_VirtualBox()
-	GUI_Format_Key()
-EndFunc   ;==>GUI_Format_Key
+	If GUICtrlRead($virtualbox) == $GUI_CHECKED Then
+		WriteSetting("Last_State","virtualization","yes")
+	Else
+		WriteSetting("Last_State","virtualization","no")
+	EndIf
+	Refresh_Persistence()
+EndFunc
+
+Func GUI_Check_HideFiles()
+	If GUICtrlRead($hide_files) == $GUI_CHECKED Then
+		WriteSetting("Last_State","hide_files","yes")
+	Else
+		WriteSetting("Last_State","hide_files","no")
+	EndIf
+EndFunc
 
 Func GUI_Launch_Creation()
 	Local $return=""

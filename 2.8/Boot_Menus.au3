@@ -4,6 +4,10 @@
 
 Func GetKbdCode()
 	Local $use_source,$return
+	if ReadSetting("Advanced","skip_keyboard_detection") = "yes" Then
+		SendReport("END-GetKbdCode : Keyboard detection will be skipped.")
+	EndIf
+
 	If StringRight(@KBLayout,4) <> "0000" Then
 		$use_source=StringRight(@KBLayout,4)
 	Elseif @MUILang <> "0000" Then
@@ -167,6 +171,41 @@ Func Aptosid_WriteTextCFG($selected_drive)
 	SendReport("End-Aptosid_WriteTextCFG")
 EndFunc
 
+
+Func BackTrack_WriteTextCFG($selected_drive,$release_in_list)
+	SendReport("Start-BackTrack_WriteTextCFG ( Drive : " & $selected_drive & " )")
+	If FileExists($selected_drive&"\casper-rw") Then
+
+		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 0)
+		If $file = -1 Then
+			SendReport("End-BackTrack_WriteTextCFG : could not open file "&$selected_drive & "\syslinux\syslinux.cfg for reading")
+			Return 0
+		EndIf
+		$content=FileRead($file)
+	EndIf
+
+
+	if StringInStr($content,"label STEALTH" )>0 Then
+		$persistence_menu="label PERSIST" _
+					&@LF&"  menu label BackTrack Persistent - Persistent mode" _
+					&@LF&"  kernel /casper/vmlinuz" _
+					&@LF&"  append  file=/cdrom/preseed/custom.seed boot=casper initrd=/casper/initrd.gz persistent cdrom-detect/try-usb=true text splash vga=791--" _
+					&@LF&@LF&"label STEALTH"
+		$new_content=StringReplace($content,"label STEALTH",$persistence_menu)
+		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
+		If $file = -1 Then
+			SendReport("IN-BackTrack_WriteTextCFG => ERROR : cannot write to syslinux file ")
+		Else
+			FileWrite($file,$new_content)
+			FileClose($file)
+			SendReport("IN-BackTrack_WriteTextCFG => writing new content to syslinux file : "&@crlf&$new_content)
+		EndIf
+
+	EndIf
+
+	SendReport("End-BackTrack_WriteTextCFG")
+EndFunc
+
 ; Modify boot menu for Arch Linux (applied to every default Linux) but will modify only if Arch Linux detected
 Func Default_WriteTextCFG($selected_drive)
 	SendReport("Start-Default_WriteTextCFG ( Drive : " & $selected_drive & " )")
@@ -206,9 +245,6 @@ Func Default_WriteTextCFG($selected_drive)
 		WEnd
 		FileClose($search)
 	EndIf
-
-
-
 EndFunc
 
 Func DefaultBootTweaks($selected_drive,$filename)
@@ -247,6 +283,19 @@ Func DefaultBootTweaks($selected_drive,$filename)
 			FileWrite($file,StringReplace($content,"pmedia=cd","pmedia=usb"))
 			FileClose($file)
 		EndIf
+	Elseif StringInStr($content,"antix" )>0 Then
+		; Modifying Boot menu for AntiX
+		; adding a delay in order to work
+		SendReport("IN-DefaultBootTweaks => AntiX variant detected in file "&$filename)
+		$file = FileOpen($filename, 2)
+		; Check if file opened for writing OK
+		If $file = -1 Then
+			SendReport("IN-DefaultBootTweaks => ERROR : cannot write to file "&$filename)
+		Else
+			SendReport("IN-DefaultBootTweaks => setting rootdelay=15 in file "&$filename)
+			FileWrite($file,StringReplace($content,"APPEND ","APPEND rootdelay=15 "))
+			FileClose($file)
+		EndIf
 	Elseif StringInStr($content,"vmkboot.gz" )>0 Then
 		; Modifying Boot menu for VMware vSphere ESXi > 4.1
 		; adding a ks=usb
@@ -260,7 +309,10 @@ Func DefaultBootTweaks($selected_drive,$filename)
 			FileWrite($file,StringReplace($content,"vmkboot.gz","vmkboot.gz ks=usb "))
 			FileClose($file)
 		EndIf
-		FileCopy(@ScriptDir&"\tools\boot-menus\esxi-ks.cfg",$selected_drive&"\ks.cfg")
+
+		If Not FileExists($selected_drive&"\ks.cfg") Then
+			FileCopy(@ScriptDir&"\tools\boot-menus\esxi-ks.cfg",$selected_drive&"\ks.cfg")
+		EndIf
 	Else
 		; Modifying Boot menu for ArchLinux
 		; setting boot device UUID

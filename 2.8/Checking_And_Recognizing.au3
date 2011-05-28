@@ -21,7 +21,7 @@ Func Check_source_integrity($linux_live_file)
 	Global $MD5_ISO, $compatible_md5, $compatible_filename,$codenames_list, $release_number = -1
 
 	; Pre-Checking
-	If get_extension($linux_live_file) = "img" Then
+	If get_extension($linux_live_file) = "img" AND NOT StringInStr($shortname, "meego") AND ReadSetting("Advanced","force_iso_mode")="no" Then
 
 		Disable_Persistent_Mode()
 		Disable_VirtualBox_Option()
@@ -62,7 +62,7 @@ Func Check_source_integrity($linux_live_file)
 	EndIf
 
 	; No check if it's an img file or if the user do not want to
-	If ReadSetting( "Advanced", "skip_recognition") == "yes" Or get_extension($linux_live_file) = "img" Then
+	If ReadSetting( "Advanced", "skip_recognition") == "yes" OR $file_set_mode="img" Then
 		Step2_Check("good")
 		$temp_index = FindReleaseFromCodeName("default")
 		$release_number = $temp_index
@@ -370,6 +370,9 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "slitaz") Then
 				; Slitaz
 				$release_number = FindReleaseFromCodeName( "slitaz-last")
+			ElseIf StringInStr($shortname, "vinux") Then
+				; Vinux
+				$release_number = FindReleaseFromCodeName( "vinux-last")
 			ElseIf StringInStr($shortname, "tinycore") Then
 				; Tiny Core
 				$release_number = FindReleaseFromCodeName( "tinycore-last")
@@ -411,11 +414,15 @@ Func Check_source_integrity($linux_live_file)
 				$release_number = FindReleaseFromCodeName( "gentoo-last")
 			ElseIf StringInStr($shortname, "backtrack") OR StringInStr($shortname, "bt") Then
 				; BackTrack
-				$release_number = FindReleaseFromCodeName( "backtrack-last")
+				if StringInStr($shortname, "5") AND NOT StringInStr($shortname, "bt4") Then
+					$release_number = FindReleaseFromCodeName( "backtrack-last")
+				Else
+					$release_number = FindReleaseFromCodeName( "backtrack4-last")
+				EndIf
 			ElseIf StringInStr($shortname, "xange") Then
 				; Xange variants
 				$release_number = FindReleaseFromCodeName( "openxange-last")
-			ElseIf StringInStr($shortname, "SimplyMEPIS") Then
+			ElseIf StringInStr($shortname, "SimplyMEPIS") OR StringInStr($shortname, "MEPIS") Then
 				; SimplyMEPIS variants
 				$release_number = FindReleaseFromCodeName( "simplymepis-last")
 			ElseIf StringInStr($shortname, "puredyne") Then
@@ -491,6 +498,9 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "xbmc") Then
 				; XBMC
 				$release_number = FindReleaseFromCodeName( "xbmc-last")
+			ElseIf StringInStr($shortname, "meego") Then
+				; Meego
+				$release_number = FindReleaseFromCodeName( "meego-last")
 			ElseIf StringInStr($shortname, "backbox") Then
 				; BackBox
 				$release_number = FindReleaseFromCodeName( "backbox-last")
@@ -559,6 +569,7 @@ Func Check_If_Default_Should_Be_Used($release_in_list)
 			SendReport("IN-Check_If_Default_Should_Be_Used ( builtin persistency for " & $codename& " )")
 		Else
 			Enable_Persistent_Mode()
+			Refresh_Persistence()
 			SendReport("IN-Check_If_Default_Should_Be_Used ( Enable persistency for " & $codename& " )")
 		EndIf
 		Step2_Check("good")
