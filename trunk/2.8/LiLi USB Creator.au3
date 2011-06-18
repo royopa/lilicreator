@@ -1,17 +1,18 @@
 #NoTrayIcon
 #RequireAdmin
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
-#AutoIt3Wrapper_Icon=tools\img\lili.ico
+#AutoIt3Wrapper_Version=Beta
+#AutoIt3Wrapper_icon=tools\img\lili.ico
 #AutoIt3Wrapper_Compression=0
 #AutoIt3Wrapper_UseUpx=n
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.8.88.46
-#AutoIt3Wrapper_Res_FileVersion_AutoIncrement=Y
+#AutoIt3Wrapper_Res_Fileversion=2.8.88.49
+#AutoIt3Wrapper_Res_Fileversion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_SaveSource=y
 #AutoIt3Wrapper_Res_Field=Site|http://www.linuxliveusb.com
-#AutoIt3Wrapper_Au3Check_Parameters=-w 4
+#AutoIt3Wrapper_AU3Check_Parameters=-w 4
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -31,7 +32,7 @@
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ; Global constants
-Global Const $software_version = "2.8 Beta"
+Global Const $software_version = "2.8"
 Global $lang_folder = @ScriptDir & "\tools\languages\"
 Global $lang_ini
 Global $verbose_logging
@@ -62,6 +63,7 @@ Global $last_stable, $last_stable_update, $last_beta, $last_beta_update, $what_i
 ; General GUI
 Global $GUI, $CONTROL_GUI, $EXIT_BUTTON, $MIN_BUTTON
 Global $combo
+Global $previous_hovered_control
 
 ; Step 1 Graphics
 Global $DRAW_CHECK_STEP1, $DRAW_REFRESH, $HELP_STEP1
@@ -123,7 +125,7 @@ Global $for_winactivate
 Global $current_download, $temp_filename
 Global $ping_result = ""
 
-Global $selected_drive, $virtualbox_check, $virtualbox_size, $virtualbox_realsize, $downloaded_virtualbox_filename
+Global $selected_drive, $virtualbox_check, $virtualbox_size, $virtualbox_realsize, $downloaded_virtualbox_filename,$recommended_ram
 Global $persistence_file = ""
 Global $STEP1_OK, $STEP2_OK, $STEP3_OK
 Global $MD5_ISO, $version_in_file
@@ -670,7 +672,6 @@ EndFunc   ;==>Redraw_Traffic_Lights
 
 
 Func Control_Hover()
-	Global $previous_hovered_control
 	Local $CursorCtrl
 	If WinActive("LinuxLive USB Creator") Or WinActive("LiLi USB Creator") Then
 		$CursorCtrl = GUIGetCursorInfo()
@@ -713,7 +714,9 @@ Func Control_Hover()
 			$previous_hovered_control = $CursorCtrl[4]
 		EndIf
 	EndIf
-	If IsArray($_Progress_Bars) Then _Paint_Bars_Procedure2()
+	If IsArray($_Progress_Bars) Then
+		_Paint_Bars_Procedure2()
+	EndIf
 	_CALLBACKQUEUE()
 EndFunc   ;==>Control_Hover
 

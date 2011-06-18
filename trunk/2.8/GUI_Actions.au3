@@ -403,7 +403,6 @@ Func GUI_Back_Download()
 	Global $label_step2_status,$label_step2_status2
 	Global $current_download,$progress_bar
 	InetClose($current_download)
-	if $progress_bar Then _ProgressDelete($progress_bar)
 	GUI_Hide_Step2_Download_Menu()
 	GUI_Hide_Back_Button()
 	GUICtrlSetState($label_step2_status,$GUI_HIDE)
@@ -455,8 +454,6 @@ Func DownloadRelease($release_in_list, $automatic_download)
 	;GUICtrlSetCursor($BACK_AREA, 0)
 	;GUICtrlSetOnEvent($BACK_AREA, "GUI_Back_Download")
 
-	_ProgressDelete($progress_bar)
-	Global $_Progress_Bars[1][15] = [[-1]]
 	$progress_bar = _ProgressCreate(38 + $offsetx0, 238 + $offsety0, 300, 30)
 	_ProgressSetImages($progress_bar, @ScriptDir & "\tools\img\progress_green.jpg", @ScriptDir & "\tools\img\progress_background.jpg")
 	_ProgressSetFont($progress_bar, "", -1, -1, 0x000000, 0)

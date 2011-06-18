@@ -215,6 +215,18 @@ Func GenericVersionCode($version)
 	Return Int(StringReplace($version,".",""))
 EndFunc
 
+; Return a generic version code without minor (10.10.2 will return 10.10) for some Linuxes (Ubuntu mostly)
+Func GenericVersionCodeWithoutMinor($version)
+	$splitted = StringSplit($version,".",2)
+	if Ubound($splitted) >= 2 Then
+		$major = $splitted[0]&$splitted[1]
+		Return Int($major)
+	Else
+		Return Int(StringReplace($version,".",""))
+	EndIf
+EndFunc
+
+
 Func CompareHuman($version1,$version2)
 	$result = CompareVersion($version1,$version2)
 	if $result=0 Then

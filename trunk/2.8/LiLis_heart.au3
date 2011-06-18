@@ -785,7 +785,19 @@ Func Install_boot_sectors($drive_letter,$release_in_list,$hide_it)
 	SendReport("Start-Install_boot_sectors")
 	UpdateStatus("Installing boot sectors")
 	$features=ReleaseGetSupportedFeatures($release_in_list)
-	if StringInStr($features,"grub") > 0 OR NOT isSyslinuxCfgPresent($drive_letter) Then
+
+	if StringInStr($features,"windows-bootsect") > 0 Then
+		; Windows mode
+		If FileExists($drive_letter & "\boot\bootsect.exe") Then
+			SendReport("IN-Install_boot_sectors : Found bootsect.exe, installing windows boot sectors")
+			InstallWindowsBootSectors($drive_letter)
+			SendReport("End-Install_boot_sectors")
+			return 0
+		Else
+			SendReport("IN-Install_boot_sectors : ERROR, bootsect.exe not found to satisfy windows-bootsect mode")
+		EndIf
+	Elseif StringInStr($features,"grub") > 0 OR NOT isSyslinuxCfgPresent($drive_letter) Then
+		; GRUB Mode
 		UpdateLog("Variant is using GRUB loader")
 
 		; Syslinux will chainload GRUB loader
@@ -794,7 +806,7 @@ Func Install_boot_sectors($drive_letter,$release_in_list,$hide_it)
 		FileCopy2(@ScriptDir & '\tools\boot-menus\grub-syslinux.cfg',$drive_letter & "\syslinux\syslinux.cfg")
 
 		if NOT (FileExists($drive_letter&"\menu.lst") OR FileExists($drive_letter&"\boot\menu.lst") OR FileExists($drive_letter&"\boot\grub\menu.lst")) Then
-			SendReport("--------------> ERROR : syslinux.cfg and menu.lst not found !")
+			SendReport("IN-Install_boot_sectors :  ERROR, syslinux.cfg and menu.lst not found ")
 		EndIf
 	EndIf
 
@@ -818,6 +830,9 @@ Func Install_boot_sectors($drive_letter,$release_in_list,$hide_it)
 		$syslinux_folder=$drive_letter & "\syslinux\"
 	Elseif FileExists($drive_letter & "\syslinux.cfg") Then
 		$syslinux_folder=$drive_letter & "\"
+	Else
+		SendReport("IN-Install_boot_sectors :  syslinux.cfg disappeared ?!!, trying with folder = "&$drive_letter & "\syslinux\")
+		$syslinux_folder=$drive_letter & "\syslinux\"
 	EndIf
 
 	; Replacing Syslinux modules by the good ones
@@ -832,23 +847,27 @@ Func Install_boot_sectors($drive_letter,$release_in_list,$hide_it)
 		WEnd
 
 		$found_modules=StringSplit(StringTrimRight($found_modules,1),"|",2)
-
-		For $module IN $found_modules
-			$new_module=@ScriptDir&"\tools\syslinux-modules\v"&$syslinux_version&"\"&$module
-			If FileExists($new_module) Then
-				SendReport("IN-Install_boot_sectors : Replacing syslinux "&$syslinux_version&" module "&$module&" by the matching one")
-				FileCopy($new_module,$syslinux_folder,1)
-			Else
-				SendReport("IN-Install_boot_sectors : WARNING, Could not replace syslinux "&$syslinux_version&" module "&$module&" by the matching one")
-			EndIf
-		Next
+		If Ubound($found_modules) > 0 Then
+			For $module IN $found_modules
+				if $module <> "gfxboot.c32" Then
+					$new_module=@ScriptDir&"\tools\syslinux-modules\v"&$syslinux_version&"\"&$module
+					If FileExists($new_module) Then
+						SendReport("IN-Install_boot_sectors : Replacing syslinux "&$syslinux_version&" module "&$module&" by the matching one")
+						FileCopy($new_module,$syslinux_folder,1)
+					Else
+						SendReport("IN-Install_boot_sectors : WARNING, Could not replace syslinux "&$syslinux_version&" module "&$module&" by the matching one")
+					EndIf
+				Else
+					SendReport("IN-Install_boot_sectors : Will not replace module "&$module&" to keep Ubuntu variants working")
+				EndIf
+			Next
+		Else
+			SendReport("IN-Install_boot_sectors : No syslinux module to replace")
+		Endif
 	EndIf
 	FileClose($search)
 
-
-
 	;RunWait3('"' & @ScriptDir & '\tools\syslinux.exe" -maf -d ' & $drive_letter & '\syslinux ' & $drive_letter, @ScriptDir, @SW_HIDE)
-
 	If ( $hide_it <> $GUI_CHECKED) Then ShowFile($drive_letter & '\ldlinux.sys')
 	SendReport("End-Install_boot_sectors")
 EndFunc
@@ -1219,7 +1238,6 @@ EndFunc
 
 Func Final_check()
 	SendReport("Start-Final_check")
-	Global $recommended_ram
 	Local $avert_mem = ""
 	$mem = MemGetStats()
 

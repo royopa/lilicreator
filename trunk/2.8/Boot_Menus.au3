@@ -182,6 +182,8 @@ Func BackTrack_WriteTextCFG($selected_drive,$release_in_list)
 			Return 0
 		EndIf
 		$content=FileRead($file)
+	Else
+		$content=""
 	EndIf
 
 
@@ -313,20 +315,30 @@ Func DefaultBootTweaks($selected_drive,$filename)
 		If Not FileExists($selected_drive&"\ks.cfg") Then
 			FileCopy(@ScriptDir&"\tools\boot-menus\esxi-ks.cfg",$selected_drive&"\ks.cfg")
 		EndIf
-	Else
-		; Modifying Boot menu for ArchLinux
+	Elseif StringInStr($content,"isolabel" )>0 OR StringInStr($content,"isolabel" )>0 Then
+		; Modifying Boot menu for ArchLinux And Chakra
 		; setting boot device UUID
-		$array1 = _StringBetween($content, 'archisolabel=', ' ')
+		if StringInStr($content,"archisolabel" )>0 Then
+			$isolabel_text="archisolabel="
+			$isolabel_replacement = "archisodevice="
+		Elseif StringInStr($content,"chakraisolabel" )>0 Then
+			$isolabel_text="chakraisolabel="
+			$isolabel_replacement = "chakraisodevice="
+		Else
+			SendReport("IN-DefaultBootTweaks => Warning : Found an unknown isolabel setting.")
+			Return 0
+		EndIf
+		$array1 = _StringBetween($content, $isolabel_text, ' ')
 		if NOT @error Then
 			SendReport("IN-DefaultBootTweaks => ArchLinux detected in file "&$filename)
 			$uuid = Get_Disk_UUID($selected_drive)
-			$new_content=StringReplace($content,'archisolabel='&$array1[0],"archisodevice=/dev/disk/by-uuid/"&$uuid)
+			$new_content=StringReplace($content,$isolabel_text&$array1[0],$isolabel_replacement&"/dev/disk/by-uuid/"&$uuid)
 			$file = FileOpen($filename, 2)
 			; Check if file opened for writing OK
 			If $file = -1 Then
 				SendReport("IN-DefaultBootTweaks => ERROR : cannot write to file "&$filename)
 			Else
-				SendReport("IN-DefaultBootTweaks => archisodevice UUID set to "&$uuid&" in file "&$filename)
+				SendReport("IN-DefaultBootTweaks => "&$isolabel_replacement&" UUID set to "&$uuid&" in file "&$filename)
 				FileWrite($file,$new_content)
 				FileClose($file)
 			EndIf
@@ -355,7 +367,7 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 	#ce
 
 	; Ubuntu versions > 9.10 use an initrd.lz instead of initrd.gz file
-	If GenericVersionCode($distrib_version) >= 910 Then
+	If GenericVersionCodeWithoutMinor($distrib_version) >= 910 Then
 		$initrd_file = "initrd.lz"
 	Else
 		$initrd_file = "initrd.gz"
@@ -453,12 +465,17 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 	$boot_text = Ubuntu_BootMenu($initrd_file,AutomaticPreseed($selected_drive,$ubuntu_variant))
 	UpdateLog("Creating text.cfg file for Ubuntu variants :" & @CRLF & $boot_text)
 
-	If GenericVersionCode($distrib_version) = 1010 AND $ubuntu_variant <> "lubuntu" Then
-		$text_file="txt.cfg"
+	If GenericVersionCodeWithoutMinor($distrib_version) >= 1010  Then
+		; Special code for lubuntu 10.10
+		if $ubuntu_variant = "lubuntu" AND GenericVersionCodeWithoutMinor($distrib_version) = 1010 Then
+			$text_file="text.cfg"
+		Else
+			$text_file="txt.cfg"
+		EndIf
 	Else
 		$text_file="text.cfg"
 	EndIf
-
+	SendReport("IN-Ubuntu_WriteTextCFG : writing to "&$text_file)
 	$file = FileOpen($selected_drive & "\syslinux\"&$text_file, 2)
 	FileWrite($file, $boot_text)
 	FileClose($file)

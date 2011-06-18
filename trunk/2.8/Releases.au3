@@ -181,10 +181,15 @@ EndFunc
 Func FindReleaseFromCodeName($codename_to_find)
 	Global $releases
 	Local $found=-1
+	SendReport("FindReleaseFromCodeName : Tring to find "&$codename_to_find)
 	$sections = IniReadSectionNames($compatibility_ini)
 	For $i=1 to $sections[0]
 		If $sections[$i] = $codename_to_find Then $found = $i
 	Next
+	if $found=-1 Then
+		SendReport("FindReleaseFromCodeName : Warning, release codename not found, falling back to default")
+		return FindReleaseFromCodeName("default")
+	EndIf
 	Return $found
 EndFunc
 
@@ -228,6 +233,20 @@ EndFunc
 Func ReleaseGetVariantVersion($release_in_list)
 	if $release_in_list <=0 Then Return "NotFound"
 	Return StringStripWS($releases[$release_in_list][$R_VARIANT_VERSION],3)
+EndFunc
+
+Func ReleaseGetMirror($release_in_list,$mirror_number=0)
+	if $release_in_list <=0 Then Return "NotFound"
+	if StringInStr($releases[$release_in_list][$R_MIRROR1],"::") Then
+		$split=StringSplit($releases[$release_in_list][$R_MIRROR1],"::",2)
+		if Ubound($split)==2 Then
+			Return IniRead(@ScriptDir&"\tools\settings\common_mirrors.ini",$split[0],"Mirrors","")
+		Else
+			Return ""
+		EndIf
+	Else
+		Return StringStripWS($releases[$release_in_list][$R_MIRROR1+$mirror_number],3)
+	EndIf
 EndFunc
 
 Func ReleaseGetInstallSize($release_in_list)
