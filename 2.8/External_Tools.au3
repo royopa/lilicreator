@@ -96,6 +96,22 @@ Func InstallSyslinux($drive_letter,$version=3)
 	Return 0
 EndFunc   ;==>InstallSyslinux
 
+; Install Windows boot sectors
+Func InstallWindowsBootSectors($drive_letter)
+	Local $line="",$error=""
+	SendReport("Start-InstallWindowsBootSectors on " & $drive_letter)
+
+	$cmd='"' & $drive_letter & '\boot\bootsect.exe" /nt60 ' & $drive_letter& " /force"
+	SendReport("IN-InstallWindowsBootSectors : executing command -> " &@CRLF& $cmd)
+	$output=_RunReadStd($cmd)
+	SendReport("Return code : "&$output[0]&@CRLF&"Output : "&$output[1]&@CRLF&"Error : "&$output[2])
+	; Sleeping 500ms because /force unmount the disk
+	Sleep(500)
+	; Add check for success
+	SendReport("End-InstallWindowsBootSectors")
+	Return 0
+EndFunc   ;==>InstallSyslinux
+
 
 Func Run7zip2($cmd, $taille)
 	Local $percentage, $line

@@ -18,7 +18,7 @@ Func Check_source_integrity($linux_live_file)
 
 	$shortname = CleanFilename(path_to_name($linux_live_file))
 
-	Global $MD5_ISO, $compatible_md5, $compatible_filename,$codenames_list, $release_number = -1
+	Global $MD5_ISO, $compatible_md5, $compatible_filename, $release_number = -1
 
 	; Pre-Checking
 	If get_extension($linux_live_file) = "img" AND NOT StringInStr($shortname, "meego") AND ReadSetting("Advanced","force_iso_mode")="no" Then
@@ -40,7 +40,7 @@ Func Check_source_integrity($linux_live_file)
 		SendReport("IN-Check_Source (img selected :" & $linux_live_file & ")")
 
 	Else
-		Enable_Persistent_Mode()
+		Disable_Persistent_Mode()
 		Enable_VirtualBox_Option()
 		Enable_Hide_Option()
 		SendReport("IN-Check_Source (iso selected :" & $linux_live_file & ")")
@@ -117,7 +117,7 @@ Func Check_source_integrity($linux_live_file)
 			; Filename is not known but trying to find what it is with its name => INTELLIGENT PROCESSING
 			SendReport("IN-Check_source_integrity (start intelligent processing)")
 
-			if ((StringInStr($shortname, "alternate") OR StringInStr($shortname, "server") OR StringInStr($shortname, "ubuntu-studio") ) AND NOT StringInStr($shortname, "live") ) Then
+			if ((StringInStr($shortname, "alternate") OR StringInStr($shortname, "server") OR StringInStr($shortname, "ubuntu-studio") ) AND NOT StringInStr($shortname, "live") AND NOT StringInStr($shortname, "windows") AND NOT StringInStr($shortname, "esx") AND NOT StringInStr($shortname, "rhel") AND NOT StringInStr($shortname, "vmware")  ) Then
 					; Any Server versions and alternate
 					$release_number = FindReleaseFromCodeName( "default")
 			ElseIf StringInStr($shortname, "archbang") Then
@@ -253,12 +253,19 @@ Func Check_source_integrity($linux_live_file)
 					; PLoP Linux without X
 					$release_number = FindReleaseFromCodeName( "plop-last")
 				EndIf
-			ElseIf StringInStr($shortname, "fedora") AND StringInStr($shortname, "14") Then
+			ElseIf StringInStr($shortname, "fedora") Then
 				; Fedora Based
-				$release_number = FindReleaseFromCodeName( "fedora14-last")
-			ElseIf StringInStr($shortname, "fedora") Or StringInStr($shortname, "F10") Or StringInStr($shortname, "F11") OR StringInStr($shortname, "F12") Then
-				; Fedora Based
-				$release_number = FindReleaseFromCodeName( "fedora-last")
+				if StringInStr($shortname, "14") Then
+					$release_number = FindReleaseFromCodeName( "fedora14-last")
+				Elseif StringInStr($shortname, "13") Then
+					$release_number = FindReleaseFromCodeName( "fedora13-last")
+				Elseif StringInStr($shortname, "12") Then
+					$release_number = FindReleaseFromCodeName( "fedora-12")
+				Elseif StringInStr($shortname, "11") Then
+					$release_number = FindReleaseFromCodeName( "fedora-11")
+				Else
+					$release_number = FindReleaseFromCodeName( "fedora-last")
+				EndIf
 			ElseIf StringInStr($shortname, "soas") Then
 				; Sugar on a stick
 				$release_number = FindReleaseFromCodeName( "sugar-last")
@@ -312,20 +319,7 @@ Func Check_source_integrity($linux_live_file)
 					EndIf
 				Elseif Not StringInStr($shortname, "live") Then
 					; Debian Non Live 6.X => No Persistence
-					if StringInStr($shortname, "KDE") Then
-						$release_number = FindReleaseFromCodeName( "debiankde6-last")
-					elseif StringInStr($shortname, "LXDE") Then
-						$release_number = FindReleaseFromCodeName( "debianlxde6-last")
-					elseif StringInStr($shortname, "Xfce") Then
-						$release_number = FindReleaseFromCodeName( "debianxfce6-last")
-					elseif StringInStr($shortname, "gnome") Then
-						$release_number = FindReleaseFromCodeName( "debiangnome6-last")
-					elseif StringInStr($shortname, "standard") Then
-						$release_number = FindReleaseFromCodeName( "debianstandard6-last")
-					else
-						$release_number = FindReleaseFromCodeName( "debiangnome6-last")
-					EndIf
-
+					$release_number = FindReleaseFromCodeName( "debian6generic-last")
 				Elseif (Not StringInStr($shortname, "sq") AND Not StringInStr($shortname, "6.") ) OR StringInStr($shortname, "CD") OR StringInStr($shortname, "DVD") then
 					; Debian Live or Non-Live 5.X and others => No Persistence
 					$release_number = FindReleaseFromCodeName( "debiangeneric5-last")
@@ -530,6 +524,35 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "Gnome_3") Then
 				; Gnome 3
 				$release_number = FindReleaseFromCodeName( "gnome3-last")
+			ElseIf StringInStr($shortname, "macpup") Then
+				; MacPup
+				$release_number = FindReleaseFromCodeName( "macpup-last")
+			ElseIf StringInStr($shortname, "vector") OR StringInStr($shortname, "VL6") OR StringInStr($shortname, "VL7") Then
+				; VectorLinux
+				$release_number = FindReleaseFromCodeName( "vector-last")
+			ElseIf StringInStr($shortname, "zen") AND StringInStr($shortname, "walk") Then
+				; ZenWalk
+				$release_number = FindReleaseFromCodeName( "zenwalk-last")
+			ElseIf StringInStr($shortname, "fuduntu") Then
+				; Fuduntu
+				$release_number = FindReleaseFromCodeName( "fuduntu-last")
+			ElseIf StringInStr($shortname, "zenix") Then
+				; Fuduntu
+				$release_number = FindReleaseFromCodeName( "zenix-last")
+			ElseIf StringInStr($shortname, "rhel") OR (StringInStr($shortname, "red") AND StringInStr($shortname, "hat"))Then
+				; Red Hat Enterprise Linux
+				$release_number = FindReleaseFromCodeName( "rhel-last")
+			ElseIf StringInStr($shortname, "windows") OR StringInStr($shortname, "microsoft") or StringInStr($shortname, "seven") OR StringInStr($shortname, "vista") Then
+				; Windows 7
+				if StringInStr($shortname, "2008") and StringInStr($shortname, "R2") Then
+					$release_number = FindReleaseFromCodeName( "windows2008r2")
+				Elseif StringInStr($shortname, "2008") Then
+					$release_number = FindReleaseFromCodeName( "windows2008")
+				Elseif StringInStr($shortname, "vista") Then
+					$release_number = FindReleaseFromCodeName( "windowsvista")
+				Else
+					$release_number = FindReleaseFromCodeName( "windows7")
+				EndIf
 			Else
 				; Any Linux, except those known not to work in Live mode
 				$release_number = FindReleaseFromCodeName( "default")
@@ -624,9 +647,13 @@ Func Check_ISO($FileToHash)
 		Return $hexa_hash
 	EndIf
 
+	Local $filehandle = FileOpen($FileToHash, 16)
+	Local $buffersize=0x20000,$final=0,$hash=""
 
-	_ProgressDelete($progress_bar)
-	Global $_Progress_Bars[1][15] = [[-1]]
+	If $FileToHash = "" Then
+		SendReport("End-Check_ISO (no iso)")
+		Return "no iso"
+	EndIf
 
 	$progress_bar = _ProgressCreate(38 + $offsetx0, 238 + $offsety0, 300, 30)
 	_ProgressSetImages($progress_bar, @ScriptDir & "\tools\img\progress_green.jpg", @ScriptDir & "\tools\img\progress_background.jpg")
@@ -636,20 +663,6 @@ Func Check_ISO($FileToHash)
 	GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 	GUICtrlSetColor(-1, 0xFFFFFF)
 
-	Local $filehandle = FileOpen($FileToHash, 16)
-	Local $buffersize=0x20000,$final=0,$hash=""
-
-	If $FileToHash = "" Then
-		SendReport("End-Check_ISO (no iso)")
-		Return "no iso"
-	EndIf
-
-	if IsArray($_Progress_Bars) Then
-		SendReport("Progress bars is an array")
-		_Paint_Bars_Procedure2()
-	Else
-		SendReport("ERROR : Progress bars is not an array !!!")
-	EndIf
 	SendReport("IN-Check_ISO : Crypto Library Startup")
 	_Crypt_Startup()
 
@@ -660,9 +673,7 @@ Func Check_ISO($FileToHash)
 		$hash=_Crypt_HashData(FileRead($filehandle, $buffersize),0x00008003,$final,$hash)
 		$percent_md5 = Round(100 * $i / $iterations)
 		$return1 = _ProgressSet($progress_bar,$percent_md5 )
-		if @error Then SendReport("Error on _ProgressSet")
 		$return2 = _ProgressSetText($progress_bar, $percent_md5&"%" )
-
 	Next
 	FileClose($filehandle)
 	_Crypt_Shutdown()
@@ -670,7 +681,15 @@ Func Check_ISO($FileToHash)
 	SendReport("IN-Check_ISO : Closed Crypto Library, hash computed")
 	_ProgressSet($progress_bar,100 )
 	_ProgressSetText($progress_bar, "100%" )
+	Sleep(200)
 	_ProgressDelete($progress_bar)
+	if @error Then
+		SendReport("Could not delete progress bar, trying again")
+		_ProgressDelete($progress_bar)
+		if @error Then
+			SendReport("ERROR Could not delete progress bar (even after retrying!!!)")
+		EndIf
+	EndIf
 	GUI_Show_Back_Button()
 	$hexa_hash = StringTrimLeft($hash, 2)
 	WriteSetting("Cached_MD5",CleanPathForCache($FileToHash),$hexa_hash&"||"&FileGetSize($FileToHash)&"||"&FileGetTime($FileToHash,0,1)&"||"&FileGetTime($FileToHash,1,1))
