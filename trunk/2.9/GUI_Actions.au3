@@ -217,9 +217,40 @@ Func GUI_Refresh_Drives()
 	Refresh_DriveList()
 EndFunc   ;==>GUI_Refresh_Drives
 
-Func GUI_Choose_ISO()
+Func GUI_Dropped_File($hWnd, $msgID, $wParam, $lParam)
+    Local $nSize, $pFileName,$dropped_drive, $dropped_dir, $dropped_filename, $dropped_extension
+    Local $nAmt = DllCall("shell32.dll", "int", "DragQueryFile", "hwnd", $wParam, "int", 0xFFFFFFFF, "ptr", 0, "int", 255)
+    For $i = 0 To $nAmt[0] - 1
+        $nSize = DllCall("shell32.dll", "int", "DragQueryFile", "hwnd", $wParam, "int", $i, "ptr", 0, "int", 0)
+        $nSize = $nSize[0] + 1
+        $pFileName = DllStructCreate("char[" & $nSize & "]")
+        DllCall("shell32.dll", "int", "DragQueryFile", "hwnd", $wParam, "int", $i, "ptr", DllStructGetPtr($pFileName), "int", $nSize)
+        $dropped_file = DllStructGetData($pFileName, 1)
+		$dropped_extension = get_extension($dropped_file)
+		If $dropped_extension = ".iso" OR $dropped_extension = ".img" OR $dropped_extension = ".zip" then
+			SendReport("GUI_Dropped_File : Dropped file "&$dropped_file&" (extension is OK)")
+			Sleep(200)
+			GUI_Show_Step2_Default_Menu()
+			GUI_Hide_Back_Button()
+			Sleep(100)
+			GUI_Choose_ISO($dropped_file)
+			Return ""
+		EndIf
+        $pFileName = 0
+    Next
+EndFunc
+
+
+Func GUI_Choose_ISO_From_GUI()
+	GUI_Choose_ISO(0)
+EndFunc
+
+Func GUI_Choose_ISO( $source_file)
 	SendReport("Start-GUI_Choose_ISO")
-	$source_file = FileOpenDialog(Translate("Please choose an ISO image of LinuxLive CD"), "", "ISO / IMG / ZIP (*.iso;*.img;*.zip)", 1)
+	if $source_file==0 Then
+		$source_file = FileOpenDialog(Translate("Please choose an ISO image of LinuxLive CD"), "", "ISO / IMG / ZIP (*.iso;*.img;*.zip)", 1)
+	EndIf
+
 	If @error Then
 		if IsString($file_set) Then
 			Return ""
@@ -236,7 +267,6 @@ Func GUI_Choose_ISO()
 	EndIf
 	SendReport("End-GUI_Choose_ISO")
 EndFunc   ;==>GUI_Choose_ISO
-
 
 Func GUI_Choose_CD()
 	SendReport("Start-GUI_Choose_CD")
@@ -407,6 +437,7 @@ Func GUI_Back_Download()
 	GUI_Hide_Back_Button()
 	GUICtrlSetState($label_step2_status,$GUI_HIDE)
 	GUICtrlSetState($label_step2_status2,$GUI_HIDE)
+	_ProgressDelete($progress_bar)
 	; Showing old elements again
 	GUI_Show_Step2_Default_Menu()
 	SendReport("End-GUI_Back_Download")
@@ -415,9 +446,16 @@ EndFunc   ;==>GUI_Back_Download
 Func GUI_Select_Linux()
 	SendReport("Start-GUI_Select_Linux")
 	$selected_linux = GUICtrlRead($combo_linux)
+
 	If StringInStr($selected_linux, ">>") = 0 Then
-		GUICtrlSetState($download_manual, $GUI_ENABLE)
-		GUICtrlSetState($download_auto, $GUI_ENABLE)
+		$release_in_list = FindReleaseFromDescription($selected_linux)
+		if ReleaseGetMirrorStatus($release_in_list)> 0 Then
+			GUICtrlSetState($download_manual, $GUI_ENABLE)
+			GUICtrlSetState($download_auto, $GUI_ENABLE)
+		Else
+			GUICtrlSetState($download_manual, $GUI_ENABLE)
+			GUICtrlSetState($download_auto, $GUI_DISABLE)
+		EndIf
 	Else
 		MsgBox(48, Translate("Please read"), Translate("Please select a linux to continue"))
 		GUICtrlSetState($download_manual, $GUI_DISABLE)
@@ -438,7 +476,11 @@ Func GUI_Download_Manually()
 	$selected_linux = GUICtrlRead($combo_linux)
 	SendReport("Start-GUI_Download_Manually (Downloading "&$selected_linux&" )")
 	$release_in_list = FindReleaseFromDescription($selected_linux)
-	DownloadRelease($release_in_list, 0)
+	if ReleaseGetMirrorStatus($release_in_list)> 0 Then
+		DownloadRelease($release_in_list, 0)
+	Else
+		ShellExecute(ReleaseGetDownloadPage($release_in_list))
+	EndIf
 	SendReport("End-GUI_Download_Manually")
 EndFunc   ;==>GUI_Download_Manually
 
@@ -475,21 +517,37 @@ Func DownloadRelease($release_in_list, $automatic_download)
 		If StringStripWS($mirror, 8) <> "" Then
 			_ProgressSet($progress_bar, $tested_mirrors * 100 / $available_mirrors)
 			_ProgressSetText($progress_bar, Translate("Testing mirror") & " : " & URLToHostname($mirror))
-			;$temp_latency = Ping(URLToHostname($mirror))
 
-			$command="ping-"&$mirror
-			SendReport($command)
+			; Old Method
+			;$temp_latency = Ping(URLToHostname($mirror))
+			;$command="ping-"&$mirror
+			;SendReport($command)
+
 			$tested_mirrors = $tested_mirrors + 1
 			$timeout=TimerInit()
-			While StringInStr($ping_result,$command)<=0 AND TimerDiff($timeout)<12000
-				Sleep(30)
-			Wend
+
+			;While StringInStr($ping_result,$command)<=0 AND TimerDiff($timeout)<12000
+			;	Sleep(30)
+			;Wend
+			Local $timer_init,$temp_size=0
+			$timer_init = TimerInit()
+			$temp_size = InetGetSize($mirror,3)
+			$ping_latency=TimerDiff($timer_init)
+			$temp_size = Round($temp_size / 1048576)
+			If $temp_size < 5 Or $temp_size > 5000 Then
+				$temp_latency = 10000
+			Else
+				$temp_latency=Int($ping_latency)
+			EndIf
+
+			#cs Old method
 			if StringInStr($ping_result,$command)<=0 Then
 				$temp_latency = 10000
 			Else
 				$result = StringReplace($ping_result,$command&"=","")
 				$temp_latency=Int($result)
 			Endif
+			#ce
 		Else
 			$temp_latency = 10000
 		EndIf
@@ -990,6 +1048,14 @@ Func GUI_Events2()
 	EndSelect
 	SendReport("End-GUI_Events2")
 EndFunc   ;==>GUI_Events2
+
+Func GUI_Help()
+	SendReport("Start-GUI_Help")
+	If WinActive("LinuxLive USB Creator") Or WinActive("LiLi USB Creator") then
+		ShellExecute("http://www.linuxliveusb.com/help")
+	EndIf
+	SendReport("End-GUI_Help")
+EndFunc   ;==>GUI_Help_Step1
 
 Func GUI_Help_Step1()
 	SendReport("Start-GUI_Help_Step1")

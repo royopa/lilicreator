@@ -163,7 +163,7 @@ Func GiveMePhysicalDisk($drive_letter)
 EndFunc   ;==>GiveMePhysicalDisk
 
 
-Func Get_MBR_ID($drive_letter)
+Func Get_MBR_ID($drive_letter,$clean_trailing_zeroes=1)
 	Local $physical_drive,$g_eventerror
 
 	UpdateLog("Get_MBR_identifier of : "&$drive_letter)
@@ -207,15 +207,16 @@ Func Get_MBR_ID($drive_letter)
 	endif
 
 	if $found=1 Then
-		UpdateLog("MBR identifier of "&$drive_letter&" is : "& $mbr_signature&" (0x"&Hex($mbr_signature)&")")
+
 		$mbr_hex = 	StringLower(Hex($mbr_signature))
 		;Signature can be 0 when formatted using a Macintosh
-		if $mbr_signature <> "0" Then
+		if $mbr_signature <> "0" AND $clean_trailing_zeroes = 1 Then
 			; Trimming left trailing zeroes
 			While StringLeft($mbr_hex,1)="0"
 				$mbr_hex=StringTrimLeft($mbr_hex,1)
 			WEnd
 		EndIf
+		UpdateLog("MBR identifier of "&$drive_letter&" is : "& $mbr_signature&" ("&$mbr_hex&")")
 		Return $mbr_hex
 	Else
 		UpdateLog("MBR identifier could not be found : no match in WMI")

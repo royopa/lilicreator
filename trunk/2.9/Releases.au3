@@ -9,6 +9,7 @@ Global Const $R_CODE = 0,$R_NAME=1,$R_DISTRIBUTION=2, $R_DISTRIBUTION_VERSION=3,
 Global Const $R_MIRROR1=12,$R_MIRROR2=13,$R_MIRROR3=14,$R_MIRROR4=15,$R_MIRROR5=16,$R_MIRROR6=17,$R_MIRROR7=18,$R_MIRROR8=19,$R_MIRROR9=20,$R_MIRROR10=21,$R_VARIANT=22,$R_VARIANT_VERSION=23,$R_VISIBLE=24,$R_FEATURES=25
 Global $releases[5][30],$compatible_md5[5],$compatible_filename[5],$codenames_list[5]
 Global $current_compatibility_list_version
+Global $sections
 
 Func Get_Compatibility_List()
 	SendReport("Start-Get_Compatibility_List")
@@ -124,9 +125,8 @@ Func DisplayRelease($release_in_list)
 EndFunc
 
 Func Print_For_ComboBox()
-	Global $releases
+	Global $releases,$sections
 	Local $temp=""
-	$sections = IniReadSectionNames($compatibility_ini)
 	For $release_in_list=1 to $sections[0]
 		if $releases[$release_in_list][$R_VISIBLE]="yes" Then $temp &=  ReleaseGetDescription($release_in_list)&"|"
 			;& "// Size : " & $releases[$release_in_list][$R_DOWNLOAD_SIZE] _
@@ -136,9 +136,8 @@ Func Print_For_ComboBox()
 EndFunc
 
 Func Print_For_ComboBox_Full()
-	Global $releases
+	Global $releases,$sections
 	Local $temp=""
-	$sections = IniReadSectionNames($compatibility_ini)
 	For $release_in_list=1 to $sections[0]
 		$temp &=  ReleaseGetDescription($release_in_list)&"|"
 			;& "// Size : " & $releases[$release_in_list][$R_DOWNLOAD_SIZE] _
@@ -148,10 +147,9 @@ Func Print_For_ComboBox_Full()
 EndFunc
 
 Func FindReleaseFromDescription($description)
-	Global $releases
+	Global $releases,$sections
 	Local $found=-1
 	If StringInStr($description,"Regular Linux") Then Return FindReleaseFromCodeName("default")
-	$sections = IniReadSectionNames($compatibility_ini)
 	For $i=1 to $sections[0]
 		If ReleaseGetDescription($i) = $description Then $found = $i
 	Next
@@ -159,30 +157,27 @@ Func FindReleaseFromDescription($description)
 EndFunc
 
 Func FindReleaseFromMD5($MD5_to_find)
-	Global $releases
+	Global $releases,$sections
 	Local $found=-1
-	$sections = IniReadSectionNames($compatibility_ini)
 	For $i=1 to $sections[0]
-		If ReleaseGetMD5($i) = $MD5_to_find Then $found = $i
+		If StringInStr(ReleaseGetMD5($i),$MD5_to_find,2)>0 Then $found = $i
 	Next
 	Return $found
 EndFunc
 
 Func FindReleaseFromFileName($filename_to_find)
-	Global $releases
+	Global $releases,$sections
 	Local $found=-1
-	$sections = IniReadSectionNames($compatibility_ini)
 	For $i=1 to $sections[0]
-		If ReleaseGetFilename($i) = $filename_to_find Then $found = $i
+		If StringInStr(ReleaseGetFilename($i),$filename_to_find,2)>0  Then $found = $i
 	Next
 	Return $found
 EndFunc
 
 Func FindReleaseFromCodeName($codename_to_find)
-	Global $releases
+	Global $releases,$sections
 	Local $found=-1
 	SendReport("FindReleaseFromCodeName : Tring to find "&$codename_to_find)
-	$sections = IniReadSectionNames($compatibility_ini)
 	For $i=1 to $sections[0]
 		If $sections[$i] = $codename_to_find Then $found = $i
 	Next
@@ -194,7 +189,7 @@ Func FindReleaseFromCodeName($codename_to_find)
 EndFunc
 
 Func DisplayAllReleases()
-	$sections = IniReadSectionNames($compatibility_ini)
+	Global $sections
 	For $i=1 to $sections[0]
 		DisplayRelease($i)
 	Next
@@ -235,6 +230,16 @@ Func ReleaseGetVariantVersion($release_in_list)
 	Return StringStripWS($releases[$release_in_list][$R_VARIANT_VERSION],3)
 EndFunc
 
+Func ReleaseGetWebsite($release_in_list)
+	if $release_in_list <=0 Then Return "NotFound"
+	Return StringStripWS($releases[$release_in_list][$R_WEB],3)
+EndFunc
+
+Func ReleaseGetDownloadPage($release_in_list)
+	if $release_in_list <=0 Then Return "NotFound"
+	Return StringStripWS($releases[$release_in_list][$R_DOWNLOAD_PAGE],3)
+EndFunc
+
 Func ReleaseGetMirror($release_in_list,$mirror_number=0)
 	if $release_in_list <=0 Then Return "NotFound"
 	if StringInStr($releases[$release_in_list][$R_MIRROR1],"::") Then
@@ -247,6 +252,17 @@ Func ReleaseGetMirror($release_in_list,$mirror_number=0)
 	Else
 		Return StringStripWS($releases[$release_in_list][$R_MIRROR1+$mirror_number],3)
 	EndIf
+EndFunc
+
+Func ReleaseGetMirrorStatus($release_in_list)
+	if $release_in_list <=0 Then Return 0
+	$available_mirrors=0
+	For $i=$R_MIRROR1 To $R_MIRROR10
+		if StringStripWS($releases[$release_in_list][$i],3) <> "" Then
+			$available_mirrors+=1
+		EndIf
+	Next
+	Return $available_mirrors
 EndFunc
 
 Func ReleaseGetInstallSize($release_in_list)

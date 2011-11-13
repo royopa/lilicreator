@@ -247,6 +247,18 @@ Func Default_WriteTextCFG($selected_drive)
 		WEnd
 		FileClose($search)
 	EndIf
+
+	; ArchLinux > 2011.08.19
+	$search = FileFindFirstFile($selected_drive&"\arch\boot\syslinux\*.cfg")
+	If $search <> -1 Then
+		While 1
+			$foundfile = FileFindNextFile($search)
+			If @error Then ExitLoop
+			DefaultBootTweaks($selected_drive,$selected_drive&"\arch\boot\syslinux\"&$foundfile)
+		WEnd
+		FileClose($search)
+	EndIf
+
 EndFunc
 
 Func DefaultBootTweaks($selected_drive,$filename)
@@ -298,10 +310,21 @@ Func DefaultBootTweaks($selected_drive,$filename)
 			FileWrite($file,StringReplace($content,"APPEND ","APPEND rootdelay=15 "))
 			FileClose($file)
 		EndIf
+	Elseif StringInStr($content,"ESXi-5" )>0 Then
+		; Modifying Boot menu for VMware vSphere ESXi > 5.X
+		if $filename = $selected_drive&"\syslinux.cfg" Then
+			SendReport("IN-DefaultBootTweaks => ESXi 5.x variant detected in file "&$filename)
+			FileMove($filename,$filename&".lili-bak",1)
+			HideFile($filename&".lili-bak")
+			FileCopy(@ScriptDir&"\tools\boot-menus\esxi5-syslinux.cfg",$selected_drive&"\syslinux.cfg",1)
+			If Not FileExists($selected_drive&"\ks.cfg") Then
+				FileCopy(@ScriptDir&"\tools\boot-menus\esxi5-ks.cfg",$selected_drive&"\ks.cfg")
+			EndIf
+		EndIf
 	Elseif StringInStr($content,"vmkboot.gz" )>0 Then
 		; Modifying Boot menu for VMware vSphere ESXi > 4.1
 		; adding a ks=usb
-		SendReport("IN-DefaultBootTweaks => ESXi variant detected in file "&$filename)
+		SendReport("IN-DefaultBootTweaks => ESXi 4.x variant detected in file "&$filename)
 		$file = FileOpen($filename, 2)
 		; Check if file opened for writing OK
 		If $file = -1 Then
@@ -514,6 +537,22 @@ Func Debian_WriteTextCFG($selected_drive, $release_in_list)
 		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
 		FileWrite($file, $boot_text)
 		FileClose($file)
+	Elseif $variant="crunchbang" Then
+		If FileExists($selected_drive&"\live-rw") Then
+			$prepend = "label persist" _
+			& @LF & "menu label Persistent" _
+			& @LF & "kernel /live/vmlinuz1" _
+			& @LF & "append initrd=/live/initrd1.img boot=live config persistent quiet"
+
+			; read original boot menu
+			$original_boot=FileRead($selected_drive & "\syslinux\live.cfg")
+
+			; Backup original boot menu
+			FileMove($selected_drive & "\syslinux\live.cfg",$selected_drive & "\syslinux\live.cfg-orig")
+
+			; Append Persistence if necessary
+			FileWrite($selected_drive & "\syslinux\live.cfg",$prepend& @LF & @LF &$original_boot)
+		EndIf
 	Else
 		Local $kbd_code,$boot_text="",$append_debian="",$prepend="",$boot_menu=""
 		$append_debian="boot=live initrd=/casper/initrd.lz live-media-path=/casper quiet splash --"
@@ -601,7 +640,7 @@ Func Debian_BootMenu($variant)
 		$boot_text = @LF& "label persist" & @LF & "menu label ^" & Translate("Persistent Mode") _
 			& @LF & "  kernel /casper/vmlinuz" _
 			& @LF & "  append  " & $kbd_code & $lang_code & " persistent "&$append_debian
-		EndIf
+	EndIf
 
 	$boot_text&= @LF & "label live" _
 		& @LF & "  menu label ^" & Translate("Live Mode") _
@@ -618,48 +657,119 @@ Func Debian_BootMenu($variant)
 
 EndFunc
 
-Func Fedora_WriteTextCFG($drive_letter)
+Func Fedora_WriteTextCFG($drive_letter,$release_in_list)
 	SendReport("Start-Fedora_WriteTextCFG ( Drive : " & $drive_letter & " )")
 	Local $boot_text = "", $uuid
+	$distrib_version = ReleaseGetDistributionVersion($release_in_list)
 	$uuid = Get_Disk_UUID($drive_letter)
-	$boot_text &= @LF & "default vesamenu.c32" _
-			 & @LF & "timeout 100" _
-			 & @LF & "menu background splash.jpg" _
-			 & @LF & "menu title Welcome to your LinuxLive Key !" _
-			 & @LF & "menu color border 0 #ffffffff #00000000" _
-			 & @LF & "menu color sel 7 #ffffffff #ff000000" _
-			 & @LF & "menu color title 0 #ffffffff #00000000" _
-			 & @LF & "menu color tabmsg 0 #ffffffff #00000000" _
-			 & @LF & "menu color unsel 0 #ffffffff #00000000" _
-			 & @LF & "menu color hotsel 0 #ff000000 #ffffffff" _
-			 & @LF & "menu color hotkey 7 #ffffffff #ff000000" _
-			 & @LF & "menu color timeout_msg 0 #ffffffff #00000000" _
-			 & @LF & "menu color timeout 0 #ffffffff #00000000" _
-			 & @LF & "menu color cmdline 0 #ffffffff #00000000" _
-			 & @LF & "menu hidden" _
-			 & @LF & "menu hiddenrow 5"
-		If FileExists($drive_letter & '\LiveOS\overlay-' & StringReplace(DriveGetLabel($drive_letter)," ", "_") & '-' & $uuid) Then
-			$boot_text&= @LF & "label persist" _
-			 & @LF & "  menu label " & Translate("Live Mode") _
-			 & @LF & "  kernel vmlinuz0" _
-			 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat ro liveimg quiet selinux=0 rhgb  rd_NO_LUKS rd_NO_MD noiswmd"
-		 EndIf
+	if GenericVersionCode($distrib_version) <= 15 Then
+		; Boot menus for Fedora <= 15
+		$boot_text &= @LF & "default vesamenu.c32" _
+				 & @LF & "timeout 100" _
+				 & @LF & "menu background splash.jpg" _
+				 & @LF & "menu title Welcome to your LinuxLive Key !" _
+				 & @LF & "menu color border 0 #ffffffff #00000000" _
+				 & @LF & "menu color sel 7 #ffffffff #ff000000" _
+				 & @LF & "menu color title 0 #ffffffff #00000000" _
+				 & @LF & "menu color tabmsg 0 #ffffffff #00000000" _
+				 & @LF & "menu color unsel 0 #ffffffff #00000000" _
+				 & @LF & "menu color hotsel 0 #ff000000 #ffffffff" _
+				 & @LF & "menu color hotkey 7 #ffffffff #ff000000" _
+				 & @LF & "menu color timeout_msg 0 #ffffffff #00000000" _
+				 & @LF & "menu color timeout 0 #ffffffff #00000000" _
+				 & @LF & "menu color cmdline 0 #ffffffff #00000000" _
+				 & @LF & "menu hidden" _
+				 & @LF & "menu hiddenrow 5" _
+				 & @LF & "label live" _
+				 & @LF & "  menu label " & Translate("Live Mode") _
+				 & @LF & "  kernel vmlinuz0" _
+				 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat ro liveimg quiet selinux=0 rhgb  rd_NO_LUKS rd_NO_MD noiswmd" _
+				 & @LF & "  menu default"
 
-			 $boot_text&= @LF & "label live" _
-			 & @LF & "  menu label " & Translate("Persistent Mode") _
-			 & @LF & "  kernel vmlinuz0" _
-			 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat rw liveimg overlay=UUID=" & $uuid & " quiet selinux=0 rhgb  rd_NO_LUKS rd_NO_MD noiswmd" _
-			 & @LF & "menu default" _
-			 & @LF & "label check0" _
-			 & @LF & "  menu label " & Translate("File Integrity Check") _
-			 & @LF & "  kernel vmlinuz0" _
-			 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat rw liveimg overlay=UUID=" & $uuid & " quiet  rhgb check" _
-			 & @LF & "label memtest" _
-			 & @LF & " menu label " & Translate("Memory Test") _
-			 & @LF & "  kernel memtest" _
-			 & @LF & "label local" _
-			 & @LF & "  menu label Boot from local drive" _
-			 & @LF & "  localboot 0xffff"
+			If FileExists($drive_letter & '\LiveOS\overlay-' & StringReplace(DriveGetLabel($drive_letter)," ", "_") & '-' & $uuid) Then
+				 $boot_text&= @LF & "label persist" _
+				 & @LF & "  menu label " & Translate("Persistent Mode") _
+				 & @LF & "  kernel vmlinuz0" _
+				 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat rw liveimg overlay=UUID=" & $uuid & " quiet selinux=0 rhgb  rd_NO_LUKS rd_NO_MD noiswmd"
+			EndIf
+				$boot_text&=@LF &"label check0" _
+				 & @LF & "  menu label " & Translate("File Integrity Check") _
+				 & @LF & "  kernel vmlinuz0" _
+				 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat ro liveimg quiet  rhgb check" _
+				 & @LF & "label memtest" _
+				 & @LF & " menu label " & Translate("Memory Test") _
+				 & @LF & "  kernel memtest" _
+				 & @LF & "label local" _
+				 & @LF & "  menu label Boot from local drive" _
+				 & @LF & "  localboot 0xffff"
+		Else
+			; Boot menus for superior versions
+			$boot_text &= @LF & "default vesamenu.c32" _
+				 & @LF & "timeout 100" _
+				 & @LF & "menu background splash.png" _
+				 & @LF & "menu title Welcome to your LinuxLive Key !" _
+				 & @LF & "menu clear" _
+				 & @LF & "menu vshift 8" _
+				 & @LF & "menu rows 18" _
+				 & @LF & "menu margin 8" _
+				 & @LF & "menu helpmsgrow 15" _
+				 & @LF & "menu tabmsgrow 13" _
+				 & @LF & "menu color border * #00000000 #00000000 none" _
+				 & @LF & "menu color sel 0 #ffffffff #00000000 none" _
+				 & @LF & "menu color title 0 #ff7ba3d0 #00000000 none" _
+				 & @LF & "menu color tabmsg 0 #ff3a6496 #00000000 none" _
+				 & @LF & "menu color unsel 0 #84b8ffff #00000000 none" _
+				 & @LF & "menu color hotsel 0 #84b8ffff #00000000 none" _
+				 & @LF & "menu color hotkey 0 #ffffffff #00000000 none" _
+				 & @LF & "menu color help 0 #ffffffff #00000000 none" _
+				 & @LF & "menu color scrollbar 0 #ffffffff #ff355594 none" _
+				 & @LF & "menu color timeout 0 #ffffffff #00000000 none" _
+				 & @LF & "menu color timeout_msg 0 #ffffffff #00000000 none" _
+				 & @LF & "menu color cmdmark 0 #84b8ffff #00000000 none" _
+				 & @LF & "menu color cmdline 0 #ffffffff #00000000 none" _
+				 & @LF & "label live" _
+				 & @LF & "  menu label " & Translate("Live Mode") _
+				 & @LF & "  kernel vmlinuz0" _
+				 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat ro liveimg quiet rhgb rd.luks=0 rd.md=0 rd.dm=0" _
+				 & @LF & "  menu default"
+
+			If FileExists($drive_letter & '\LiveOS\overlay-' & StringReplace(DriveGetLabel($drive_letter)," ", "_") & '-' & $uuid) Then
+				 $boot_text&= @LF & "label persist" _
+				 & @LF & "  menu label " & Translate("Persistent Mode") _
+				 & @LF & "  kernel vmlinuz0" _
+				 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat rw liveimg overlay=UUID=" & $uuid & " quiet rhgb rd.luks=0 rd.md=0 rd.dm=0"
+			EndIf
+				$boot_text&=@LF &"menu begin ^Troubleshooting" _
+				 & @LF & "    menu title Troubleshooting" _
+				 & @LF & "  label basic0" _
+				 & @LF & "    menu label Start in ^basic graphics mode." _
+				 & @LF & "    kernel vmlinuz0" _
+				 & @LF & "    append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat ro liveimg quiet  rhgb rd.luks=0 rd.md=0 rd.dm=0 xdriver=vesa nomodeset" _
+ 				 & @LF & "   text help" _
+				 & @LF & "        Try this option out if you're having trouble installing Fedora 16." _
+ 				 & @LF & "   endtext" _
+				 & @LF & "  label check0" _
+				 & @LF & "    menu label "& Translate("File Integrity Check") _
+				 & @LF & "    kernel vmlinuz0" _
+				 & @LF & "    append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat ro liveimg quiet  rhgb rd.luks=0 rd.md=0 rd.dm=0 rd.live.check" _
+				 & @LF & "  label memtest" _
+				 & @LF & "    menu label "& Translate("Memory Test") _
+				 & @LF & "    text help" _
+				 & @LF & "      If your system is having issues, a problem with your" _
+				 & @LF & "      system's memory may be the cause. Use this utility to " _
+ 				 & @LF & "     see if the memory is working correctly." _
+				 & @LF & "    endtext" _
+				 & @LF & "    kernel memtest" _
+				 & @LF & "  menu separator" _
+				 & @LF & "  label local" _
+				 & @LF & "    menu label Boot from ^local drive" _
+ 				 & @LF & "   localboot 0xffff" _
+				 & @LF & "  menu separator" _
+				 & @LF & "  label returntomain" _
+				 & @LF & "    menu label Return to ^main menu." _
+				 & @LF & "    menu exit" _
+				 & @LF & "  menu end	"
+		EndIf
 	$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
 	FileWrite($file, $boot_text)
 	FileClose($file)
@@ -723,9 +833,13 @@ Func Mandriva_WriteTextCFG($drive_letter)
 	Local $boot_text = ""
 	$uuid = Get_Disk_UUID($drive_letter)
 	$boot_text &= @LF & "default vesamenu.c32" _
+			 & @LF & "font cyra8x16.psf" _
 			 & @LF & "timeout 100" _
 			 & @LF & "menu background splash.jpg" _
-			 & @LF & "menu title Welcome to Mandriva !" _
+			 & @LF & "menu title Welcome to Mandriva" _
+			 & @LF & "menu tabmsg Press [Tab] to edit options" _
+			 & @LF & "menu passprompt Password required" _
+			 & @LF & "menu autoboot Automatic boot in # second{,s}..." _
 			 & @LF & "menu color border 0 #ffffffff #00000000" _
 			 & @LF & "menu color sel 7 #ffffffff #ff000000" _
 			 & @LF & "menu color title 0 #ffffffff #00000000" _
@@ -736,20 +850,21 @@ Func Mandriva_WriteTextCFG($drive_letter)
 			 & @LF & "menu color timeout_msg 0 #ffffffff #00000000" _
 			 & @LF & "menu color timeout 0 #ffffffff #00000000" _
 			 & @LF & "menu color cmdline 0 #ffffffff #00000000" _
-			 & @LF & "menu hidden" _
-			 & @LF & "menu hiddenrow 5" _
-			 & @LF & "label linux0" _
+			 & @LF & "label live" _
+			 & @LF & "  menu label " & Translate("Live Mode") _
+			 & @LF & "  kernel vmlinuz0" _
+			 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=auto ro liveimg overlay=UUID=" & $uuid & " vga=788 desktop nopat rd_NO_LUKS rd_NO_MD noiswmd splash=silent" _
+			 & @LF & "menu default"
+	If FileExists($drive_letter & '\LiveOS\overlay-' & StringReplace(DriveGetLabel($drive_letter)," ", "_") & '-' & $uuid) Then
+		$boot_text &= @LF & "label persist" _
 			 & @LF & "  menu label " & Translate("Persistent Mode") _
 			 & @LF & "  kernel vmlinuz0" _
-			 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat rw liveimg overlay=UUID=" & $uuid & " quiet  rhgb " _
-			 & @LF & "menu default" _
-			 & @LF & "label check0" _
-			 & @LF & "  menu label " & Translate("File Integrity Check") _
+			 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=auto rw liveimg overlay=UUID=" & $uuid & " vga=788 desktop nopat rd_NO_LUKS rd_NO_MD noiswmd splash=silent"
+	EndIf
+		$boot_text &= @LF & "label install" _
+			 & @LF & "  menu label " & Translate("Install") _
 			 & @LF & "  kernel vmlinuz0" _
-			 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat rw liveimg overlay=UUID=" & $uuid & "quiet  rhgb check" _
-			 & @LF & "label memtest" _
-			 & @LF & " menu label " & Translate("Memory Test") _
-			 & @LF & "  kernel memtest" _
+			 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=auto ro liveimg install overlay=UUID=" & $uuid & " vga=788 desktop nopat rd_NO_LUKS rd_NO_MD noiswmd splash=silent" _
 			 & @LF & "label local" _
 			 & @LF & "  menu label Boot from local drive" _
 			 & @LF & "  localboot 0xffff"
@@ -767,7 +882,7 @@ Func Crunchbang_WriteTextCFG($selected_drive,$release_in_list)
 		$prepend = "label persist" _
 		& @LF & "menu label Persistent" _
 		& @LF & "kernel /live/vmlinuz1" _
-		& @LF & "append initrd=/live/initrd1.img boot=live config live-config.hostname=crunchbang live-config.username=crunchbang live-config.user-fullname=CrunchBangLiveUser live-config.locales=en_GB.UTF-8 live-config.timezone=Europe/London persistent quiet"
+		& @LF & "append initrd=/live/initrd1.img boot=live config persistent quiet"
 
 		; read original boot menu
 		$original_boot=FileRead($selected_drive & "\syslinux\live.cfg")
@@ -807,9 +922,9 @@ Func XBMC_WriteTextCFG($selected_drive,$release_in_list)
 	SendReport("End-XBMC_WriteTextCFG")
 EndFunc
 
-Func Set_OpenSuse_MBR_ID($drive_letter)
+Func Set_OpenSuse_MBR_ID($drive_letter,$clean_trailing_zeroes=1)
 	SendReport("Start-Set_OpenSuse_MBR_ID ( Drive : " & $drive_letter & " )")
-	Local $mbr_id = "0x"&Get_MBR_ID($drive_letter)
+	Local $mbr_id = "0x"&Get_MBR_ID($drive_letter,$clean_trailing_zeroes)
 	FileMove($drive_letter&"\boot\grub\mbrid",$drive_letter&"\boot\grub\backup-mbrid")
 	$file = FileOpen($drive_letter&"\boot\grub\mbrid", 10)
 
