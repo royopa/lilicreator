@@ -513,13 +513,19 @@ Func Create_boot_menu($drive_letter,$release_in_list)
 	$variant = ReleaseGetVariant($release_in_list)
 	$distribution = ReleaseGetDistribution($release_in_list)
 	$features=ReleaseGetSupportedFeatures($release_in_list)
+	$variant_version=ReleaseGetVariantVersion($release_in_list)
 	if StringInStr($features,"default") = 0 Then
 		If $variant ="CentOS" Then
 			SendReport("IN-Create_boot_menu for CentOS")
 			CentOS_WriteTextCFG($drive_letter)
 		Elseif $distribution = "Fedora" Then
-			SendReport("IN-Create_boot_menu for Fedora")
-			Fedora_WriteTextCFG($drive_letter)
+			if $variant = "Mandriva" Then
+				SendReport("IN-Create_boot_menu for Mandriva")
+				Mandriva_WriteTextCFG($drive_letter)
+			Else
+				SendReport("IN-Create_boot_menu for Fedora")
+				Fedora_WriteTextCFG($drive_letter,$release_in_list)
+			EndIf
 		Elseif $variant = "TinyCore" Then
 			SendReport("IN-Create_boot_menu for TinyCore")
 			TinyCore_WriteTextCFG($drive_letter)
@@ -546,11 +552,20 @@ Func Create_boot_menu($drive_letter,$release_in_list)
 			Crunchbang_WriteTextCFG($drive_letter,$release_in_list)
 		EndIf
 	Elseif $variant = "opensuse" Then
-			SendReport("IN-Create_boot_menu for OpenSuse : Setting MBR ID")
-			Set_OpenSuse_MBR_ID($drive_letter)
+		If $variant_version = "11.3" Then
+			SendReport("IN-Create_boot_menu for OpenSuse : Setting MBR ID (without trailing zeroes)")
+			Set_OpenSuse_MBR_ID($drive_letter,1)
+		Else
+			SendReport("IN-Create_boot_menu for OpenSuse : Setting MBR ID (with trailing zeroes)")
+			Set_OpenSuse_MBR_ID($drive_letter,0)
+		EndIf
+	ElseIf StringInStr($features,"opensuse-mbrid-trailing")>0 then
+			SendReport("IN-Create_boot_menu for OpenSuse variant: Setting MBR ID (with trailing zeroes)")
+			Set_OpenSuse_MBR_ID($drive_letter,0)
 	ElseIf StringInStr($features,"opensuse-mbrid")>0 then
-			SendReport("IN-Create_boot_menu for OpenSuse variant: Setting MBR ID")
-			Set_OpenSuse_MBR_ID($drive_letter)
+			SendReport("IN-Create_boot_menu for OpenSuse variant: Setting MBR ID (without trailing zeroes)")
+			Set_OpenSuse_MBR_ID($drive_letter,1)
+
 	Else
 		SendReport("IN-Create_boot_menu for Regular Linux")
 		Default_WriteTextCFG($drive_letter)
@@ -700,10 +715,10 @@ Func Create_persistence_file($drive_letter,$release_in_list,$persistence_size,$h
 			; Aptosid (ex-Sidux)
 			$persistence_file= "aptosid\aptosid-rw"
 			UpdateLog("Found feature aptosid-persistence, persistence file will be "&$persistence_file)
-		Elseif StringInStr($features,"fedora-persistence")<>0 Then
-			; Fedora
+		Elseif StringInStr($features,"fedora-persistence")<>0 OR StringInStr($features,"mandriva-persistence")<>0 Then
+			; Fedora and Mandriva
 			$persistence_file= 'LiveOS\overlay-' & StringReplace(DriveGetLabel($drive_letter)," ", "_") & '-' & Get_Disk_UUID($drive_letter)
-			UpdateLog("Found feature fedora-persistence, persistence file will be "&$persistence_file)
+			UpdateLog("Found feature fedora-persistence (or mandriva-persistence), persistence file will be "&$persistence_file)
 		Elseif StringInStr($features,"debian-persistence")<>0 Then
 			; Debian > 6.0 and CrunchBang 10 and XBMC Live
 			$persistence_file= 'live-rw'
@@ -1098,6 +1113,7 @@ Func CreateUninstaller($drive_letter,$release_in_list)
 	AddToSmartClean($drive_letter,"ldlinux.sys")
 	AddToSmartClean($drive_letter,"syslinux")
 	AddToSmartClean($drive_letter,"syslinux.cfg")
+	AddToSmartClean($drive_letter,"syslinux.cfg.lili-bak")
 
 	if ReleaseGetVariant($release_in_list)="pmagic" Then
 		AddToSmartClean($drive_letter,"pmagic")

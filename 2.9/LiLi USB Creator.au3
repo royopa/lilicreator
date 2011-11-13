@@ -7,7 +7,7 @@
 #AutoIt3Wrapper_UseUpx=n
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.8.88.50
+#AutoIt3Wrapper_Res_Fileversion=2.9.88.50
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_SaveSource=y
@@ -15,8 +15,8 @@
 #AutoIt3Wrapper_Res_Field=Compile Date|%date% %time%
 #AutoIt3Wrapper_Res_Field=Site|http://www.linuxliveusb.com
 #AutoIt3Wrapper_AU3Check_Parameters=-w 4
-#EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_AutoIt3="C:\Program Files (x86)\AutoIt3\Beta\autoit3.exe"
+#EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////// About this software                           ///////////////////////////////////////////////////////////////////////////////
@@ -35,7 +35,7 @@
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ; Global constants
-Global Const $software_version = "2.8"
+Global Const $software_version = "2.9 Beta"
 Global $lang_folder = @ScriptDir & "\tools\languages\"
 Global $lang_ini
 Global $verbose_logging
@@ -198,48 +198,48 @@ EndIf
 #include-once
 
 ; AutoIT native includes
-#include <GuiConstants.au3>
-#include <GuiConstantsEx.au3>
-#include <GuiListView.au3>
-#include <GuiImageList.au3>
-#include <WinApi.au3>
-#include <GDIPlus.au3>
-#include <Constants.au3>
-#include <ProgressConstants.au3>
-#include <ComboConstants.au3>
-#include <WindowsConstants.au3>
-#include <ButtonConstants.au3>
-#include <StaticConstants.au3>
-#include <EditConstants.au3>
-#include <GUIConstantsEx.au3>
-#include <GUIListBox.au3>
-#include <GuiTreeView.au3>
-#include <StaticConstants.au3>
-#include <TabConstants.au3>
-#include <Array.au3>
-#include <String.au3>
-#include <File.au3>
-#include <INet.au3>
-#include <WinHTTP.au3>
-#include <Crypt.au3>
+#include "GuiConstants.au3"
+#include "GuiConstantsEx.au3"
+#include "GuiListView.au3"
+#include "GuiImageList.au3"
+#include "WinApi.au3"
+#include "GDIPlus.au3"
+#include "Constants.au3"
+#include "ProgressConstants.au3"
+#include "ComboConstants.au3"
+#include "WindowsConstants.au3"
+#include "ButtonConstants.au3"
+#include "StaticConstants.au3"
+#include "EditConstants.au3"
+#include "GUIConstantsEx.au3"
+#include "GUIListBox.au3"
+#include "GuiTreeView.au3"
+#include "StaticConstants.au3"
+#include "TabConstants.au3"
+#include "Array.au3"
+#include "String.au3"
+#include "File.au3"
+#include "INet.au3"
+#include "WinHTTP.au3"
+#include "Crypt.au3"
 
 ; LiLi's components
-#include <Languages.au3>
-#include <Updates.au3>
-#include <Settings.au3>
-#include <Files.au3>
-#include <Logs_And_Status.au3>
-#include <Automatic_Bug_Report.au3>
-#include <Graphics.au3>
-#include <External_Tools.au3>
-#include <Disks.au3>
-#include <Boot_Menus.au3>
-#include <Checking_And_Recognizing.au3>
-#include <Statistics.au3>
-#include <Releases.au3>
-#include <LiLis_heart.au3>
-#include <GUI_Actions.au3>
-#include <Options_Menu.au3>
+#include "Languages.au3"
+#include "Updates.au3"
+#include "Settings.au3"
+#include "Files.au3"
+#include "Logs_And_Status.au3"
+#include "Automatic_Bug_Report.au3"
+#include "Graphics.au3"
+#include "External_Tools.au3"
+#include "Disks.au3"
+#include "Boot_Menus.au3"
+#include "Checking_And_Recognizing.au3"
+#include "Statistics.au3"
+#include "Releases.au3"
+#include "LiLis_heart.au3"
+#include "GUI_Actions.au3"
+#include "Options_Menu.au3"
 
 
 $current_compatibility_list_version = IniRead($compatibility_ini, "Compatibility_List", "Version", $software_version & ".0")
@@ -351,15 +351,19 @@ $BACK_PNG = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\back.png")
 $BACK_HOVER_PNG = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\back_hover.png")
 $PNG_GUI = _GDIPlus_ImageLoadFromFile(@ScriptDir & "\tools\img\GUI.png")
 
+;create hotkeyset for opening the helppage
+HotKeySet("{F1}", "GUI_Help")
+
 SendReport("Creating GUI")
 
-$GUI = GUICreate("LiLi USB Creator", 450, 750, -1, -1, $WS_POPUP, $WS_EX_LAYERED)
+$GUI = GUICreate("LiLi USB Creator", 450, 750, -1, -1, $WS_POPUP, $WS_EX_LAYERED + $WS_EX_ACCEPTFILES)
 GUISetFont($font_size)
 GUISetOnEvent($GUI_EVENT_CLOSE, "GUI_Events")
 GUISetOnEvent($GUI_EVENT_MINIMIZE, "GUI_Minimize")
 GUISetOnEvent($GUI_EVENT_RESTORE, "GUI_Restore")
 GUISetOnEvent($GUI_EVENT_MAXIMIZE, "GUI_Restore")
 
+GUIRegisterMsg ($WM_DROPFILES, "GUI_Dropped_File")
 GUIRegisterMsg($WM_LBUTTONDOWN, "moveGUI")
 
 SetBitmap($GUI, $PNG_GUI, 255)
@@ -367,10 +371,6 @@ GUIRegisterMsg($WM_NCHITTEST, "WM_NCHITTEST")
 
 $CONTROL_GUI = GUICreate("LinuxLive USB Creator", 450, 750, 5, 7, $WS_POPUP, BitOR($WS_EX_LAYERED, $WS_EX_MDICHILD), $GUI)
 GUISetFont($font_size)
-HotKeySet("{UP}", "GUI_MoveUp")
-HotKeySet("{DOWN}", "GUI_MoveDown")
-HotKeySet("{LEFT}", "GUI_MoveLeft")
-HotKeySet("{RIGHT}", "GUI_MoveRight")
 
 ; Offset applied on every items
 $offsetx0 = 27
@@ -398,7 +398,7 @@ GUICtrlSetCursor(-1, 0)
 GUICtrlSetOnEvent(-1, "GUI_Refresh_Drives")
 $ISO_AREA = GUICtrlCreateLabel("", 38 + $offsetx0, 231 + $offsety0, 75, 75)
 GUICtrlSetCursor(-1, 0)
-GUICtrlSetOnEvent(-1, "GUI_Choose_ISO")
+GUICtrlSetOnEvent(-1, "GUI_Choose_ISO_From_GUI")
 $CD_AREA = GUICtrlCreateLabel("", 146 + $offsetx0, 231 + $offsety0, 75, 75)
 GUICtrlSetCursor(-1, 0)
 GUICtrlSetOnEvent(-1, "GUI_Choose_CD")
@@ -599,9 +599,15 @@ If ReadSetting("Internal", "restart_language") = "yes" Then
 EndIf
 
 ; Netbook warning (interface too big). Warning will only appear once
-If @DesktopHeight <= 600 And ReadSetting("Advanced", "skip_netbook_warning") <> "yes" Then
-	$return = MsgBox(64, Translate("Netbook screen detected"), Translate("Your screen vertical resolution is less than 600 pixels") & "." & @CRLF & Translate("Please use the arrow keys (up and down) of your keyboard to move the interface") & ".")
-	WriteSetting("Advanced", "skip_netbook_warning", "yes")
+If @DesktopHeight <= 600 Then
+	HotKeySet("{UP}", "GUI_MoveUp")
+	HotKeySet("{DOWN}", "GUI_MoveDown")
+	HotKeySet("{LEFT}", "GUI_MoveLeft")
+	HotKeySet("{RIGHT}", "GUI_MoveRight")
+	if ReadSetting("Advanced", "skip_netbook_warning") <> "yes" Then
+		$return = MsgBox(64, Translate("Netbook screen detected"), Translate("Your screen vertical resolution is less than 600 pixels") & "." & @CRLF & Translate("Please use the arrow keys (up and down) of your keyboard to move the interface") & ".")
+		WriteSetting("Advanced", "skip_netbook_warning", "yes")
+	EndIf
 EndIf
 
 ; Main part
