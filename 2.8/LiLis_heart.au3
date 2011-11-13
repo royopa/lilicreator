@@ -513,13 +513,19 @@ Func Create_boot_menu($drive_letter,$release_in_list)
 	$variant = ReleaseGetVariant($release_in_list)
 	$distribution = ReleaseGetDistribution($release_in_list)
 	$features=ReleaseGetSupportedFeatures($release_in_list)
+	$variant_version=ReleaseGetVariantVersion($release_in_list)
 	if StringInStr($features,"default") = 0 Then
 		If $variant ="CentOS" Then
 			SendReport("IN-Create_boot_menu for CentOS")
 			CentOS_WriteTextCFG($drive_letter)
 		Elseif $distribution = "Fedora" Then
-			SendReport("IN-Create_boot_menu for Fedora")
-			Fedora_WriteTextCFG($drive_letter)
+			if $variant = "Mandriva" Then
+				SendReport("IN-Create_boot_menu for Mandriva")
+				Mandriva_WriteTextCFG($drive_letter)
+			Else
+				SendReport("IN-Create_boot_menu for Fedora")
+				Fedora_WriteTextCFG($drive_letter,$release_in_list)
+			EndIf
 		Elseif $variant = "TinyCore" Then
 			SendReport("IN-Create_boot_menu for TinyCore")
 			TinyCore_WriteTextCFG($drive_letter)
@@ -546,11 +552,20 @@ Func Create_boot_menu($drive_letter,$release_in_list)
 			Crunchbang_WriteTextCFG($drive_letter,$release_in_list)
 		EndIf
 	Elseif $variant = "opensuse" Then
-			SendReport("IN-Create_boot_menu for OpenSuse : Setting MBR ID")
-			Set_OpenSuse_MBR_ID($drive_letter)
+		If $variant_version = "11.3" Then
+			SendReport("IN-Create_boot_menu for OpenSuse : Setting MBR ID (without trailing zeroes)")
+			Set_OpenSuse_MBR_ID($drive_letter,1)
+		Else
+			SendReport("IN-Create_boot_menu for OpenSuse : Setting MBR ID (with trailing zeroes)")
+			Set_OpenSuse_MBR_ID($drive_letter,0)
+		EndIf
+	ElseIf StringInStr($features,"opensuse-mbrid-trailing")>0 then
+			SendReport("IN-Create_boot_menu for OpenSuse variant: Setting MBR ID (with trailing zeroes)")
+			Set_OpenSuse_MBR_ID($drive_letter,0)
 	ElseIf StringInStr($features,"opensuse-mbrid")>0 then
-			SendReport("IN-Create_boot_menu for OpenSuse variant: Setting MBR ID")
-			Set_OpenSuse_MBR_ID($drive_letter)
+			SendReport("IN-Create_boot_menu for OpenSuse variant: Setting MBR ID (without trailing zeroes)")
+			Set_OpenSuse_MBR_ID($drive_letter,1)
+
 	Else
 		SendReport("IN-Create_boot_menu for Regular Linux")
 		Default_WriteTextCFG($drive_letter)
@@ -835,6 +850,14 @@ Func Install_boot_sectors($drive_letter,$release_in_list,$hide_it)
 		$syslinux_folder=$drive_letter & "\syslinux\"
 	EndIf
 
+	$modules_to_keep=""
+	$features_array=StringSplit($features,",",2)
+	FOR $feature IN $features_array
+		if StringInStr($feature,"keep-module:")<>0 Then
+				$modules_to_keep=StringReplace($feature,"keep-module:","")
+		EndIf
+	Next
+
 	; Replacing Syslinux modules by the good ones
 	$search = FileFindFirstFile($syslinux_folder&"*.c32")
 	; Check if the search was successful
@@ -849,7 +872,11 @@ Func Install_boot_sectors($drive_letter,$release_in_list,$hide_it)
 		$found_modules=StringSplit(StringTrimRight($found_modules,1),"|",2)
 		If Ubound($found_modules) > 0 Then
 			For $module IN $found_modules
-				if $module <> "gfxboot.c32" Then
+				if $module = "gfxboot.c32" Then
+					SendReport("IN-Install_boot_sectors : Skip replacement of module "&$module&" to keep Ubuntu variants working")
+				Elseif StringInStr($module,$modules_to_keep) Then
+					SendReport("IN-Install_boot_sectors : Skip replacement of module "&$module&" because of parameter keep-module")
+				Else
 					$new_module=@ScriptDir&"\tools\syslinux-modules\v"&$syslinux_version&"\"&$module
 					If FileExists($new_module) Then
 						SendReport("IN-Install_boot_sectors : Replacing syslinux "&$syslinux_version&" module "&$module&" by the matching one")
@@ -857,8 +884,6 @@ Func Install_boot_sectors($drive_letter,$release_in_list,$hide_it)
 					Else
 						SendReport("IN-Install_boot_sectors : WARNING, Could not replace syslinux "&$syslinux_version&" module "&$module&" by the matching one")
 					EndIf
-				Else
-					SendReport("IN-Install_boot_sectors : Will not replace module "&$module&" to keep Ubuntu variants working")
 				EndIf
 			Next
 		Else
@@ -1088,6 +1113,7 @@ Func CreateUninstaller($drive_letter,$release_in_list)
 	AddToSmartClean($drive_letter,"ldlinux.sys")
 	AddToSmartClean($drive_letter,"syslinux")
 	AddToSmartClean($drive_letter,"syslinux.cfg")
+	AddToSmartClean($drive_letter,"syslinux.cfg.lili-bak")
 
 	if ReleaseGetVariant($release_in_list)="pmagic" Then
 		AddToSmartClean($drive_letter,"pmagic")
