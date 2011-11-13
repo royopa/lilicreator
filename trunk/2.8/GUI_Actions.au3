@@ -407,6 +407,7 @@ Func GUI_Back_Download()
 	GUI_Hide_Back_Button()
 	GUICtrlSetState($label_step2_status,$GUI_HIDE)
 	GUICtrlSetState($label_step2_status2,$GUI_HIDE)
+	_ProgressDelete($progress_bar)
 	; Showing old elements again
 	GUI_Show_Step2_Default_Menu()
 	SendReport("End-GUI_Back_Download")
@@ -415,9 +416,16 @@ EndFunc   ;==>GUI_Back_Download
 Func GUI_Select_Linux()
 	SendReport("Start-GUI_Select_Linux")
 	$selected_linux = GUICtrlRead($combo_linux)
+
 	If StringInStr($selected_linux, ">>") = 0 Then
-		GUICtrlSetState($download_manual, $GUI_ENABLE)
-		GUICtrlSetState($download_auto, $GUI_ENABLE)
+		$release_in_list = FindReleaseFromDescription($selected_linux)
+		if ReleaseGetMirrorStatus($release_in_list)> 0 Then
+			GUICtrlSetState($download_manual, $GUI_ENABLE)
+			GUICtrlSetState($download_auto, $GUI_ENABLE)
+		Else
+			GUICtrlSetState($download_manual, $GUI_ENABLE)
+			GUICtrlSetState($download_auto, $GUI_DISABLE)
+		EndIf
 	Else
 		MsgBox(48, Translate("Please read"), Translate("Please select a linux to continue"))
 		GUICtrlSetState($download_manual, $GUI_DISABLE)
@@ -438,7 +446,11 @@ Func GUI_Download_Manually()
 	$selected_linux = GUICtrlRead($combo_linux)
 	SendReport("Start-GUI_Download_Manually (Downloading "&$selected_linux&" )")
 	$release_in_list = FindReleaseFromDescription($selected_linux)
-	DownloadRelease($release_in_list, 0)
+	if ReleaseGetMirrorStatus($release_in_list)> 0 Then
+		DownloadRelease($release_in_list, 0)
+	Else
+		ShellExecute(ReleaseGetDownloadPage($release_in_list))
+	EndIf
 	SendReport("End-GUI_Download_Manually")
 EndFunc   ;==>GUI_Download_Manually
 
@@ -475,21 +487,38 @@ Func DownloadRelease($release_in_list, $automatic_download)
 		If StringStripWS($mirror, 8) <> "" Then
 			_ProgressSet($progress_bar, $tested_mirrors * 100 / $available_mirrors)
 			_ProgressSetText($progress_bar, Translate("Testing mirror") & " : " & URLToHostname($mirror))
-			;$temp_latency = Ping(URLToHostname($mirror))
 
-			$command="ping-"&$mirror
-			SendReport($command)
+			; Old Method
+			;$temp_latency = Ping(URLToHostname($mirror))
+			;$command="ping-"&$mirror
+			;SendReport($command)
+
 			$tested_mirrors = $tested_mirrors + 1
 			$timeout=TimerInit()
-			While StringInStr($ping_result,$command)<=0 AND TimerDiff($timeout)<12000
-				Sleep(30)
-			Wend
+
+			;While StringInStr($ping_result,$command)<=0 AND TimerDiff($timeout)<12000
+			;	Sleep(30)
+			;Wend
+
+			Local $timer_init,$temp_size=0
+			$timer_init = TimerInit()
+			$temp_size = InetGetSize($mirror,3)
+			$ping_latency=TimerDiff($timer_init)
+			$temp_size = Round($temp_size / 1048576)
+			If $temp_size < 5 Or $temp_size > 5000 Then
+				$temp_latency = 10000
+			Else
+				$temp_latency=Int($ping_latency)
+			EndIf
+
+			#cs Old method
 			if StringInStr($ping_result,$command)<=0 Then
 				$temp_latency = 10000
 			Else
 				$result = StringReplace($ping_result,$command&"=","")
 				$temp_latency=Int($result)
 			Endif
+			#ce
 		Else
 			$temp_latency = 10000
 		EndIf

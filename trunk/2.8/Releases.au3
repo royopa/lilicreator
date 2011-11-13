@@ -235,6 +235,16 @@ Func ReleaseGetVariantVersion($release_in_list)
 	Return StringStripWS($releases[$release_in_list][$R_VARIANT_VERSION],3)
 EndFunc
 
+Func ReleaseGetWebsite($release_in_list)
+	if $release_in_list <=0 Then Return "NotFound"
+	Return StringStripWS($releases[$release_in_list][$R_WEB],3)
+EndFunc
+
+Func ReleaseGetDownloadPage($release_in_list)
+	if $release_in_list <=0 Then Return "NotFound"
+	Return StringStripWS($releases[$release_in_list][$R_DOWNLOAD_PAGE],3)
+EndFunc
+
 Func ReleaseGetMirror($release_in_list,$mirror_number=0)
 	if $release_in_list <=0 Then Return "NotFound"
 	if StringInStr($releases[$release_in_list][$R_MIRROR1],"::") Then
@@ -247,6 +257,17 @@ Func ReleaseGetMirror($release_in_list,$mirror_number=0)
 	Else
 		Return StringStripWS($releases[$release_in_list][$R_MIRROR1+$mirror_number],3)
 	EndIf
+EndFunc
+
+Func ReleaseGetMirrorStatus($release_in_list)
+	if $release_in_list <=0 Then Return 0
+	$available_mirrors=0
+	For $i=$R_MIRROR1 To $R_MIRROR10
+		if StringStripWS($releases[$release_in_list][$i],3) <> "" Then
+			$available_mirrors+=1
+		EndIf
+	Next
+	Return $available_mirrors
 EndFunc
 
 Func ReleaseGetInstallSize($release_in_list)

@@ -1,19 +1,22 @@
 #NoTrayIcon
 #RequireAdmin
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
-#AutoIt3Wrapper_Version=Beta
+#AutoIt3Wrapper_Version=beta
 #AutoIt3Wrapper_icon=tools\img\lili.ico
 #AutoIt3Wrapper_Compression=0
 #AutoIt3Wrapper_UseUpx=n
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.8.88.49
+#AutoIt3Wrapper_Res_Fileversion=2.8.88.50
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_SaveSource=y
+#AutoIt3Wrapper_Res_Field=AutoIt Version|%AutoItVer%
+#AutoIt3Wrapper_Res_Field=Compile Date|%date% %time%
 #AutoIt3Wrapper_Res_Field=Site|http://www.linuxliveusb.com
 #AutoIt3Wrapper_AU3Check_Parameters=-w 4
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
+#AutoIt3Wrapper_AutoIt3="C:\Program Files (x86)\AutoIt3\Beta\autoit3.exe"
 
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////// About this software                           ///////////////////////////////////////////////////////////////////////////////
@@ -364,10 +367,6 @@ GUIRegisterMsg($WM_NCHITTEST, "WM_NCHITTEST")
 
 $CONTROL_GUI = GUICreate("LinuxLive USB Creator", 450, 750, 5, 7, $WS_POPUP, BitOR($WS_EX_LAYERED, $WS_EX_MDICHILD), $GUI)
 GUISetFont($font_size)
-HotKeySet("{UP}", "GUI_MoveUp")
-HotKeySet("{DOWN}", "GUI_MoveDown")
-HotKeySet("{LEFT}", "GUI_MoveLeft")
-HotKeySet("{RIGHT}", "GUI_MoveRight")
 
 ; Offset applied on every items
 $offsetx0 = 27
@@ -596,9 +595,15 @@ If ReadSetting("Internal", "restart_language") = "yes" Then
 EndIf
 
 ; Netbook warning (interface too big). Warning will only appear once
-If @DesktopHeight <= 600 And ReadSetting("Advanced", "skip_netbook_warning") <> "yes" Then
-	$return = MsgBox(64, Translate("Netbook screen detected"), Translate("Your screen vertical resolution is less than 600 pixels") & "." & @CRLF & Translate("Please use the arrow keys (up and down) of your keyboard to move the interface") & ".")
-	WriteSetting("Advanced", "skip_netbook_warning", "yes")
+If @DesktopHeight <= 600 Then
+	HotKeySet("{UP}", "GUI_MoveUp")
+	HotKeySet("{DOWN}", "GUI_MoveDown")
+	HotKeySet("{LEFT}", "GUI_MoveLeft")
+	HotKeySet("{RIGHT}", "GUI_MoveRight")
+	if ReadSetting("Advanced", "skip_netbook_warning") <> "yes" Then
+		$return = MsgBox(64, Translate("Netbook screen detected"), Translate("Your screen vertical resolution is less than 600 pixels") & "." & @CRLF & Translate("Please use the arrow keys (up and down) of your keyboard to move the interface") & ".")
+		WriteSetting("Advanced", "skip_netbook_warning", "yes")
+	EndIf
 EndIf
 
 ; Main part
