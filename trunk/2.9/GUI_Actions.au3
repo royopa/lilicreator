@@ -158,24 +158,23 @@ EndFunc   ;==>GUI_Restore
 
 Func GUI_Choose_Drive()
 	SendReport("Start-GUI_Choose_Drive")
-	$selected_drive = StringLeft(GUICtrlRead($combo), 2)
-	$space_after_linux_live_MB=SpaceAfterLinuxLiveMB($selected_drive)
-	If (StringInStr(DriveGetFileSystem($selected_drive), "FAT") >= 1 And $space_after_linux_live_MB > 0) Then
+	USBInitializeVariables(StringLeft(GUICtrlRead($combo), 2))
+	If ($usb_isvalid_filesystem And $usb_space_after_lili_MB > 0) Then
 		; State is OK ( FAT32 or FAT format and 700MB+ free)
 		Step1_Check("good")
 
 		If GUICtrlRead($slider) > 0 Then
-			GUICtrlSetData($label_max, $space_after_linux_live_MB & " " & Translate("MB"))
-			GUICtrlSetLimit($slider, Round($space_after_linux_live_MB / 10), 0)
+			GUICtrlSetData($label_max, $usb_space_after_lili_MB & " " & Translate("MB"))
+			GUICtrlSetLimit($slider, Round($usb_space_after_lili_MB / 10), 0)
 			; State is OK ( FAT32 or FAT format and 700MB+ free) and warning for live mode only on step 3
 			Step3_Check("good")
 		Else
-			GUICtrlSetData($label_max, $space_after_linux_live_MB & " " & Translate("MB"))
-			GUICtrlSetLimit($slider, Round($space_after_linux_live_MB / 10), 0)
+			GUICtrlSetData($label_max, $usb_space_after_lili_MB & " " & Translate("MB"))
+			GUICtrlSetLimit($slider, Round($usb_space_after_lili_MB / 10), 0)
 			; State is OK but warning for live mode only on step 3
 			Step3_Check("warning")
 		EndIf
-	ElseIf (StringInStr(DriveGetFileSystem($selected_drive), "FAT") <= 0 And GUICtrlRead($formater) <> $GUI_CHECKED) Then
+	ElseIf ( $usb_isvalid_filesystem And GUICtrlRead($formater) <> $GUI_CHECKED) Then
 
 		MsgBox(4096, "", Translate("Please choose a FAT32 or FAT formated key or check the formating option"))
 
@@ -191,13 +190,13 @@ Func GUI_Choose_Drive()
 		Step3_Check("good")
 		GUICtrlSetState($slider, $GUI_DISABLE)
 		GUICtrlSetState($slider_visual, $GUI_DISABLE)
-		If DriveSpaceTotal($selected_drive) > Round(FileGetSize($file_set)/1048576,1) Then
+		If DriveSpaceTotal($usb_letter) > Round(FileGetSize($file_set)/1048576,1) Then
 			Step1_Check("good")
 		Else
 			Step1_Check("bad")
 		EndIf
 	Else
-		If (DriveGetFileSystem($selected_drive) = "") Then
+		If ( $usb_filesystem = "") Then
 			MsgBox(4096, "", Translate("No disk selected"))
 		EndIf
 		; State is NOT OK (no selected key)
@@ -789,16 +788,15 @@ EndFunc   ;==>GUI_Persistence_Slider
 
 Func GUI_Persistence_Input()
 	SendReport("Start-GUI_Persistence_Input")
-	$selected_drive = StringLeft(GUICtrlRead($combo), 2)
-	$space_after_linux_live_MB=SpaceAfterLinuxLiveMB($selected_drive)
-	If StringIsInt(GUICtrlRead($slider_visual)) And GUICtrlRead($slider_visual) <= $space_after_linux_live_MB And GUICtrlRead($slider_visual) > 0 Then
+
+	If StringIsInt(GUICtrlRead($slider_visual)) And GUICtrlRead($slider_visual) <= $usb_space_after_lili_MB And GUICtrlRead($slider_visual) > 0 Then
 		GUICtrlSetData($slider, Round(GUICtrlRead($slider_visual) / 10))
 		GUICtrlSetData($slider_visual_mode, Translate("(Persistent Mode)"))
 		; State is  OK (persistent mode)
 		Step3_Check("good")
 
-	ElseIf StringIsInt(GUICtrlRead($slider_visual)) And GUICtrlRead($slider_visual) > $space_after_linux_live_MB And GUICtrlRead($slider_visual) > 0 Then
-		GUICtrlSetData($slider_visual, $space_after_linux_live_MB)
+	ElseIf StringIsInt(GUICtrlRead($slider_visual)) And GUICtrlRead($slider_visual) > $usb_space_after_lili_MB And GUICtrlRead($slider_visual) > 0 Then
+		GUICtrlSetData($slider_visual, $usb_space_after_lili_MB)
 		GUICtrlSetData($slider, $slider_visual)
 		GUICtrlSetData($slider_visual_mode, Translate("(Persistent Mode)"))
 		; State is  OK (persistent mode)
@@ -819,23 +817,23 @@ EndFunc   ;==>GUI_Persistence_Input
 
 Func GUI_Format_Key()
 	SendReport("Start-GUI_Format_Key")
-	$space_after_linux_live_MB=SpaceAfterLinuxLiveMB($selected_drive)
-	GUICtrlSetData($label_max, $space_after_linux_live_MB & " " & Translate("MB"))
-	GUICtrlSetLimit($slider, $space_after_linux_live_MB / 10, 0)
 
-	If ((StringInStr(DriveGetFileSystem($selected_drive), "FAT") >= 1 Or GUICtrlRead($formater) == $GUI_CHECKED) And $space_after_linux_live_MB > 0) Then
+	GUICtrlSetData($label_max, $usb_space_after_lili_MB & " " & Translate("MB"))
+	GUICtrlSetLimit($slider, $usb_space_after_lili_MB / 10, 0)
+
+	If (( $usb_isvalid_filesystem Or GUICtrlRead($formater) == $GUI_CHECKED) And $usb_space_after_lili_MB > 0) Then
 		; State is OK ( FAT32 or FAT format and 700MB+ free)
-		GUICtrlSetData($label_max, $space_after_linux_live_MB & " " & Translate("MB"))
-		GUICtrlSetLimit($slider, Round($space_after_linux_live_MB / 10), 0)
+		GUICtrlSetData($label_max, $usb_space_after_lili_MB & " " & Translate("MB"))
+		GUICtrlSetLimit($slider, Round($usb_space_after_lili_MB / 10), 0)
 		Step1_Check("good")
 
-	ElseIf (StringInStr(DriveGetFileSystem($selected_drive), "FAT") <= 0 And GUICtrlRead($formater) <> $GUI_CHECKED) Then
+	ElseIf (Not $usb_isvalid_filesystem And GUICtrlRead($formater) <> $GUI_CHECKED) Then
 		MsgBox(4096, "", Translate("Please choose a FAT32 or FAT formated key or check the formating option"))
 		GUICtrlSetData($label_max, "?? "&Translate("MB"))
 		Step1_Check("bad")
 
 	Else
-		If (DriveGetFileSystem($selected_drive) = "") Then
+		If ($usb_filesystem = "") Then
 			MsgBox(4096, "", Translate("No disk selected"))
 		EndIf
 		;State is NOT OK (no selected key)
@@ -847,14 +845,12 @@ Func GUI_Format_Key()
 EndFunc   ;==>GUI_Format_Key
 
 Func Refresh_Persistence()
-	$space_after_linux_live_MB=SpaceAfterLinuxLiveMB($selected_drive)
-
-	If ((StringInStr(DriveGetFileSystem($selected_drive), "FAT") >= 1 Or GUICtrlRead($formater) == $GUI_CHECKED) And $space_after_linux_live_MB > 0) Then
+	If (($usb_isvalid_filesystem Or GUICtrlRead($formater) == $GUI_CHECKED) And $usb_space_after_lili_MB > 0) Then
 		; State is OK ( FAT32 or FAT format and 700MB+ free)
-		GUICtrlSetData($label_max, $space_after_linux_live_MB & " " & Translate("MB"))
-		GUICtrlSetLimit($slider, Round($space_after_linux_live_MB / 10), 0)
+		GUICtrlSetData($label_max, $usb_space_after_lili_MB & " " & Translate("MB"))
+		GUICtrlSetLimit($slider, Round($usb_space_after_lili_MB / 10), 0)
 
-	ElseIf (StringInStr(DriveGetFileSystem($selected_drive), "FAT") <= 0 And GUICtrlRead($formater) <> $GUI_CHECKED) Then
+	ElseIf (NOT $usb_isvalid_filesystem And GUICtrlRead($formater) <> $GUI_CHECKED) Then
 		GUICtrlSetData($label_max, "?? " & Translate("MB"))
 	Else
 		GUICtrlSetData($label_max, "?? " & Translate("MB"))
@@ -882,13 +878,10 @@ EndFunc
 Func GUI_Launch_Creation()
 	Local $return=""
 
-	$selected_drive = StringLeft(GUICtrlRead($combo), 2)
-
-	if Not FileExists($selected_drive&"\") Then
+	if Not FileExists($usb_letter&"\") Then
 		MsgBox(64,Translate("Please read"),Translate("Please insert your USB key back or select another one")&".")
 		Return ""
 	EndIf
-
 
 	; to avoid to create the key twice in a row
 	if $already_create_a_key >0 Then
@@ -921,9 +914,9 @@ Func GUI_Launch_Creation()
 	; Format option has been selected
 	If (GUICtrlRead($formater) == $GUI_CHECKED) And $annuler <> 2 Then
 		$annuler = 0
-		$annuler = MsgBox(49, Translate("Please read") & "!!!", Translate("Are you sure you want to format this disk and lose your data") &" ?"& @CRLF & @CRLF & "       " & Translate("Label") & " : ( " & $selected_drive & " ) " & DriveGetLabel($selected_drive) & @CRLF & "       " & Translate("Size") & " : " & Round(DriveSpaceTotal($selected_drive) / 1024, 1) & " " & Translate("GB") & @CRLF & "       " & Translate("Formatted in") & " : " & DriveGetFileSystem($selected_drive) & @CRLF)
+		$annuler = MsgBox(49, Translate("Please read") & "!!!", Translate("Are you sure you want to format this disk and lose your data") &" ?"& @CRLF & @CRLF & "       " & Translate("Label") & " : ( " & $usb_letter & " ) " & DriveGetLabel($usb_letter) & @CRLF & "       " & Translate("Size") & " : " & Round(DriveSpaceTotal($usb_letter) / 1024, 1) & " " & Translate("GB") & @CRLF & "       " & Translate("Formatted in") & " : " & DriveGetFileSystem($usb_letter) & @CRLF)
 		If $annuler = 1 Then
-			Format_FAT32($selected_drive)
+			Format_FAT32()
 		EndIf
 	EndIf
 
@@ -935,36 +928,36 @@ Func GUI_Launch_Creation()
 		; Cleaning old installs only if needed
 		If $file_set_mode <> "img" Then
 			if InitializeFilesInSource($file_set)=-1 Then Return -1
-			If GUICtrlRead($formater) <> $GUI_CHECKED Then Clean_old_installs($selected_drive, $release_number)
+			If GUICtrlRead($formater) <> $GUI_CHECKED Then Clean_old_installs($usb_letter, $release_number)
 		EndIf
 
 		If GUICtrlRead($virtualbox) == $GUI_CHECKED Then $virtualbox_check = Download_virtualBox()
 
 		; Uncompressing ou copying files on the key
 		If $file_set_mode = "iso" Then
-			Uncompress_ISO_on_key($selected_drive, $file_set, $release_number)
+			Uncompress_ISO_on_key($usb_letter, $file_set, $release_number)
 		ElseIf $file_set_mode = "folder" Then
-			Create_Stick_From_CD($selected_drive, $file_set)
+			Create_Stick_From_CD($usb_letter, $file_set)
 		ElseIf $file_set_mode = "img" Then
-			if Create_Stick_From_IMG($selected_drive, $file_set)=-1 Then Return -1
+			if Create_Stick_From_IMG($usb_letter, $file_set)=-1 Then Return -1
 		EndIf
 
 		; If it's not an IMG file, we have to do all these things :
 		If $file_set_mode <> "img" Then
-			Rename_and_move_files($selected_drive, $release_number)
+			Rename_and_move_files($usb_letter, $release_number)
 
-			Create_persistence_file($selected_drive, $release_number, GUICtrlRead($slider_visual), GUICtrlRead($hide_files))
+			Create_persistence_file($usb_letter, $release_number, GUICtrlRead($slider_visual), GUICtrlRead($hide_files))
 
-			Create_boot_menu($selected_drive, $release_number)
+			Create_boot_menu($usb_letter, $release_number)
 
-			Install_boot_sectors($selected_drive,$release_number, GUICtrlRead($hide_files))
+			Install_boot_sectors($usb_letter,$release_number, GUICtrlRead($hide_files))
 
 			; Create Autorun menu
-			Create_autorun($selected_drive, $release_number)
+			Create_autorun($usb_letter, $release_number)
 
-			CreateUninstaller($selected_drive,$release_number)
+			CreateUninstaller($usb_letter,$release_number)
 
-			If (GUICtrlRead($hide_files) == $GUI_CHECKED) Then Hide_live_files($selected_drive)
+			If (GUICtrlRead($hide_files) == $GUI_CHECKED) Then Hide_live_files($usb_letter)
 
 			If GUICtrlRead($virtualbox) == $GUI_CHECKED And $virtualbox_check >= 1 Then
 
@@ -973,12 +966,12 @@ Func GUI_Launch_Creation()
 				; maybe check downloaded file ?
 
 				; Next step : installing vbox on the key
-				Install_virtualbox_on_key($selected_drive)
+				Install_virtualbox_on_key($usb_letter)
 
 				UpdateStatus("Applying VirtualBox settings")
-				Setup_RAM_for_VM($selected_drive,$release_number)
+				Setup_RAM_for_VM($usb_letter,$release_number)
 
-				;Run($selected_drive & "\Portable-VirtualBox\Launch_usb.exe", @ScriptDir, @SW_HIDE)
+				;Run($usb_letter & "\Portable-VirtualBox\Launch_usb.exe", @ScriptDir, @SW_HIDE)
 
 			EndIf
 

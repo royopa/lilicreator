@@ -200,6 +200,11 @@ Func ReleaseGetCodename($release_in_list)
 	Return StringStripWS($releases[$release_in_list][$R_CODE],3)
 EndFunc
 
+Func ReleaseGetName($release_in_list)
+	if $release_in_list <=0 Then Return "NotFound"
+	Return StringStripWS($releases[$release_in_list][$R_NAME],3)
+EndFunc
+
 Func ReleaseGetFilename($release_in_list)
 	if $release_in_list <=0 Then Return "NotFound"
 	Return StringStripWS($releases[$release_in_list][$R_FILENAME],3)
@@ -254,6 +259,15 @@ Func ReleaseGetMirror($release_in_list,$mirror_number=0)
 	EndIf
 EndFunc
 
+Func ReleaseGetMirrors($release_in_list)
+	if $release_in_list <=0 Then Return "NotFound"
+	$all_mirrors=""
+	For $i=0 To $i=9
+			$all_mirrors &= ReleaseGetMirror($release_in_list,$i)&"##"
+	Next
+	Return StringSplit(StringTrimRight($all_mirrors,2),"##",1)
+EndFunc
+
 Func ReleaseGetMirrorStatus($release_in_list)
 	if $release_in_list <=0 Then Return 0
 	$available_mirrors=0
@@ -263,6 +277,16 @@ Func ReleaseGetMirrorStatus($release_in_list)
 		EndIf
 	Next
 	Return $available_mirrors
+EndFunc
+
+Func ReleaseGetReleaseDate($release_in_list)
+	if $release_in_list <=0 Then Return "NotFound"
+	Return StringStripWS($releases[$release_in_list][$R_RELEASE_DATE],3)
+EndFunc
+
+Func ReleaseGetDownloadSize($release_in_list)
+	if $release_in_list <=0 Then Return 800
+	Return StringStripWS($releases[$release_in_list][$R_DOWNLOAD_SIZE],3)
 EndFunc
 
 Func ReleaseGetInstallSize($release_in_list)
@@ -279,12 +303,33 @@ Func ReleaseGetDescription($release_in_list)
 		; This is Linux description
 		Return Translate(StringStripWS($releases[$release_in_list][$R_DESCRIPTION],3))
 	Endif
-
 EndFunc
 
 Func ReleaseGetSupportedFeatures($release_in_list)
 	if $release_in_list <=0 Then Return "NotFound"
 	Return StringStripWS($releases[$release_in_list][$R_FEATURES],3)
+EndFunc
+
+Func ReleaseInitializeVariables($release_in_list)
+	if $release_in_list <=0 Then Return "NotFound"
+	Global $release_number=$release_in_list
+	Global $release_codename=ReleaseGetCodename($release_number)
+	Global $release_name=ReleaseGetDescription($release_number)
+	Global $release_distribution=ReleaseGetDistribution($release_number)
+	Global $release_distribution_version=ReleaseGetDistributionVersion($release_number)
+	Global $release_variant=ReleaseGetVariant($release_number)
+	Global $release_variant_version=ReleaseGetVariant($release_number)
+	Global $release_supported_features=ReleaseGetSupportedFeatures($release_number)
+	Global $release_filename=ReleaseGetFilename($release_number)
+	Global $release_file_md5=ReleaseGetMD5($release_number)
+	Global $release_release_date=ReleaseGetReleaseDate($release_number)
+	Global $release_web=ReleaseGetWebsite($release_number)
+	Global $release_download_page=ReleaseGetDownloadPage($release_number)
+	Global $release_download_size=ReleaseGetDownloadSize($release_number)
+	Global $release_install_size=ReleaseGetInstallSize($release_number)
+	Global $release_description=ReleaseGetDescription($release_number)
+	Global $release_mirrors=ReleaseGetMirrors($release_number)
+	Global $release_mirrors_status=ReleaseGetMirrorStatus($release_number)
 EndFunc
 
 Func ReleaseGetVBoxRAM($release_in_list)
