@@ -2,6 +2,16 @@
 ; ///////////////////////////////// Disks Management                              ///////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+Func USBInitializeVariables($drive_letter)
+	Global $usb_letter=$drive_letter
+	Global $usb_filesystem=DriveGetFileSystem($usb_letter)
+	Global $usb_space_total=DriveSpaceTotal($usb_letter)
+	Global $usb_space_free=DriveSpaceFree($usb_letter)
+	Global $usb_space_after_lili_MB=SpaceAfterLinuxLiveMB($usb_letter)
+	Global $usb_isvalid_filesystem=isValidFilesystem($usb_filesystem)
+EndFunc
+
+
 Func Refresh_DriveList()
 	SendReport("Start-Refresh_DriveList")
 	$system_letter = StringLeft(@SystemDir, 2)
@@ -257,6 +267,16 @@ Func Get_Disk_UUID($drive_letter)
 		Return $result
 	EndIf
 EndFunc   ;==>Get_Disk_UUID
+
+Func isValidFilesystem($format)
+		; Testing if FAT or FAT32 (not exfat)
+		If StringStripWS($format,3) == "FAT" OR StringStripWS($format,3) == "FAT32" Then
+				Return True
+		Else
+				Return False
+		EndIf
+
+EndFunc
 
 Func FAT32Format($drive,$label)
 	SendReport("Start-FAT32Format ( Drive : " & $drive & " )")
