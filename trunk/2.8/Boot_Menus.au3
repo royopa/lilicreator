@@ -171,7 +171,6 @@ Func Aptosid_WriteTextCFG($selected_drive)
 	SendReport("End-Aptosid_WriteTextCFG")
 EndFunc
 
-
 Func BackTrack_WriteTextCFG($selected_drive,$release_in_list)
 	SendReport("Start-BackTrack_WriteTextCFG ( Drive : " & $selected_drive & " )")
 	If FileExists($selected_drive&"\casper-rw") Then
@@ -206,6 +205,10 @@ Func BackTrack_WriteTextCFG($selected_drive,$release_in_list)
 	EndIf
 
 	SendReport("End-BackTrack_WriteTextCFG")
+EndFunc
+
+Func CDLinux_WriteTextCFG($selected_drive,$release_in_list)
+	FileCopy2(@ScriptDir&"\tools\boot-menus\cdlinux-syslinux.cfg",$selected_drive&"\syslinux\syslinux.cfg")
 EndFunc
 
 ; Modify boot menu for Arch Linux (applied to every default Linux) but will modify only if Arch Linux detected
@@ -635,7 +638,7 @@ Func Debian_BootMenu($variant)
 	$kbd_code = GetKbdCode()
 	$lang_code = GetLangCode()
 
-	$append_debian="boot=live initrd=/casper/initrd.lz live-media-path=/casper quiet splash --"
+	$append_debian="boot=live config initrd=/casper/initrd.lz live-media-path=/casper quiet splash --"
 	If FileExists($selected_drive&"\live-rw") Then
 		$boot_text = @LF& "label persist" & @LF & "menu label ^" & Translate("Persistent Mode") _
 			& @LF & "  kernel /casper/vmlinuz" _
@@ -770,7 +773,7 @@ Func Fedora_WriteTextCFG($drive_letter,$release_in_list)
 				 & @LF & "    menu exit" _
 				 & @LF & "  menu end	"
 		EndIf
-	$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
+	$file = FileOpen($drive_letter & "\syslinux\syslinux.cfg", 2)
 	FileWrite($file, $boot_text)
 	FileClose($file)
 	UpdateLog("IN-Fedora_WriteTextCFG : Creating syslinux config file :" & @CRLF & $boot_text)

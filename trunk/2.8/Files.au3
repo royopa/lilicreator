@@ -113,14 +113,16 @@ Func FileCopyShell($fromFile, $tofile)
 	SendReport("End-_FileCopyShell")
 EndFunc   ;==>_FileCopy
 
-Func FileCopy2($arg1, $arg2)
+Func FileCopy2($arg1, $arg2 , $advanced=1)
 	Local $status="Copying File : " & $arg1 & " to " & $arg2
-	If FileCopy($arg1, $arg2,1) Then
+	If FileCopy($arg1, $arg2,$advanced) Then
 		$status &=" -> " &"Copied successfully"
 	Else
 		if FileExists($arg1) Then
-			$status &=" -> " & "Not copied"
+			$status &=" -> " & "Not copied (source file does not exist)"
 		Else
+			$status &=" -> " & "Not copied (error)"
+			UpdateLog($status)
 			Return 1
 		EndIf
 	EndIf
@@ -273,8 +275,8 @@ Func AutoDetectSyslinuxVersion($drive_letter)
 	ElseIf FileExists($drive_letter&"\isolinux.bin") Then
 		$isolinux_bin = $drive_letter&"\isolinux.bin"
 	Else
-		UpdateLog("Could not detect syslinux version (no isolinux.bin or syslinux.bin found)")
-		Return -1
+		UpdateLog("Could not detect syslinux version (no isolinux.bin or syslinux.bin found), default to v3")
+		Return 3
 	EndIf
 	Return DetectSyslinuxVersionInBin($isolinux_bin)
 EndFunc

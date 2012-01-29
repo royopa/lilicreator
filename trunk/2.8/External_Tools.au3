@@ -15,7 +15,7 @@ Func Run7zip($cmd, $taille)
 	While ProcessExists($foo) > 0
 		$percentage = Round((($initial - DriveSpaceFree($selected_drive)) * 100 / $taille), 0)
 		If $percentage > 0 And $percentage < 101 Then
-			UpdateStatusNoLog(Translate("Extracting ISO file on key") & " ( ± " & $percentage & "% )")
+			UpdateStatusNoLog(Translate("Extracting ISO file on key") & " ( " & $percentage & "% )")
 		EndIf
 		;If @error Then ExitLoop
 		Sleep(500)

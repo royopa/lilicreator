@@ -551,6 +551,9 @@ Func Create_boot_menu($drive_letter,$release_in_list)
 			SendReport("IN-Create_boot_menu for CrunchBang")
 			Crunchbang_WriteTextCFG($drive_letter,$release_in_list)
 		EndIf
+	Elseif $variant="CDLinux" Then
+		SendReport("IN-Create_boot_menu for CDLinux")
+		CDLinux_WriteTextCFG($drive_letter,$release_in_list)
 	Elseif $variant = "opensuse" Then
 		If $variant_version = "11.3" Then
 			SendReport("IN-Create_boot_menu for OpenSuse : Setting MBR ID (without trailing zeroes)")
@@ -751,7 +754,7 @@ Func Create_persistence_file($drive_letter,$release_in_list,$persistence_size,$h
 		if ($persistence_size >= 1000) Then $time_to_format=6
 		if ($persistence_size >= 2000) Then $time_to_format=10
 		if ($persistence_size >= 3000) Then $time_to_format=15
-		UpdateStatus(Translate("Formating persistence file") & " ( ±"& $time_to_format & " " & Translate("min") & " )")
+		UpdateStatus(Translate("Formating persistence file") & " ( ~"& $time_to_format & " " & Translate("min") & " )")
 		EXT2_Format_File($drive_letter&"\"&$persistence_file)
 	Else
 		UpdateStatus("Live mode : no persistence file")
@@ -851,12 +854,26 @@ Func Install_boot_sectors($drive_letter,$release_in_list,$hide_it)
 	EndIf
 
 	$modules_to_keep=""
+	$modules_to_copy=""
 	$features_array=StringSplit($features,",",2)
 	FOR $feature IN $features_array
 		if StringInStr($feature,"keep-module:")<>0 Then
-				$modules_to_keep=StringReplace($feature,"keep-module:","")
+			$modules_to_keep&=StringReplace($feature,"keep-module:","")&"|"
+		Elseif StringInStr($feature,"copy-module:")<>0 Then
+			$modules_to_copy&=StringReplace($feature,"copy-module:","")&"|"
 		EndIf
 	Next
+	If StringRight($modules_to_keep,1) == "|" Then $modules_to_keep=StringTrimRight($modules_to_keep,1)
+	If StringRight($modules_to_copy,1) == "|" Then $modules_to_copy=StringTrimRight($modules_to_copy,1)
+
+	SendReport("IN-Install_boot_sectors :  modules to keep='"&$modules_to_keep&"' and modules to copy='"&$modules_to_copy&"'")
+
+	If $modules_to_copy <> "" Then
+		$modules_to_copy_array=StringSplit($modules_to_copy,"|",3)
+		FOR $modulename_to_copy IN $modules_to_copy_array
+			FileCopy2(@ScriptDir&"\tools\syslinux-modules\v"&$syslinux_version&"\"&$modulename_to_copy,$syslinux_folder,9)
+		Next
+	EndIf
 
 	; Replacing Syslinux modules by the good ones
 	$search = FileFindFirstFile($syslinux_folder&"*.c32")
@@ -880,7 +897,7 @@ Func Install_boot_sectors($drive_letter,$release_in_list,$hide_it)
 					$new_module=@ScriptDir&"\tools\syslinux-modules\v"&$syslinux_version&"\"&$module
 					If FileExists($new_module) Then
 						SendReport("IN-Install_boot_sectors : Replacing syslinux "&$syslinux_version&" module "&$module&" by the matching one")
-						FileCopy($new_module,$syslinux_folder,1)
+						FileCopy2($new_module,$syslinux_folder)
 					Else
 						SendReport("IN-Install_boot_sectors : WARNING, Could not replace syslinux "&$syslinux_version&" module "&$module&" by the matching one")
 					EndIf
