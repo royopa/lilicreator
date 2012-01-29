@@ -401,9 +401,6 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "SystemRescue") Then
 				; System Rescue CD
 				$release_number = FindReleaseFromCodeName( "systemrescue-last")
-			ElseIf StringInStr($shortname, "gentoo") Then
-				; Gentoo
-				$release_number = FindReleaseFromCodeName( "gentoo-last")
 			ElseIf StringInStr($shortname, "xange") Then
 				; Xange variants
 				$release_number = FindReleaseFromCodeName( "openxange-last")
@@ -513,11 +510,13 @@ Func Check_source_integrity($linux_live_file)
 					$release_number = FindReleaseFromCodeName( "livehacking-last")
 				EndIf
 			ElseIf StringInStr($shortname, "vmware") OR StringInStr($shortname, "VMvisor")  OR StringInStr($shortname, "esx") Then
+				$clean_name=StringReplace($shortname,".iso","")
+				$clean_name=StringReplace($clean_name,".x86_64","")
 				; VMware vSphere Hypervisor (ESXi)
-				if  StringInStr($shortname, "4.") Then
-					$release_number = FindReleaseFromCodeName( "esxi4-last")
-				Else
+				if  StringInStr($clean_name, "5.") > 0 Then
 					$release_number = FindReleaseFromCodeName( "esxi-last")
+				Else
+					$release_number = FindReleaseFromCodeName( "esxi4-last")
 				EndIf
 			ElseIf StringInStr($shortname, "dban") Then
 				; Darik's Boot And Nuke (DBAN)
@@ -546,9 +545,9 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "porteus") Then
 				; Porteus
 				$release_number = FindReleaseFromCodeName( "porteus-last")
-			ElseIf StringInStr($shortname, "lps") Then
-				; Lightweight Portable Security
-				$release_number = FindReleaseFromCodeName( "lps-last")
+			ElseIf StringInStr($shortname, "cdlinux") Then
+				; CDLinux
+				$release_number = FindReleaseFromCodeName( "cdlinux-last")
 			ElseIf StringInStr($shortname, "rhel") OR (StringInStr($shortname, "red") AND StringInStr($shortname, "hat"))Then
 				; Red Hat Enterprise Linux
 				$release_number = FindReleaseFromCodeName( "rhel-last")
@@ -566,9 +565,24 @@ Func Check_source_integrity($linux_live_file)
 				Else
 					$release_number = FindReleaseFromCodeName( "windows7")
 				EndIf
+			Elseif StringInStr($shortname, "deepin") Then
+				; Deepin Linux
+				$release_number = FindReleaseFromCodeName( "deepin-last")
+			ElseIf StringInStr($shortname, "gentoo") OR StringInStr($shortname, "livedvd-") Then
+				; Gentoo
+				$release_number = FindReleaseFromCodeName( "gentoo-last")
 			Elseif StringInStr($shortname, "calculate") OR StringInStr($shortname, "cds-") OR StringInStr($shortname, "cld-") or StringInStr($shortname, "cldg-") OR StringInStr($shortname, "cldx-") OR StringInStr($shortname, "cmc-") OR StringInStr($shortname, "css-") Then
 				; Calculate Linux
 				$release_number = FindReleaseFromCodeName( "calculate-last")
+			Elseif StringInStr($shortname, "scientific") OR StringInStr($shortname, "SL-") Then
+				; Scientific Linux
+				$release_number = FindReleaseFromCodeName( "scientific-last")
+			ElseIf StringInStr($shortname, "pear") Then
+				; Pear OS
+				$release_number = FindReleaseFromCodeName( "pear-last")
+			ElseIf StringInStr($shortname, "lps") Then
+				; Lightweight Portable Security
+				$release_number = FindReleaseFromCodeName( "lps-last")
 			ElseIf StringInStr($shortname, "backtrack") OR StringInStr($shortname, "bt") Then
 				; BackTrack
 				if StringInStr($shortname, "5") AND NOT StringInStr($shortname, "bt4") Then
