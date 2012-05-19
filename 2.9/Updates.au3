@@ -61,15 +61,15 @@ Func CheckForMajorUpdate()
 		EndIf
 		Return 1
 	ElseIf Not $last_stable = 0 And Not $last_stable ="" And VersionCompare($last_stable, $software_version) = 1 Then
-		UpdateLog("New stable version available")
+		UpdateLog("New major stable version available")
 		$return = MsgBox(68, Translate("There is a new version available"), Translate("Your LiLi's version is not up to date") &"."& @CRLF & @CRLF & Translate("Last version is") & " : " & $last_stable & @CRLF & Translate("Your version is") & " : " & $software_version & @CRLF & @CRLF & Translate("Do want to download it")&" ?")
 		If $return = 6 Then
-			ShellExecute("http://www.linuxliveusb.com/")
+			ShellExecute("http://www.linuxliveusb.com/update")
 			GUI_Exit()
 		EndIf
 		Return 1
 	Else
-		UpdateLog("Current software version is up to date")
+		UpdateLog("Current major software version is up to date")
 		Return 0
 	EndIf
 EndFunc   ;==>Check_for_updates
@@ -81,7 +81,15 @@ Func CheckForMinorUpdate()
 
 		; Compare with the current version
 		if VersionCodeForCompatList($current_compatibility_list_version) < VersionCodeForCompatList($last_stable_update) AND MajorVersionCode($current_compatibility_list_version)=MajorVersionCode($last_stable_update) Then
-			UpdateLog("Compatibility list can be updated")
+			UpdateLog("Minor update is available")
+			$return = MsgBox(68, Translate("There is a new version available"), Translate("Your LiLi's version is not up to date") &"."& @CRLF & @CRLF & Translate("Your version is") & " : " & $software_version & @CRLF & Translate("Last version is") & " : " & $last_stable  & @CRLF & @CRLF & Translate("Do want to download it")&" ?")
+			If $return = 6 Then
+				ShellExecute("http://www.linuxliveusb.com/update")
+				GUI_Exit()
+			EndIf
+			Return 1
+			#cs LiLi 2.9 => no more AutoUpdate
+
 			; There is a new version => Downloading it to new_compatibility_list.ini
 			InetGet($check_updates_url&"compatibility_lists/"&$last_stable_update, @ScriptDir &"\tools\settings\new_compatibility_list.ini",3)
 
@@ -97,8 +105,9 @@ Func CheckForMinorUpdate()
 				UpdateLog("WARNING : Could not download new compatibility list version")
 				return 0
 			EndIf
+			#ce
 		Else
-			UpdateLog("Current compatibility list version is up to date")
+			UpdateLog("Current minor software version is up to date")
 			Return 0
 		EndIf
 	EndFunc

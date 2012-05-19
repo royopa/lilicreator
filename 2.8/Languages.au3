@@ -84,14 +84,18 @@ Func _Language()
 			$lang_found = "Spanish"
 		Case StringInStr("0407,0807,0c07,1007,1407", $use_source)
 			$lang_found = "German"
-		Case StringInStr("0416,0816", $use_source)
-			$lang_found = "Portuguese"
+		Case StringInStr("0416", $use_source)
+			$lang_found = "Portuguese (Brazilian)"
+		Case StringInStr("0816", $use_source)
+			$lang_found = "Portuguese (Standard)"
 		Case StringInStr("0410,0810", $use_source)
 			$lang_found = "Italian"
 		Case StringInStr("0414,0814", $use_source)
 			$lang_found = "Norwegian"
 		Case StringInStr("0404,0804,0c04,1004,1404", $use_source)
 			$lang_found = "Chinese"
+		Case StringInStr("0418", $use_source)
+			$lang_found = "Romanian"
 		Case StringInStr("040e", $use_source)
 			$lang_found = "Hungarian"
 		Case StringInStr("0411", $use_source)
@@ -106,6 +110,12 @@ Func _Language()
 			$lang_found = "Dutch"
 		Case StringInStr("0421", $use_source)
 			$lang_found = "Indonesian"
+		Case StringInStr("0422", $use_source)
+			$lang_found = "Ukrainian"
+		Case StringInStr("041f", $use_source)
+			$lang_found = "Turkish"
+		Case StringInStr("0449", $use_source)
+			$lang_found = "Tamil"
 		Case Else
 			$lang_found = "English"
 	EndSelect

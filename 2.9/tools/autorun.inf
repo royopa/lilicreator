@@ -1,0 +1,8 @@
+[autorun]
+icon=lili.ico
+open=
+label=LinuxLive Key
+shell\linuxlive=----> LinuxLive!
+shell\linuxlive\command=VirtualBox\Virtualize_This_Key.exe
+shell\linuxlive2=----> VirtualBox Interface
+shell\linuxlive2\command=VirtualBox\VirtualBox.exe

@@ -104,9 +104,7 @@ $boot_text="display boot.msg" _
 	& @LF & "F1 boot.msg" _
 	& @LF & "F2 f2" _
 	& @LF & "F3 f3"
-	$file = FileOpen($selected_drive & "\boot\syslinux\syslinux.cfg", 2)
-	FileWrite($file, $boot_text)
-	FileClose($file)
+	FileOverWrite($selected_drive & "\boot\syslinux\syslinux.cfg", $boot_text)
 	SendReport("End-TinyCore_WriteTextCFG")
 EndFunc
 
@@ -135,9 +133,7 @@ Func Sidux_WriteTextCFG($selected_drive)
 	& @LF & "	localboot 0x80" _
 	& @LF & "LABEL "& Translate("Memory Test") _
 	& @LF & "	KERNEL /boot/memtest"
-	$file = FileOpen($selected_drive & "\boot\syslinux\syslinux.cfg", 2)
-	FileWrite($file, $boot_text)
-	FileClose($file)
+	FileOverWrite($selected_drive & "\boot\syslinux\syslinux.cfg", $boot_text)
 	SendReport("End-Sidux_WriteTextCFG")
 EndFunc
 
@@ -165,9 +161,7 @@ Func Aptosid_WriteTextCFG($selected_drive)
 	& @LF & "	localboot 0x80" _
 	& @LF & "LABEL "& Translate("Memory Test") _
 	& @LF & "	KERNEL /boot/memtest"
-	$file = FileOpen($selected_drive & "\boot\syslinux\syslinux.cfg", 2)
-	FileWrite($file, $boot_text)
-	FileClose($file)
+	FileOverWrite($selected_drive & "\boot\syslinux\syslinux.cfg", $boot_text)
 	SendReport("End-Aptosid_WriteTextCFG")
 EndFunc
 
@@ -182,6 +176,7 @@ Func BackTrack_WriteTextCFG($selected_drive,$release_in_list)
 			Return 0
 		EndIf
 		$content=FileRead($file)
+		FileClose($file)
 	Else
 		$content=""
 	EndIf
@@ -194,18 +189,19 @@ Func BackTrack_WriteTextCFG($selected_drive,$release_in_list)
 					&@LF&"  append  file=/cdrom/preseed/custom.seed boot=casper initrd=/casper/initrd.gz persistent cdrom-detect/try-usb=true text splash vga=791--" _
 					&@LF&@LF&"label STEALTH"
 		$new_content=StringReplace($content,"label STEALTH",$persistence_menu)
-		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
-		If $file = -1 Then
-			SendReport("IN-BackTrack_WriteTextCFG => ERROR : cannot write to syslinux file ")
-		Else
-			FileWrite($file,$new_content)
-			FileClose($file)
-			SendReport("IN-BackTrack_WriteTextCFG => writing new content to syslinux file : "&@crlf&$new_content)
-		EndIf
-
+		FileOverWrite($selected_drive & "\syslinux\syslinux.cfg", $new_content)
 	EndIf
 
 	SendReport("End-BackTrack_WriteTextCFG")
+EndFunc
+
+Func CDLinux_WriteTextCFG($selected_drive,$release_in_list)
+	FileCopy2(@ScriptDir&"\tools\boot-menus\cdlinux-syslinux.cfg",$selected_drive&"\syslinux\syslinux.cfg")
+EndFunc
+
+Func ReactOS_WriteTextCFG($selected_drive)
+	DirCreate($selected_drive&"\syslinux\")
+	FileCopy2(@ScriptDir&"\tools\boot-menus\reactos-syslinux.cfg",$selected_drive&"\syslinux\syslinux.cfg")
 EndFunc
 
 ; Modify boot menu for Arch Linux (applied to every default Linux) but will modify only if Arch Linux detected
@@ -282,6 +278,19 @@ Func DefaultBootTweaks($selected_drive,$filename)
 		Else
 			SendReport("IN-DefaultBootTweaks => setting cdroot_type=vfat slowusb in file "&$filename)
 			FileWrite($file,StringReplace($content,"cdroot_type=udf","cdroot_type=vfat slowusb"))
+			FileClose($file)
+		EndIf
+	Elseif StringInStr($content,"live-media=removable" )>0 Then
+		; Modifying Boot menu for Tails
+		; removing media type
+		SendReport("IN-DefaultBootTweaks => Tails or Debian variant detected in file "&$filename&" (live-media=removable)")
+		$file = FileOpen($filename, 2)
+		; Check if file opened for writing OK
+		If $file = -1 Then
+			SendReport("IN-DefaultBootTweaks => ERROR : cannot write to file "&$filename)
+		Else
+			SendReport("IN-DefaultBootTweaks => removing live-media=removable in file "&$filename)
+			FileWrite($file,StringReplace($content," live-media=removable",""))
 			FileClose($file)
 		EndIf
 	Elseif StringInStr($content,"pmedia=cd" )>0 Then
@@ -440,9 +449,7 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 	If $ubuntu_variant = "crunchbang" OR $ubuntu_variant = "kuki"  OR $ubuntu_variant = "element" Then
 		$boot_text=Ubuntu_BootMenu($initrd_file,"custom") & @LF & "DISPLAY isolinux.txt"& @LF &"TIMEOUT 300"& @LF &"PROMPT 1" & @LF & "default persist"
 		UpdateLog("Creating syslinux.cfg file for "&$ubuntu_variant&" :" & @CRLF & $boot_text)
-		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
-		FileWrite($file, $boot_text)
-		FileClose($file)
+		FileOverWrite($selected_drive & "\syslinux\syslinux.cfg",$boot_text)
 		FileCopy($selected_drive & "\syslinux\isolinux.txt",$selected_drive & "\syslinux\isolinux-orig.txt")
 		FileCopy(@ScriptDir & "\tools\boot-menus\"&$ubuntu_variant&"-isolinux.txt", $selected_drive & "\syslinux\isolinux.txt", 1)
 		SendReport("End-Ubuntu_WriteTextCFG")
@@ -458,9 +465,7 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 		& @LF &"menu background splash.png" _
 		& @LF &"menu color title 1;37;44 #c0ffffff #00000000 std"&Ubuntu_BootMenu($initrd_file,"custom")
 		UpdateLog("Creating syslinux.cfg file for "&$ubuntu_variant&" :" & @CRLF & $boot_text)
-		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
-		FileWrite($file, $boot_text)
-		FileClose($file)
+		FileOverWrite($selected_drive & "\syslinux\syslinux.cfg",$boot_text)
 		SendReport("End-Ubuntu_WriteTextCFG")
 		Return 1
 	EndIf
@@ -477,9 +482,7 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 		& @LF &"menu color sel	7;37;40  #e0000000 #f0ff8000 all" _
 		& @LF &"menu color title 1;37;24 #c0ffffff #00000000 std" &Ubuntu_BootMenu($initrd_file,"custom")
 		UpdateLog("Creating syslinux.cfg file for "&$ubuntu_variant&" :" & @CRLF & $boot_text)
-		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
-		FileWrite($file, $boot_text)
-		FileClose($file)
+		FileOverWrite($selected_drive & "\syslinux\syslinux.cfg",$boot_text)
 		SendReport("End-Ubuntu_WriteTextCFG")
 		Return 1
 	EndIf
@@ -499,9 +502,7 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 		$text_file="text.cfg"
 	EndIf
 	SendReport("IN-Ubuntu_WriteTextCFG : writing to "&$text_file)
-	$file = FileOpen($selected_drive & "\syslinux\"&$text_file, 2)
-	FileWrite($file, $boot_text)
-	FileClose($file)
+	FileOverWrite($selected_drive & "\syslinux\"&$text_file,$boot_text)
 	SendReport("End-Ubuntu_WriteTextCFG")
 EndFunc   ;==>Ubuntu_WriteTextCFG
 
@@ -534,9 +535,7 @@ Func Debian_WriteTextCFG($selected_drive, $release_in_list)
 		$boot_text &= Debian_BootMenu("mint")
 
 		UpdateLog("Creating syslinux.cfg file for Mint :" & @CRLF & $boot_text)
-		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
-		FileWrite($file, $boot_text)
-		FileClose($file)
+		FileOverWrite($selected_drive & "\syslinux\syslinux.cfg",$boot_text)
 	Elseif $variant="crunchbang" Then
 		If FileExists($selected_drive&"\live-rw") Then
 			$prepend = "label persist" _
@@ -635,7 +634,7 @@ Func Debian_BootMenu($variant)
 	$kbd_code = GetKbdCode()
 	$lang_code = GetLangCode()
 
-	$append_debian="boot=live initrd=/casper/initrd.lz live-media-path=/casper quiet splash --"
+	$append_debian="boot=live config initrd=/casper/initrd.lz live-media-path=/casper quiet splash --"
 	If FileExists($selected_drive&"\live-rw") Then
 		$boot_text = @LF& "label persist" & @LF & "menu label ^" & Translate("Persistent Mode") _
 			& @LF & "  kernel /casper/vmlinuz" _
@@ -769,11 +768,9 @@ Func Fedora_WriteTextCFG($drive_letter,$release_in_list)
 				 & @LF & "    menu label Return to ^main menu." _
 				 & @LF & "    menu exit" _
 				 & @LF & "  menu end	"
-		EndIf
-	$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
-	FileWrite($file, $boot_text)
-	FileClose($file)
-	UpdateLog("IN-Fedora_WriteTextCFG : Creating syslinux config file :" & @CRLF & $boot_text)
+			 EndIf
+	FileOverWrite($drive_letter & "\syslinux\syslinux.cfg",$boot_text)
+	UpdateLog("IN-Fedora_WriteTextCFG : Creating '"&$drive_letter & "\syslinux\syslinux.cfg"&"' config file :" & @CRLF & $boot_text)
 	SendReport("End-Fedora_WriteTextCFG")
 EndFunc   ;==>Fedora_WriteTextCFG
 
@@ -821,9 +818,7 @@ Func CentOS_WriteTextCFG($drive_letter)
 			 & @LF & "label local" _
 			 & @LF & "  menu label Boot from local drive" _
 			 & @LF & "  localboot 0xffff"
-	$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
-	FileWrite($file, $boot_text)
-	FileClose($file)
+	FileOverWrite($drive_letter & "\syslinux\syslinux.cfg",$boot_text)
 	UpdateLog("IN-CentOS_WriteTextCFG : Creating CentOS syslinux config file :" & @CRLF & $boot_text)
 	SendReport("End-CentOS_WriteTextCFG")
 EndFunc   ;==>CentOS_WriteTextCFG
@@ -868,9 +863,8 @@ Func Mandriva_WriteTextCFG($drive_letter)
 			 & @LF & "label local" _
 			 & @LF & "  menu label Boot from local drive" _
 			 & @LF & "  localboot 0xffff"
-	$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
-	FileWrite($file, $boot_text)
-	FileClose($file)
+
+	FileOverWrite($drive_letter & "\syslinux\syslinux.cfg",$boot_text)
 	SendReport("End-Mandriva_WriteTextCFG")
 EndFunc   ;==>Mandriva_WriteTextCFG
 

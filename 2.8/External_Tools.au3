@@ -73,9 +73,16 @@ Func InitializeFilesInISO($iso_to_list)
 EndFunc   ;==>InitializeFilesInISO
 
 ; Install Syslinux boot sectors
-Func InstallSyslinux($drive_letter,$version=3)
+Func InstallSyslinux($drive_letter,$version=3,$syslinux_menu_folder="")
 	Local $line="",$error="",$executable="syslinux.exe"
 	SendReport("Start-InstallSyslinux on " & $drive_letter &" (version "&$version&")")
+
+	; Installing Syslinux to custom directory, format has to be -d \HBCD for example
+	if $syslinux_menu_folder <> "" Then
+		$syslinux_menu_folder_arg="-d " &$syslinux_menu_folder&" "
+	Else
+		$syslinux_menu_folder_arg=""
+	EndIf
 
 	if $version=4 Then
 		$executable="syslinux4.exe"
@@ -83,7 +90,7 @@ Func InstallSyslinux($drive_letter,$version=3)
 		$executable="syslinux.exe"
 	EndIf
 
-	$cmd='"' & @ScriptDir & '\tools\'&$executable&'" -maf -d ' & $drive_letter & '\syslinux ' & $drive_letter
+	$cmd='"' & @ScriptDir & '\tools\'&$executable&'" -maf ' & $syslinux_menu_folder_arg & $drive_letter
 	SendReport("IN-InstallSyslinux : executing command -> " &@CRLF& $cmd)
 	$output=_RunReadStd($cmd)
 	SendReport("Return code : "&$output[0]&@CRLF&"Output : "&$output[1]&@CRLF&"Error : "&$output[2])
