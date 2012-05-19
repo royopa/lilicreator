@@ -181,8 +181,18 @@ Func GUI_Options_Menu()
 					GUISetState(@SW_ENABLE, $CONTROL_GUI)
 					ControlFocus("LinuxLive USB Creator", "", $REFRESH_AREA)
 					GUISwitch($CONTROL_GUI)
+					SendReport("=========> File Set = "&$file_set)
+					if $file_set <> 0 Then
+						SendReport("=========> running detection again")
+						if $step2_display_menu=1 Then
+							GUI_Hide_Step2_Download_Menu()
+						EndIf
+						GUI_Show_Step2_Default_Menu()
+						Check_source_integrity($file_set)
+					EndIf
 					Return ""
 				EndIf
+
 			Case $ok_button
 				WriteAdvancedSettings()
 				if CheckCustomRecognition() Then
@@ -192,6 +202,15 @@ Func GUI_Options_Menu()
 					GUISetState(@SW_ENABLE, $CONTROL_GUI)
 					ControlFocus("LinuxLive USB Creator", "", $REFRESH_AREA)
 					GUISwitch($CONTROL_GUI)
+					SendReport("=========> File Set = "&$file_set)
+					if $file_set <> "0" Then
+						SendReport("=========> running detection again")
+						if $step2_display_menu=1 Then
+							GUI_Hide_Step2_Download_Menu()
+						EndIf
+						GUI_Show_Step2_Default_Menu()
+						Check_source_integrity($file_set)
+					EndIf
 					Return ""
 				EndIf
 			Case $contact
@@ -307,6 +326,7 @@ Func CheckCustomRecognition()
 		If StringInStr($forced_linux_selected, ">>") = 0 Then
 			WriteSetting("Install_Parameters","use_same_parameter_as",$forced_linux_selected)
 			UpdateRecognition()
+			$need_to_recheck=1
 			Return 1
 		Else
 			WriteSetting("Install_Parameters","use_same_parameter_as","")

@@ -113,14 +113,16 @@ Func FileCopyShell($fromFile, $tofile)
 	SendReport("End-_FileCopyShell")
 EndFunc   ;==>_FileCopy
 
-Func FileCopy2($arg1, $arg2)
+Func FileCopy2($arg1, $arg2 , $advanced=1)
 	Local $status="Copying File : " & $arg1 & " to " & $arg2
-	If FileCopy($arg1, $arg2,1) Then
+	If FileCopy($arg1, $arg2,$advanced) Then
 		$status &=" -> " &"Copied successfully"
 	Else
 		if FileExists($arg1) Then
-			$status &=" -> " & "Not copied"
+			$status &=" -> " & "Not copied (source file does not exist)"
 		Else
+			$status &=" -> " & "Not copied (error)"
+			UpdateLog($status)
 			Return 1
 		EndIf
 	EndIf
@@ -251,30 +253,30 @@ Func InitializeFilesInCD($searchdir)
 	$files_in_source = $files
 EndFunc   ;==>InitializeFilesInCD
 
-Func AutoDetectSyslinuxVersion($drive_letter)
-	if FileExists($drive_letter&"\boot\syslinux\syslinux.bin") Then
-		$isolinux_bin = $drive_letter&"\boot\syslinux\syslinux.bin"
-	ElseIf FileExists($drive_letter&"\syslinux\syslinux.bin") Then
-		$isolinux_bin = $drive_letter&"\syslinux\syslinux.bin"
-	ElseIf FileExists($drive_letter&"\isolinux\syslinux.bin") Then
-		$isolinux_bin = $drive_letter&"\isolinux\syslinux.bin"
-	ElseIf FileExists($drive_letter&"\boot\isolinux\syslinux.bin") Then
-		$isolinux_bin = $drive_letter&"\boot\isolinux\syslinux.bin"
-	ElseIf FileExists($drive_letter&"\syslinux.bin") Then
-		$isolinux_bin = $drive_letter&"\syslinux.bin"
-	Elseif FileExists($drive_letter&"\boot\syslinux\isolinux.bin") Then
-		$isolinux_bin = $drive_letter&"\boot\syslinux\isolinux.bin"
-	ElseIf FileExists($drive_letter&"\syslinux\isolinux.bin") Then
-		$isolinux_bin = $drive_letter&"\syslinux\isolinux.bin"
-	ElseIf FileExists($drive_letter&"\isolinux\isolinux.bin") Then
-		$isolinux_bin = $drive_letter&"\isolinux\isolinux.bin"
-	ElseIf FileExists($drive_letter&"\boot\isolinux\isolinux.bin") Then
-		$isolinux_bin = $drive_letter&"\boot\isolinux\isolinux.bin"
-	ElseIf FileExists($drive_letter&"\isolinux.bin") Then
-		$isolinux_bin = $drive_letter&"\isolinux.bin"
+Func AutoDetectSyslinuxVersion()
+	if FileExists($usb_letter&"\boot\syslinux\syslinux.bin") Then
+		$isolinux_bin = $usb_letter&"\boot\syslinux\syslinux.bin"
+	ElseIf FileExists($usb_letter&"\syslinux\syslinux.bin") Then
+		$isolinux_bin = $usb_letter&"\syslinux\syslinux.bin"
+	ElseIf FileExists($usb_letter&"\isolinux\syslinux.bin") Then
+		$isolinux_bin = $usb_letter&"\isolinux\syslinux.bin"
+	ElseIf FileExists($usb_letter&"\boot\isolinux\syslinux.bin") Then
+		$isolinux_bin = $usb_letter&"\boot\isolinux\syslinux.bin"
+	ElseIf FileExists($usb_letter&"\syslinux.bin") Then
+		$isolinux_bin = $usb_letter&"\syslinux.bin"
+	Elseif FileExists($usb_letter&"\boot\syslinux\isolinux.bin") Then
+		$isolinux_bin = $usb_letter&"\boot\syslinux\isolinux.bin"
+	ElseIf FileExists($usb_letter&"\syslinux\isolinux.bin") Then
+		$isolinux_bin = $usb_letter&"\syslinux\isolinux.bin"
+	ElseIf FileExists($usb_letter&"\isolinux\isolinux.bin") Then
+		$isolinux_bin = $usb_letter&"\isolinux\isolinux.bin"
+	ElseIf FileExists($usb_letter&"\boot\isolinux\isolinux.bin") Then
+		$isolinux_bin = $usb_letter&"\boot\isolinux\isolinux.bin"
+	ElseIf FileExists($usb_letter&"\isolinux.bin") Then
+		$isolinux_bin = $usb_letter&"\isolinux.bin"
 	Else
-		UpdateLog("Could not detect syslinux version (no isolinux.bin or syslinux.bin found)")
-		Return -1
+		UpdateLog("Could not detect syslinux version (no isolinux.bin or syslinux.bin found), default to v3")
+		Return 3
 	EndIf
 	Return DetectSyslinuxVersionInBin($isolinux_bin)
 EndFunc
@@ -350,3 +352,12 @@ Func FileOverWrite($filename,$content)
 	FileWrite($file,$content)
 	FileClose($file)
 EndFunc
+
+Func unix_path_to_extension($filepath)
+	$extension = StringSplit($filepath, '.')
+	If Not @error And IsArray($extension) Then
+		Return ($extension[$extension[0]])
+	Else
+		Return "ERROR"
+	EndIf
+EndFunc   ;==>unix_path_to_extension

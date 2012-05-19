@@ -31,6 +31,7 @@ Global $current_crashlog = @ScriptDir & "\logs\crash-report-" & @YEAR & "-" & @M
 Global $current_logfile = @ScriptDir & "\logs\" & @YEAR & "-" & @MON & "-" & @MDAY&".log"
 Global $user_system
 Global $email_address,$problem_details,$report_gui
+Global $current_dl
 
 Global $oMyRet[2]
 Global $oMyError,$crash_detected=0
@@ -92,7 +93,7 @@ Func _OnAutoItError()
 	;   trap the error message
     While 1
         $sErrorMsg&=StdoutRead($iPID)
-        If @error Then ExitLoop
+        If @error and NOT $current_dl Then ExitLoop
 		;if TimerDiff($timer_check) > 5000 AND $update_checked=0 Then
 			;Check_for_compatibility_list_updates()
 			;$update_checked=1
@@ -310,11 +311,44 @@ Func _ReceiveReport($report)
 			Else
 				SendReportToMain($report&"=10000")
 			EndIf
+	Elseif StringLeft($report, 9) = "download-" Then
+		$aboutitem      = TrayCreateItem("About")
+		TrayCreateItem("")
+		$exititem       = TrayCreateItem("Exit")
+		TraySetIcon(@ScriptDir&"\systray\systray-0.ico")
+		TraySetState()
+		$i=1
+		While 1
+			$msg = TrayGetMsg()
+			$percent_dl = Percent(InetGetInfo($current_dl,0),InetGetInfo($current_dl,1))
+			TrayItemSetText($aboutitem,$percent_dl&"%" )
+			SetProgressIcon($percent_dl)
+			Select
+				Case $msg = 0
+					ContinueLoop
+				Case $msg = $exititem
+					ExitLoop
+				Case $msg = $aboutitem
+
+				Case Else
+
+			EndSelect
+		WEnd
 	Else
 		ConsoleWrite($report & @CRLF)
 		$last_report = $report
 		_ArrayPush($last_actions,$report)
 	EndIf
+EndFunc
+
+Func Percent($value, $total)
+	Return Round(100*$value/$total,0)
+EndFunc
+
+Func SetProgressIcon($progress_percent)
+	$icon_number = Round($progress_percent/6.25,0)
+	TraySetIcon(@ScriptDir&"\systray\systray-"&$icon_number&".ico")
+	TraySetState()
 EndFunc
 
 Func MyErrFunc()

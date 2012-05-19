@@ -15,7 +15,7 @@ Func Run7zip($cmd, $taille)
 	While ProcessExists($foo) > 0
 		$percentage = Round((($initial - DriveSpaceFree($selected_drive)) * 100 / $taille), 0)
 		If $percentage > 0 And $percentage < 101 Then
-			UpdateStatusNoLog(Translate("Extracting ISO file on key") & " ( ± " & $percentage & "% )")
+			UpdateStatusNoLog(Translate("Extracting ISO file on key") & " ( " & $percentage & "% )")
 		EndIf
 		;If @error Then ExitLoop
 		Sleep(500)
@@ -73,9 +73,16 @@ Func InitializeFilesInISO($iso_to_list)
 EndFunc   ;==>InitializeFilesInISO
 
 ; Install Syslinux boot sectors
-Func InstallSyslinux($drive_letter,$version=3)
+Func InstallSyslinux($version=3,$syslinux_menu_folder="")
 	Local $line="",$error="",$executable="syslinux.exe"
-	SendReport("Start-InstallSyslinux on " & $drive_letter &" (version "&$version&")")
+	SendReport("Start-InstallSyslinux on " & $usb_letter &" (version "&$version&")")
+
+	; Installing Syslinux to custom directory, format has to be -d \HBCD for example
+	if $syslinux_menu_folder <> "" Then
+		$syslinux_menu_folder_arg="-d " &$syslinux_menu_folder&" "
+	Else
+		$syslinux_menu_folder_arg=""
+	EndIf
 
 	if $version=4 Then
 		$executable="syslinux4.exe"
@@ -83,7 +90,7 @@ Func InstallSyslinux($drive_letter,$version=3)
 		$executable="syslinux.exe"
 	EndIf
 
-	$cmd='"' & @ScriptDir & '\tools\'&$executable&'" -maf -d ' & $drive_letter & '\syslinux ' & $drive_letter
+	$cmd='"' & @ScriptDir & '\tools\'&$executable&'" -maf ' & $syslinux_menu_folder_arg & $usb_letter
 	SendReport("IN-InstallSyslinux : executing command -> " &@CRLF& $cmd)
 	$output=_RunReadStd($cmd)
 	SendReport("Return code : "&$output[0]&@CRLF&"Output : "&$output[1]&@CRLF&"Error : "&$output[2])
@@ -216,6 +223,15 @@ Func Run2($soft, $arg1, $arg2)
 	UpdateLog("                   " & $line)
 	SendReport("End-Run2")
 EndFunc   ;==>Run2
+
+Func DownloadDistribution($file_to_download,$destination_file)
+	SendReport("Start-DownloadDistribution (file : " & $file_to_download )
+	Local $cmd, $line
+	$cmd = @ScriptDir & '\tools\lili-downloader.exe "' & $file_to_download & '" "' & $destination_file & '"'
+	UpdateLog($cmd)
+	Run($cmd, @ScriptDir, @SW_HIDE)
+	SendReport("End-DownloadDistribution")
+EndFunc   ;==>Create_Empty_File
 
 ;===============================================================================
 ;

@@ -287,6 +287,19 @@ Func DefaultBootTweaks($selected_drive,$filename)
 			FileWrite($file,StringReplace($content,"cdroot_type=udf","cdroot_type=vfat slowusb"))
 			FileClose($file)
 		EndIf
+	Elseif StringInStr($content,"live-media=removable" )>0 Then
+		; Modifying Boot menu for Tails
+		; removing media type
+		SendReport("IN-DefaultBootTweaks => Tails or Debian variant detected in file "&$filename&" (live-media=removable)")
+		$file = FileOpen($filename, 2)
+		; Check if file opened for writing OK
+		If $file = -1 Then
+			SendReport("IN-DefaultBootTweaks => ERROR : cannot write to file "&$filename)
+		Else
+			SendReport("IN-DefaultBootTweaks => removing live-media=removable in file "&$filename)
+			FileWrite($file,StringReplace($content," live-media=removable",""))
+			FileClose($file)
+		EndIf
 	Elseif StringInStr($content,"pmedia=cd" )>0 Then
 		; Modifying Boot menu for Puppy Variants
 		; changing media from CD to USB

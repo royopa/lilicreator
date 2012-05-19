@@ -4,12 +4,13 @@
 
 Func InitLog()
 	DirCreate($log_dir)
-	UpdateLog(LogSystemConfig())
-	;SendReport("logfile-" & $logfile)
+	FlushLog()
+	$system_config = LogSystemConfig()
+	SendReport($system_config)
 EndFunc   ;==>InitLog
 
 Func LogSystemConfig()
-	SendReport("Start-LogSystemConfig")
+
 	Local $space = -1
 
 	; Little fix for AutoIT 3.3.0.0
@@ -51,48 +52,47 @@ Func LogSystemConfig()
 	$line &= @CRLF & "Resolution : " & @DesktopWidth & "x" & @DesktopHeight
 	$line &= @CRLF & "Proxy settings : " & ProxySettingsReport()
 
-	If StringStripWS($selected_drive,8)<>"->" Then
-		$line &= @CRLF & "Chosen Key : " & $selected_drive
-		$line &= @CRLF & "Filesystem : " & DriveGetFileSystem($selected_drive)
-		$line &= @CRLF & "Free space on key : " & Round(DriveSpaceFree($selected_drive)) & "MB"
+	If StringTrimLeft($usb_letter,2) <> "->" Then
+		$line &= @CRLF & "Select partition : " & $usb_letter
+		$line &= @CRLF & "Filesystem : " & $usb_filesystem
+		$line &= @CRLF & "Free space on key : " & Round($usb_space_free) & "MB"
 		$line &= @CRLF & "Previous install : "&PreviousInstallReport()
 	EndIf
 
 	If $file_set_mode = "iso" Then
 		$line &= @CRLF & "Selected ISO : " &path_to_name($file_set)
-		$line &= @CRLF & "Recognized as : "&ReleaseGetDescription($release_number)&"("&ReleaseGetCodename($release_number)&")"
+		$line &= @CRLF & "Recognized as : "&$release_description&"("&$release_codename&")"
+		$line &= @CRLF & "Recognition method : "&$release_recognition_method
 		$line &= @CRLF & "ISO Hash : " & $MD5_ISO
+
 	Elseif $file_set_mode == "img" Then
 		$line &= @CRLF & "Selected source : " & $file_set
 		$line &= @CRLF & "Selected file : " &path_to_name($file_set)
 	EndIf
 	$line &= @CRLF & "Step Status : (STEP1=" & HumanStepCheck($STEP1_OK) & ") (STEP2=" & HumanStepCheck($STEP2_OK) & ") (STEP3=" & HumanStepCheck($STEP3_OK) & ") "
 	$line &= @CRLF & "------------------------------  End of system config  ------------------------------" & @CRLF
-	SendReport("End-LogSystemConfig")
 	Return $line
 EndFunc   ;==>LogSystemConfig
 
 Func PreviousInstallReport()
 	; Getting Portable VirtualBox infos
-	if FileExists($selected_drive&"\VirtualBox\Portable-VirtualBox\linuxlive\settings.ini") Then
-		$vbox_report=" and Portable-VirtualBox pack "&IniRead($selected_drive&"\VirtualBox\Portable-VirtualBox\linuxlive\settings.ini","General","pack_version","NotFound") _
-		& " ( "&IniRead($selected_drive&"\VirtualBox\Portable-VirtualBox\linuxlive\settings.ini","General","virtualbox_version","NotFound")&" )"
+	if FileExists($usb_letter&"\VirtualBox\Portable-VirtualBox\linuxlive\settings.ini") Then
+		$vbox_report=" and Portable-VirtualBox pack "&IniRead($usb_letter&"\VirtualBox\Portable-VirtualBox\linuxlive\settings.ini","General","pack_version","NotFound") _
+		& " ( "&IniRead($usb_letter&"\VirtualBox\Portable-VirtualBox\linuxlive\settings.ini","General","virtualbox_version","NotFound")&" )"
 	Else
 		$vbox_report=" and no Portable-VirtualBox installed"
 	EndIf
 
 	; Getting Live USB infos
-	if FileExists($selected_drive&"\"&$autoclean_settings) Then
-		$installed_linux=IniRead($selected_drive&"\"&$autoclean_settings,"General","Installed_Linux","NotFound")
-		$linux_codename=IniRead($selected_drive&"\"&$autoclean_settings,"General","Installed_Linux_Codename","NotFound")
-		$install_size=GetPreviousInstallSizeMB($selected_drive)
+	if FileExists($usb_letter&"\"&$autoclean_settings) Then
+		$installed_linux=IniRead($usb_letter&"\"&$autoclean_settings,"General","Installed_Linux","NotFound")
+		$linux_codename=IniRead($usb_letter&"\"&$autoclean_settings,"General","Installed_Linux_Codename","NotFound")
+		$install_size=GetPreviousInstallSizeMB($usb_letter)
 		Return $installed_linux&" ("&$linux_codename&") using "&$install_size&"MB"&$vbox_report
 	Else
 		Return "No previous install found on key"&$vbox_report
 	EndIf
 EndFunc
-
-
 
 Func ProxySettingsReport()
 	; Apply proxy settings
@@ -132,6 +132,10 @@ Func UpdateStatusStep2($status)
 		_FileWriteLog($logfile, "Status : " & Translate($status))
 	EndIf
 EndFunc   ;==>UpdateStatusStep2
+
+Func FlushLog()
+	FileDelete($logfile)
+EndFunc
 
 Func UpdateLog($status)
 	_FileWriteLog($logfile, $status) ; No translation in logs

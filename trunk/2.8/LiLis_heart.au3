@@ -427,7 +427,6 @@ Func Rename_and_move_files($drive_letter, $release_in_list)
 		if Not FileExists($drive_letter & "\boot\syslinux") AND Not FileExists($drive_letter & "\syslinux") then
 			DirMove($drive_letter & "\isolinux",$drive_letter & "\syslinux",1)
 			DirMove($drive_letter & "\boot\isolinux",$drive_letter & "\boot\syslinux",1)
-			DirMove($drive_letter & "\HBCD\isolinux",$drive_letter & "\HBCD\syslinux",1)
 		EndIf
 
 
@@ -777,7 +776,7 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func isSyslinuxCfgPresent($drive_letter)
 	SendReport("Start-isSyslinuxCfgPresent")
-	$config_found = (FileExists($drive_letter&"\boot\syslinux\syslinux.cfg") OR FileExists($drive_letter&"\syslinux\syslinux.cfg") OR FileExists($drive_letter&"\syslinux.cfg"))
+	$config_found = (FileExists($drive_letter&"\boot\syslinux\syslinux.cfg") OR FileExists($drive_letter&"\syslinux\syslinux.cfg") OR FileExists($drive_letter&"\syslinux.cfg") OR FileExists($drive_letter & "\HBCD\syslinux.cfg"))
 	SendReport("End-isSyslinuxCfgPresent : Found = "&$config_found)
 	Return $config_found
 EndFunc
@@ -828,19 +827,34 @@ Func Install_boot_sectors($drive_letter,$release_in_list,$hide_it)
 		EndIf
 	EndIf
 
+	If FileExists($drive_letter & "\HBCD\syslinux.cfg") Then
+		SendReport("IN-Install_boot_sectors :  Hiren's boot CD detected, using syslinux folder HBCD\ ")
+		$syslinux_menu_folder = "/HBCD"
+	Else
+		$syslinux_menu_folder = 0
+	EndIf
+
 	$syslinux_version = AutoDetectSyslinuxVersion($drive_letter)
 
-	; AutoDetection for syslinux 3/4
-	if $syslinux_version >= 3 Then
-		InstallSyslinux($drive_letter,$syslinux_version)
+	; Selecting syslinux version
+	if StringInStr($features,"syslinux4") > 0 Then
+		SendReport("IN-Install_boot_sectors :  Syslinux version forced to v4 (found = v"&$syslinux_version&")")
+		$syslinux_version = 4
+	Elseif StringInStr($features,"syslinux3") > 0 Then
+		SendReport("IN-Install_boot_sectors :  Syslinux version forced to v3 (found = v"&$syslinux_version&")")
+		$syslinux_version = 3
 	Else
-		; Installing the syslinux boot sectors using Syslinux 4 if feature is set.
-		if StringInStr($features,"syslinux4") > 0 Then
-			InstallSyslinux($drive_letter,4)
-		Else
-			InstallSyslinux($drive_letter,3)
-		EndIf
+		SendReport("IN-Install_boot_sectors :  Using syslinux version "&$syslinux_version)
 	EndIf
+
+	; Syslinux 3.X or superior
+	if $syslinux_version >= 3 Then
+		InstallSyslinux($drive_letter,$syslinux_version,$syslinux_menu_folder)
+	Else
+		InstallSyslinux($drive_letter,3,$syslinux_menu_folder)
+	EndIf
+
+
 
 	if FileExists($drive_letter & "\boot\syslinux\syslinux.cfg") Then
 		$syslinux_folder=$drive_letter & "\boot\syslinux\"

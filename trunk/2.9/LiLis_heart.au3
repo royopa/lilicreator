@@ -12,9 +12,9 @@
 Func Format_FAT32()
 	SendReport("Start-Format_FAT32 ( Drive : "& $usb_letter &" )")
 	UpdateStatus("Formating the key")
-	$drive_size=Round(DriveSpaceTotal($usb_letter)/1024,1)
-	if $drive_size<32 AND ReadSetting( "Advanced", "force_3rdparty_format") <> "yes" Then
-		UpdateLog("Drive is smaller than 32GB ("&$drive_size&"GB)-> LiLi will use the Windows Format utility")
+	$usb_size_GB=Round($usb_space_total/1024,1)
+	if $usb_size_GB<32 AND ReadSetting( "Advanced", "force_3rdparty_format") <> "yes" Then
+		UpdateLog("Drive is smaller than 32GB ("&$usb_size_GB&"GB)-> LiLi will use the Windows Format utility")
 		; default Method, will force work even when some applications are locking the drive
 		RunWait3('cmd /c format /Q /X /y /V:MyLinuxLive /FS:FAT32 ' & $usb_letter)
 	Else
@@ -22,7 +22,7 @@ Func Format_FAT32()
 		if ReadSetting( "Advanced", "force_3rdparty_format") = "yes" Then
 			UpdateLog("force_3rdparty_format="&ReadSetting( "Advanced", "force_3rdparty_format")&" -> LiLi will use the Third party format utility")
 		Else
-			UpdateLog("Drive is bigger than 32GB ("&$drive_size&"GB) and force_3rdparty_format="&ReadSetting( "Advanced", "force_3rdparty_format")&"-> LiLi will use the Third party format utility")
+			UpdateLog("Drive is bigger than 32GB ("&$usb_size_GB&"GB) and force_3rdparty_format="&ReadSetting( "Advanced", "force_3rdparty_format")&"-> LiLi will use the Third party format utility")
 		EndIf
 		FAT32Format($usb_letter,"MyLinuxLive")
 	EndIf
@@ -38,15 +38,15 @@ EndFunc
 	Description : Clean previous Linux Live installs
 	Input :
 		$usb_letter = Letter of the drive (pre-formated like "E:" )
-		$release_in_list = number of the release in the compatibility list (-1 if not present)
+		$release_number = number of the release in the compatibility list (-1 if not present)
 	Output :
 		0 = sucess
 		1 = error see @error
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-Func Clean_old_installs($usb_letter,$release_in_list)
+Func Clean_old_installs()
 	If ReadSetting( "Advanced", "skip_cleaning") = "yes" Then Return 0
-	SendReport("Start-Clean_old_installs ( Drive : "& $usb_letter &" - Release : "& $release_in_list &" )")
+	SendReport("Start-Clean_old_installs ( Drive : "& $usb_letter &" - Release : "& $release_number &" )")
 	UpdateStatus("Cleaning previous installations ( 2min )")
 
 	if SmartCleanPreviousInstall($usb_letter)=1 Then
@@ -247,22 +247,22 @@ EndFunc
 	Input :
 		$usb_letter =  Letter of the drive (pre-formated like "E:" )
 		$iso_file = path to the iso file of a Linux Live CD
-		$release_in_list = number of the release in the compatibility list (-1 if not present)
+		$release_number = number of the release in the compatibility list (-1 if not present)
 	Output :
 		0 = sucess
 		1 = error see @error
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Func Uncompress_ISO_on_key($usb_letter,$iso_file,$release_in_list)
+Func Uncompress_ISO_on_key($iso_file)
 	If ReadSetting("Advanced", "skip_copy") = "yes" Then Return 0
-	SendReport("Start-Uncompress_ISO_on_key ( Drive : "& $usb_letter &" - File : "& $iso_file &" - Release : "& $release_in_list &" )")
+	SendReport("Start-Uncompress_ISO_on_key ( Drive : "& $usb_letter &" - File : "& $iso_file &" - Release : "& $release_number &" )")
 
 	If ProcessExists("7z.exe") > 0 Then ProcessClose("7z.exe")
 	UpdateStatus(Translate("Extracting ISO file on key") & " ( 5-10" & Translate("min") & " )")
 
 	#cs
-	if ReleaseGetCodename($release_in_list)="default" Then
+	if ReleaseGetCodename($release_number)="default" Then
 		$install_size=Round(FileGetSize($iso_file)/1048576)
 	Else
 		$install_size = ReleasegetInstallSize($release_number)
@@ -271,7 +271,7 @@ Func Uncompress_ISO_on_key($usb_letter,$iso_file,$release_in_list)
 	if get_extension($iso_file)="iso" Then
 		$install_size=Round(FileGetSize($iso_file)/1048576)
 	Else
-		$install_size = ReleasegetInstallSize($release_in_list)
+		$install_size = $release_install_size
 	EndIf
 
 	; Just in case ...
@@ -299,7 +299,7 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Func Create_Stick_From_CD($usb_letter,$path_to_cd)
+Func Create_Stick_From_CD($path_to_cd)
 	If ReadSetting("Advanced", "skip_copy") = "yes" Then Return 0
 	SendReport("Start-Create_Stick_From_CD ( Drive : "& $usb_letter &" - CD Folder : "& $path_to_cd &" )")
 	FileCopyShell($path_to_cd & "\*.*", $usb_letter & "\")
@@ -319,7 +319,7 @@ EndFunc
 		1 = error see @error
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-Func Create_Stick_From_IMG($usb_letter,$img_file)
+Func Create_Stick_From_IMG($img_file)
 	SendReport("Start-Create_Stick_From_IMG ( Drive : "& $usb_letter &" - File : "& $img_file & " )")
 	Local $cmd, $foo, $line,$lines="",$errors="", $img_size,$physical_disk_number
 
@@ -407,14 +407,14 @@ EndFunc
 	Description : Rename and move some file in order to work on an USB key
 	Input :
 		$usb_letter = Letter of the drive (pre-formated like "E:" )
-		$release_in_list = number of the release in the compatibility list (-1 if not present)
+		$release_number = number of the release in the compatibility list (-1 if not present)
 	Output :
 		0 = sucess
 		1 = error see @error
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Func Rename_and_move_files($usb_letter, $release_in_list)
+Func Rename_and_move_files()
 	If ReadSetting("Advanced", "skip_moving_renaming") = "yes" Then Return 0
 	SendReport("Start-Rename_and_move_files")
 	UpdateStatus(Translate("Renaming some files"))
@@ -427,7 +427,6 @@ Func Rename_and_move_files($usb_letter, $release_in_list)
 		if Not FileExists($usb_letter & "\boot\syslinux") AND Not FileExists($usb_letter & "\syslinux") then
 			DirMove($usb_letter & "\isolinux",$usb_letter & "\syslinux",1)
 			DirMove($usb_letter & "\boot\isolinux",$usb_letter & "\boot\syslinux",1)
-			DirMove($usb_letter & "\HBCD\isolinux",$usb_letter & "\HBCD\syslinux",1)
 		EndIf
 
 
@@ -447,7 +446,7 @@ Func Rename_and_move_files($usb_letter, $release_in_list)
 			$syslinux_path = $usb_letter & "\BOOT\SYSLINUX\"
 		Elseif FileExists($usb_letter & "\HBCD\isolinux.cfg") Then
 			$syslinux_path = $usb_letter & "\HBCD\"
-		Elseif FileExists($usb_letter & "\boot\i386\loader\isolinux.cfg") AND (ReleaseGetVariant($release_in_list)="opensuse" OR StringInStr(ReleaseGetSupportedFeatures($release_in_list),"opensuse-mbrid")>0 )Then
+		Elseif FileExists($usb_letter & "\boot\i386\loader\isolinux.cfg") AND (ReleaseGetVariant($release_number)="opensuse" OR StringInStr(ReleaseGetSupportedFeatures($release_number),"opensuse-mbrid")>0 )Then
 			FileDelete($usb_letter&"\syslinux.cfg")
 			DirMove($usb_letter & "\boot\i386\loader", $usb_letter & "\boot\syslinux",1)
 			$syslinux_path = $usb_letter & "\boot\syslinux\"
@@ -457,7 +456,7 @@ Func Rename_and_move_files($usb_letter, $release_in_list)
 		isolinux2syslinux($syslinux_path)
 
 	; Fix for Parted Magic > 4.6 (support is discontinued for 4.6)
-	If ReleaseGetVariant($release_in_list) ="pmagic"  Then
+	If $release_variant = "pmagic"  Then
 		$search = FileFindFirstFile($usb_letter&"\pmagic-usb-*")
 		$search2 = FileFindFirstFile($usb_letter&"\pmagic-pxe-*")
 		; Check if the search was successful
@@ -468,12 +467,12 @@ Func Rename_and_move_files($usb_letter, $release_in_list)
 			$pmagic_folder = FileFindNextFile($search2)
 			SendReport("IN-Rename_and_move_files : Found pmagic PXE folder (automatic) = "&$pmagic_folder)
 		Else
-			if GenericVersionCode(ReleaseGetVariantVersion($release_in_list)) > "52" Then
+			if GenericVersionCode($release_variant_version) > "52" Then
 				$look_for="pxe"
 			Else
 				$look_for="usb"
 			EndIf
-			$pmagic_folder="pmagic-"&$look_for&"-"&ReleaseGetVariantVersion($release_in_list)
+			$pmagic_folder="pmagic-"&$look_for&"-"&$release_variant_version
 			SendReport("IN-Rename_and_move_files : Found pmagic folder (manual)= "&$pmagic_folder)
 		EndIf
 
@@ -484,7 +483,7 @@ Func Rename_and_move_files($usb_letter, $release_in_list)
 	EndIf
 
 	; fix for bootlogo too big of PCLinuxOS 2010
-	if NOT StringInStr(ReleaseGetSupportedFeatures($release_in_list),"fix-bootlogo") = 0 Then
+	if NOT StringInStr($release_supported_features,"fix-bootlogo") = 0 Then
 		SendReport("Fixing bootlogo too big")
 		FileCopy2(@ScriptDir&"\tools\boot-menus\small-bootlogo",$usb_letter & "\syslinux\bootlogo")
 	EndIf
@@ -501,68 +500,70 @@ EndFunc
 	Description : Create files for custom boot menu (including persistence options)
 	Input :
 		$usb_letter = Letter of the drive (pre-formated like "E:" )
-		$release_in_list = number of the release in the compatibility list (-1 if not present)
+		$release_number = number of the release in the compatibility list (-1 if not present)
 	Output :
 		0 = sucess
 		1 = error see @error
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-Func Create_boot_menu($usb_letter,$release_in_list)
+Func Create_boot_menu()
 	If IniRead($usb_letter, "Advanced", "skip_boot_text", "no") = "yes" Then Return 0
 	SendReport("Start-Create_boot_menu")
-	$variant = ReleaseGetVariant($release_in_list)
-	$distribution = ReleaseGetDistribution($release_in_list)
-	$features=ReleaseGetSupportedFeatures($release_in_list)
-	$variant_version=ReleaseGetVariantVersion($release_in_list)
-	if StringInStr($features,"default") = 0 Then
-		If $variant ="CentOS" Then
+	if StringInStr($release_supported_features,"default") = 0 Then
+		If $release_variant ="CentOS" Then
 			SendReport("IN-Create_boot_menu for CentOS")
 			CentOS_WriteTextCFG($usb_letter)
-		Elseif $distribution = "Fedora" Then
-			if $variant = "Mandriva" Then
+		Elseif $release_distribution = "Fedora" Then
+			if $release_variant = "Mandriva" Then
 				SendReport("IN-Create_boot_menu for Mandriva")
 				Mandriva_WriteTextCFG($usb_letter)
 			Else
 				SendReport("IN-Create_boot_menu for Fedora")
-				Fedora_WriteTextCFG($usb_letter,$release_in_list)
+				Fedora_WriteTextCFG($usb_letter,$release_number)
 			EndIf
-		Elseif $variant = "TinyCore" Then
+		Elseif $release_variant = "TinyCore" Then
 			SendReport("IN-Create_boot_menu for TinyCore")
 			TinyCore_WriteTextCFG($usb_letter)
-		Elseif $variant = "Aptosid" Then
+		Elseif $release_variant = "ReactOS" Then
+			SendReport("IN-Create_boot_menu for ReactOS")
+			ReactOS_WriteTextCFG($usb_letter)
+		Elseif $release_variant = "Aptosid" Then
 			SendReport("IN-Create_boot_menu for Aptosid")
 			Aptosid_WriteTextCFG($usb_letter)
-		Elseif $variant = "Sidux" Then
+		Elseif $release_variant = "Sidux" Then
 			SendReport("IN-Create_boot_menu for Sidux")
 			Sidux_WriteTextCFG($usb_letter)
-		Elseif $variant="XBMC" Then
+		Elseif $release_variant="XBMC" Then
 			SendReport("IN-Create_boot_menu for XBMC")
-			XBMC_WriteTextCFG($usb_letter,$release_in_list)
-		Elseif $variant = "backtrack" Then
+			XBMC_WriteTextCFG($usb_letter,$release_number)
+		Elseif $release_variant = "backtrack" Then
 			SendReport("IN-Create_boot_menu for BackTrack")
-			BackTrack_WriteTextCFG($usb_letter,$release_in_list)
-		Elseif $distribution = "ubuntu" Then
+			BackTrack_WriteTextCFG($usb_letter,$release_number)
+		Elseif $release_distribution = "ubuntu" Then
 			SendReport("IN-Create_boot_menu for Ubuntu")
-			Ubuntu_WriteTextCFG($usb_letter,$release_in_list)
-		Elseif $distribution = "debian" Then
+			Ubuntu_WriteTextCFG($usb_letter,$release_number)
+		Elseif $release_distribution = "debian" Then
 			SendReport("IN-Create_boot_menu for Debian")
-			Debian_WriteTextCFG($usb_letter,$release_in_list)
-		Elseif $variant="Crunchbang" Then
+			Debian_WriteTextCFG($usb_letter,$release_number)
+		Elseif $release_variant="Crunchbang" Then
 			SendReport("IN-Create_boot_menu for CrunchBang")
-			Crunchbang_WriteTextCFG($usb_letter,$release_in_list)
+			Crunchbang_WriteTextCFG($usb_letter,$release_number)
 		EndIf
-	Elseif $variant = "opensuse" Then
-		If $variant_version = "11.3" Then
+	Elseif $release_variant="CDLinux" Then
+		SendReport("IN-Create_boot_menu for CDLinux")
+		CDLinux_WriteTextCFG($usb_letter,$release_number)
+	Elseif $release_variant = "opensuse" Then
+		If $release_variant_version = "11.3" Then
 			SendReport("IN-Create_boot_menu for OpenSuse : Setting MBR ID (without trailing zeroes)")
 			Set_OpenSuse_MBR_ID($usb_letter,1)
 		Else
 			SendReport("IN-Create_boot_menu for OpenSuse : Setting MBR ID (with trailing zeroes)")
 			Set_OpenSuse_MBR_ID($usb_letter,0)
 		EndIf
-	ElseIf StringInStr($features,"opensuse-mbrid-trailing")>0 then
+	ElseIf StringInStr($release_supported_features,"opensuse-mbrid-trailing")>0 then
 			SendReport("IN-Create_boot_menu for OpenSuse variant: Setting MBR ID (with trailing zeroes)")
 			Set_OpenSuse_MBR_ID($usb_letter,0)
-	ElseIf StringInStr($features,"opensuse-mbrid")>0 then
+	ElseIf StringInStr($release_supported_features,"opensuse-mbrid")>0 then
 			SendReport("IN-Create_boot_menu for OpenSuse variant: Setting MBR ID (without trailing zeroes)")
 			Set_OpenSuse_MBR_ID($usb_letter,1)
 
@@ -589,7 +590,7 @@ EndFunc
 		1 = error see @error
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-Func Hide_live_files($usb_letter)
+Func Hide_live_files()
 	If ReadSetting("Advanced", "skip_hiding") = "yes" Then return 0
 	SendReport("Start-Hide_live_files")
 
@@ -605,7 +606,7 @@ Func Hide_live_files($usb_letter)
 	HideFile($usb_letter & "\" & $autoclean_settings)
 
 	; Fix for Parted Magic 4.6
-	If ReleaseGetVariant($release_number)="pmagic" Then
+	If $release_variant="pmagic" Then
 			HideFile($usb_letter & "\pmagic\")
 			HideFile($usb_letter & "\readme.txt")
 			HideFile( $usb_letter & "\boot\")
@@ -670,7 +671,7 @@ EndFunc
 	Description : Create a persistence file
 	Input :
 		$usb_letter = Letter of the drive (pre-formated like "E:" )
-		$release_in_list = number of the release in the compatibility list (-1 if not present)
+		$release_number = number of the release in the compatibility list (-1 if not present)
 		$persistence_size = size of persistence file in MB
 		$hide_it = state of user checkbox about hiding file or not
 	Output :
@@ -678,16 +679,14 @@ EndFunc
 		1 = error see @error
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-Func Create_persistence_file($usb_letter,$release_in_list,$persistence_size,$hide_it)
+Func Create_persistence_file($persistence_size,$hide_it)
 	Global $persistence_file
 	If ReadSetting( "Advanced", "skip_persistence") = "yes" Then Return 0
 	SendReport("Start-Create_persistence_file")
 
 	; Checking if persistence is supported for this Linux
-	$features=ReleaseGetSupportedFeatures($release_in_list)
-	if StringInStr($features,"persistence")=0 Then
-		$codename=ReleaseGetCodename($release_in_list)
-		SendReport("End-Create_persistence_file : No persistence for release "&$codename)
+	if StringInStr($release_supported_features,"persistence")=0 Then
+		SendReport("End-Create_persistence_file : No persistence for release "&$release_codename)
 		Return 0
 	EndIf
 
@@ -695,37 +694,33 @@ Func Create_persistence_file($usb_letter,$release_in_list,$persistence_size,$hid
 		UpdateStatus("Creating file for persistence")
 		Sleep(1000)
 
-		$distribe = ReleaseGetDistribution($release_in_list)
-		$variant = ReleaseGetVariant($release_in_list)
-
-
-		if StringInStr($features,"ubuntu-persistence")<>0 Then
+		if StringInStr($release_supported_features,"ubuntu-persistence")<>0 Then
 			; Ubuntu
 			$persistence_file= 'casper-rw'
 			UpdateLog("Found feature ubuntu-persistence, persistence file will be "&$persistence_file)
-		Elseif StringInStr($features,"backtrack-persistence")<>0 Then
+		Elseif StringInStr($release_supported_features,"backtrack-persistence")<>0 Then
 			; BackTrack > v5
 			$persistence_file= 'casper-rw'
 			UpdateLog("Found feature backtrack-persistence, persistence file will be "&$persistence_file)
-		Elseif StringInStr($features,"sidux-persistence")<>0 Then
+		Elseif StringInStr($release_supported_features,"sidux-persistence")<>0 Then
 			; Sidux
 			$persistence_file= "sidux\sidux-rw"
 			UpdateLog("Found feature sidux-persistence, persistence file will be "&$persistence_file)
-		Elseif StringInStr($features,"aptosid-persistence")<>0 Then
+		Elseif StringInStr($release_supported_features,"aptosid-persistence")<>0 Then
 			; Aptosid (ex-Sidux)
 			$persistence_file= "aptosid\aptosid-rw"
 			UpdateLog("Found feature aptosid-persistence, persistence file will be "&$persistence_file)
-		Elseif StringInStr($features,"fedora-persistence")<>0 OR StringInStr($features,"mandriva-persistence")<>0 Then
+		Elseif StringInStr($release_supported_features,"fedora-persistence")<>0 OR StringInStr($release_supported_features,"mandriva-persistence")<>0 Then
 			; Fedora and Mandriva
 			$persistence_file= 'LiveOS\overlay-' & StringReplace(DriveGetLabel($usb_letter)," ", "_") & '-' & Get_Disk_UUID($usb_letter)
 			UpdateLog("Found feature fedora-persistence (or mandriva-persistence), persistence file will be "&$persistence_file)
-		Elseif StringInStr($features,"debian-persistence")<>0 Then
+		Elseif StringInStr($release_supported_features,"debian-persistence")<>0 Then
 			; Debian > 6.0 and CrunchBang 10 and XBMC Live
 			$persistence_file= 'live-rw'
 			UpdateLog("Found feature debian-persistence, persistence file will be "&$persistence_file)
-		Elseif StringInStr($features,"custom-persistence")<>0 Then
+		Elseif StringInStr($release_supported_features,"custom-persistence")<>0 Then
 			; Custom persistence filename
-			$features_array=StringSplit ($features,",",2)
+			$features_array=StringSplit ($release_supported_features,",",2)
 			FOR $feature IN $features_array
 				if StringInStr($feature,"custom-persistence")<>0 Then
 					$persistence_file=StringReplace($feature,"custom-persistence:","")
@@ -751,7 +746,7 @@ Func Create_persistence_file($usb_letter,$release_in_list,$persistence_size,$hid
 		if ($persistence_size >= 1000) Then $time_to_format=6
 		if ($persistence_size >= 2000) Then $time_to_format=10
 		if ($persistence_size >= 3000) Then $time_to_format=15
-		UpdateStatus(Translate("Formating persistence file") & " ( ±"& $time_to_format & " " & Translate("min") & " )")
+		UpdateStatus(Translate("Formating persistence file") & " ( ~"& $time_to_format & " " & Translate("min") & " )")
 		EXT2_Format_File($usb_letter&"\"&$persistence_file)
 	Else
 		UpdateStatus("Live mode : no persistence file")
@@ -772,9 +767,9 @@ EndFunc
 		1 = syslinux config found (use syslinux)
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-Func isSyslinuxCfgPresent($usb_letter)
+Func isSyslinuxCfgPresent()
 	SendReport("Start-isSyslinuxCfgPresent")
-	$config_found = (FileExists($usb_letter&"\boot\syslinux\syslinux.cfg") OR FileExists($usb_letter&"\syslinux\syslinux.cfg") OR FileExists($usb_letter&"\syslinux.cfg"))
+	$config_found = (FileExists($usb_letter&"\boot\syslinux\syslinux.cfg") OR FileExists($usb_letter&"\syslinux\syslinux.cfg") OR FileExists($usb_letter&"\syslinux.cfg") OR FileExists($usb_letter & "\HBCD\syslinux.cfg"))
 	SendReport("End-isSyslinuxCfgPresent : Found = "&$config_found)
 	Return $config_found
 EndFunc
@@ -787,7 +782,7 @@ EndFunc
 	Description : Build and install boot sectors in order to make the key bootable
 	Input :
 		$usb_letter = Letter of the drive (pre-formated like "E:" )
-		$release_in_list = number of the release in the compatibility list (-1 if not present)
+		$release_number = number of the release in the compatibility list (-1 if not present)
 		$hide_it = state of user checkbox about hiding file or not
 	Output :
 		0 = sucess
@@ -795,13 +790,12 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Func Install_boot_sectors($usb_letter,$release_in_list,$hide_it)
+Func Install_boot_sectors($hide_it)
 	If ReadSetting( "Advanced", "skip_bootsector") = "yes" Then Return 0
 	SendReport("Start-Install_boot_sectors")
 	UpdateStatus("Installing boot sectors")
-	$features=ReleaseGetSupportedFeatures($release_in_list)
 
-	if StringInStr($features,"windows-bootsect") > 0 Then
+	if StringInStr($release_supported_features,"windows-bootsect") > 0 Then
 		; Windows mode
 		If FileExists($usb_letter & "\boot\bootsect.exe") Then
 			SendReport("IN-Install_boot_sectors : Found bootsect.exe, installing windows boot sectors")
@@ -811,7 +805,7 @@ Func Install_boot_sectors($usb_letter,$release_in_list,$hide_it)
 		Else
 			SendReport("IN-Install_boot_sectors : ERROR, bootsect.exe not found to satisfy windows-bootsect mode")
 		EndIf
-	Elseif StringInStr($features,"grub") > 0 OR NOT isSyslinuxCfgPresent($usb_letter) Then
+	Elseif StringInStr($release_supported_features,"grub") > 0 OR NOT isSyslinuxCfgPresent() Then
 		; GRUB Mode
 		UpdateLog("Variant is using GRUB loader")
 
@@ -825,19 +819,33 @@ Func Install_boot_sectors($usb_letter,$release_in_list,$hide_it)
 		EndIf
 	EndIf
 
-	$syslinux_version = AutoDetectSyslinuxVersion($usb_letter)
-
-	; AutoDetection for syslinux 3/4
-	if $syslinux_version >= 3 Then
-		InstallSyslinux($usb_letter,$syslinux_version)
+	If FileExists($usb_letter & "\HBCD\syslinux.cfg") Then
+		SendReport("IN-Install_boot_sectors :  Hiren's boot CD detected, using syslinux folder HBCD\ ")
+		$syslinux_menu_folder = "/HBCD"
 	Else
-		; Installing the syslinux boot sectors using Syslinux 4 if feature is set.
-		if StringInStr($features,"syslinux4") > 0 Then
-			InstallSyslinux($usb_letter,4)
-		Else
-			InstallSyslinux($usb_letter,3)
-		EndIf
+		$syslinux_menu_folder = 0
 	EndIf
+
+	$syslinux_version = AutoDetectSyslinuxVersion()
+
+	; Selecting syslinux version
+	if StringInStr($release_supported_features,"syslinux4") > 0 Then
+		SendReport("IN-Install_boot_sectors :  Syslinux version forced to v4 (found = v"&$syslinux_version&")")
+		$syslinux_version = 4
+	Elseif StringInStr($release_supported_features,"syslinux3") > 0 Then
+		SendReport("IN-Install_boot_sectors :  Syslinux version forced to v3 (found = v"&$syslinux_version&")")
+		$syslinux_version = 3
+	Else
+		SendReport("IN-Install_boot_sectors :  Using syslinux version "&$syslinux_version)
+	EndIf
+
+	; Syslinux 3.X or superior
+	if $syslinux_version >= 3 Then
+		InstallSyslinux($syslinux_version,$syslinux_menu_folder)
+	Else
+		InstallSyslinux(3,$syslinux_menu_folder)
+	EndIf
+
 
 	if FileExists($usb_letter & "\boot\syslinux\syslinux.cfg") Then
 		$syslinux_folder=$usb_letter & "\boot\syslinux\"
@@ -851,12 +859,26 @@ Func Install_boot_sectors($usb_letter,$release_in_list,$hide_it)
 	EndIf
 
 	$modules_to_keep=""
-	$features_array=StringSplit($features,",",2)
+	$modules_to_copy=""
+	$features_array=StringSplit($release_supported_features,",",2)
 	FOR $feature IN $features_array
 		if StringInStr($feature,"keep-module:")<>0 Then
-				$modules_to_keep=StringReplace($feature,"keep-module:","")
+			$modules_to_keep&=StringReplace($feature,"keep-module:","")&"|"
+		Elseif StringInStr($feature,"copy-module:")<>0 Then
+			$modules_to_copy&=StringReplace($feature,"copy-module:","")&"|"
 		EndIf
 	Next
+	If StringRight($modules_to_keep,1) == "|" Then $modules_to_keep=StringTrimRight($modules_to_keep,1)
+	If StringRight($modules_to_copy,1) == "|" Then $modules_to_copy=StringTrimRight($modules_to_copy,1)
+
+	SendReport("IN-Install_boot_sectors :  modules to keep='"&$modules_to_keep&"' and modules to copy='"&$modules_to_copy&"'")
+
+	If $modules_to_copy <> "" Then
+		$modules_to_copy_array=StringSplit($modules_to_copy,"|",3)
+		FOR $modulename_to_copy IN $modules_to_copy_array
+			FileCopy2(@ScriptDir&"\tools\syslinux-modules\v"&$syslinux_version&"\"&$modulename_to_copy,$syslinux_folder,9)
+		Next
+	EndIf
 
 	; Replacing Syslinux modules by the good ones
 	$search = FileFindFirstFile($syslinux_folder&"*.c32")
@@ -880,7 +902,7 @@ Func Install_boot_sectors($usb_letter,$release_in_list,$hide_it)
 					$new_module=@ScriptDir&"\tools\syslinux-modules\v"&$syslinux_version&"\"&$module
 					If FileExists($new_module) Then
 						SendReport("IN-Install_boot_sectors : Replacing syslinux "&$syslinux_version&" module "&$module&" by the matching one")
-						FileCopy($new_module,$syslinux_folder,1)
+						FileCopy2($new_module,$syslinux_folder)
 					Else
 						SendReport("IN-Install_boot_sectors : WARNING, Could not replace syslinux "&$syslinux_version&" module "&$module&" by the matching one")
 					EndIf
@@ -978,7 +1000,7 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Func Install_virtualbox_on_key($usb_letter)
+Func Install_virtualbox_on_key()
 	SendReport("Start-Install_virtualbox_on_key")
 	Local $downloaded_version,$installed_version
 
@@ -1028,18 +1050,17 @@ EndFunc
 	Description : Create Autorun.inf
 	Input :
 		$usb_letter = Letter of the drive (pre-formated like "E:" )
-		$release_in_list = number of the release in the compatibility list (-1 if not present)
+		$release_number = number of the release in the compatibility list (-1 if not present)
 	Output :
 		0 = sucess
 		1 = error see @error
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-Func Create_autorun($usb_letter,$release_in_list)
+Func Create_autorun()
 	If ReadSetting( "Advanced", "skip_autorun") = "yes" Then Return 0
 
 	SendReport("Start-Create_autorun")
 	If FileExists($usb_letter & "\autorun.inf") Then FileMove($usb_letter & "\autorun.inf",$usb_letter & "\autorun.bak",1)
-	$codename = ReleaseGetCodename($release_in_list)
 
 	; Using LiLi icon
 	FileCopy2(@ScriptDir & "\tools\img\lili.ico", $usb_letter & "\lili.ico")
@@ -1088,17 +1109,16 @@ EndFunc
 	Description : Creates The uninstaller
 	Input :
 		$usb_letter = Letter of the drive (pre-formated like "E:" )
-		$release_in_list = number of the release in the compatibility list (-1 if not present)
+		$release_number = number of the release in the compatibility list (-1 if not present)
 	Output :
 		0 = sucess
 		1 = error see @error
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-Func CreateUninstaller($usb_letter,$release_in_list)
+Func CreateUninstaller()
 	SendReport("Start-CreateUninstaller")
 	Global $files_in_source
-	$codename = ReleaseGetCodename($release_in_list)
-	$description = ReleaseGetDescription($release_in_list)
+	$description = ReleaseGetDescription($release_number)
 
 	if (Ubound($files_in_source)=0) Then
 		SendReport("End-CreateUninstaller : list of files is not an array !")
@@ -1115,7 +1135,7 @@ Func CreateUninstaller($usb_letter,$release_in_list)
 	AddToSmartClean($usb_letter,"syslinux.cfg")
 	AddToSmartClean($usb_letter,"syslinux.cfg.lili-bak")
 
-	if ReleaseGetVariant($release_in_list)="pmagic" Then
+	if ReleaseGetVariant($release_number)="pmagic" Then
 		AddToSmartClean($usb_letter,"pmagic")
 		AddToSmartClean($usb_letter,"boot")
 	EndIf
@@ -1199,8 +1219,8 @@ Func CreateUninstaller($usb_letter,$release_in_list)
 	FileCLose($handle)
 
 	IniWrite($usb_letter&"\"&$autoclean_settings,"General","Total_Size",$total)
-	IniWrite($usb_letter&"\"&$autoclean_settings,"General","Installed_Linux",$description)
-	IniWrite($usb_letter&"\"&$autoclean_settings,"General","Installed_Linux_Codename",$codename)
+	IniWrite($usb_letter&"\"&$autoclean_settings,"General","Installed_Linux",$release_description)
+	IniWrite($usb_letter&"\"&$autoclean_settings,"General","Installed_Linux_Codename",$release_codename)
 	SendReport("End-CreateUninstaller")
 EndFunc   ;==>DeleteFilesInDir
 
@@ -1209,14 +1229,14 @@ EndFunc   ;==>DeleteFilesInDir
 	Description : Set the Virtual Machine with the right amount of RAM (=minimum requirement)  for a specific version of Linux
 	Input :
 		$usb_letter = Letter of the drive (pre-formated like "E:" )
-		$release_in_list = number of the release in the compatibility list (-1 if not present)
+		$release_number = number of the release in the compatibility list (-1 if not present)
 	Output :
 		0 = sucess
 		1 = error see @error
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Func Setup_RAM_for_VM($usb_letter,$release_in_list)
+Func Setup_RAM_for_VM()
 	SendReport("Start-Setup_RAM_for_VM")
 	$linuxlive_settings_file = $usb_letter&"\VirtualBox\Portable-VirtualBox\data\.VirtualBox\Machines\LinuxLive\LinuxLive.vbox"
 
@@ -1235,7 +1255,7 @@ Func Setup_RAM_for_VM($usb_letter,$release_in_list)
 	$old_value = _StringBetween ($line, 'Memory RAMSize="', '"')
 
 	If NOt @error AND isArray($old_value) AND $old_value[0] > 0 Then
-		$recommended_ram = ReleaseGetVBoxRAM($release_in_list)
+		$recommended_ram = ReleaseGetVBoxRAM($release_number)
 		UpdateStatus(Translate("Setting the memory to the recommended value")&" ( "& $recommended_ram&Translate("MB") & " )")
 		SendReport("IN-Setup_RAM_for_VM (Recommended settings found :"&$recommended_ram&" )")
 		$new_line=StringReplace ($line, 'Memory RAMSize="' & $old_value[0] & '"', 'Memory RAMSize="' & $recommended_ram & '"')
@@ -1286,10 +1306,9 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Func Finish_Help($usb_letter)
+Func Finish_Help()
 	SendReport("Start-Finish_Help")
 	Opt("GUIOnEventMode", 1)
-
 	SendReport("End-Finish_Help")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

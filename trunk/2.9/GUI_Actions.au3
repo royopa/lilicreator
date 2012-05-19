@@ -244,7 +244,7 @@ Func GUI_Choose_ISO_From_GUI()
 	GUI_Choose_ISO(0)
 EndFunc
 
-Func GUI_Choose_ISO( $source_file)
+Func GUI_Choose_ISO($source_file)
 	SendReport("Start-GUI_Choose_ISO")
 	if $source_file==0 Then
 		$source_file = FileOpenDialog(Translate("Please choose an ISO image of LinuxLive CD"), "", "ISO / IMG / ZIP (*.iso;*.img;*.zip)", 1)
@@ -299,7 +299,7 @@ Func GUI_Choose_CD()
 				GUI_Show_Back_Button()
 				Sleep(100)
 				GUI_Show_Check_status(Translate("Verifying") & " OK"&@CRLF& Translate("This version is compatible and its integrity was checked")&@CRLF&Translate("Recognized Linux")&" : "&@CRLF& @CRLF & @TAB &ReleaseGetDescription($release_number))
-				Check_If_Default_Should_Be_Used($release_number)
+				Check_If_Default_Should_Be_Used()
 			EndIf
 			SendReport("IN-GUI_Choose_CD (forced install parameters to : "&$forced_description&" - Release # :"&$release_number&")")
 			Return ""
@@ -323,6 +323,7 @@ EndFunc   ;==>GUI_Choose_CD
 
 Func GUI_Download()
 	SendReport("Start-GUI_Download")
+	$file_set = 0
 	; Used to avoid redrawing the old elements of Step 2 (ISO, CD and download)
 	$step2_display_menu = 1
 	GUI_Hide_Step2_Default_Menu()
@@ -583,18 +584,25 @@ Func DownloadRelease($release_in_list, $automatic_download)
 
 			;AND StringInStr($download_folder,":")>0
 
-			$temp_filename = $download_folder&"\"&$filename&".lili-download"
-			SendReport("Downloading Linux to "&$download_folder&"\"&$filename)
+			$destination_filename = $download_folder&"\"&$filename
 
-			$current_download = InetGet($best_mirror, $temp_filename, 3, 1)
-			If InetGetInfo($current_download, 4)=0 Then
-				UpdateStatusStep2(Translate("Downloading") & " " & $filename & @CRLF & Translate("from") & " " & URLToHostname($best_mirror))
-				Download_State()
+
+			If ReadSetting( "Advanced", "force_old_downloadmethod") <> "yes" Then
+				SendReport("Downloading Linux to "&$download_folder&"\"&$filename&" using new method")
+				DownloadDistribution($best_mirror,$destination_filename)
+				Monitor_Download_State($destination_filename,$iso_size)
 			Else
-				UpdateStatusStep2(Translate("Error while trying to download") & @CRLF & Translate("Please check your internet connection or try with another linux"))
-				Sleep(3000)
-				_ProgressDelete($progress_bar)
-				GUI_Back_Download()
+				SendReport("Downloading Linux to "&$download_folder&"\"&$filename&" using old method")
+				$current_download = InetGet($best_mirror, $temp_filename, 3, 1)
+				If InetGetInfo($current_download, 4)=0 Then
+					UpdateStatusStep2(Translate("Downloading") & " " & $filename & @CRLF & Translate("from") & " " & URLToHostname($best_mirror))
+					Download_State()
+				Else
+					UpdateStatusStep2(Translate("Error while trying to download") & @CRLF & Translate("Please check your internet connection or try with another linux"))
+					Sleep(3000)
+					_ProgressDelete($progress_bar)
+					GUI_Back_Download()
+				EndIf
 			EndIf
 		EndIf
 	EndIf
@@ -696,6 +704,53 @@ Func DisplayMirrorList($latency_table, $release_in_list)
 	WinActivate($for_winactivate)
 	GUISetState($GUI_SHOW, $CONTROL_GUI)
 EndFunc   ;==>DisplayMirrorList
+
+
+Func Monitor_Download_State($destination_filename,$total_size)
+	SendReport("Start-Monitor_Download_State")
+	Global $current_download
+	Local $begin, $oldgetbytesread, $estimated_time = ""
+
+	if IsArray($_Progress_Bars) Then _Paint_Bars_Procedure2()
+
+	$begin = TimerInit()
+	$oldgetbytesread = 0
+
+	$iso_size_mb = RoundForceDecimal($total_size / (1024 * 1024))
+	Do
+		$download_status = IniRead($lilidownloader_ini,"CurrentDownload","status","")
+		SendReport("Download status = "&$download_status)
+		if StringInStr($download_status,"downloading")>0 Then
+			SendReport("Downloaded "&StringTrimLeft($download_status,12)&"b")
+			$percent_downloaded = Round((100 * StringTrimLeft($download_status,9) / $total_size),0)
+			_ProgressSet($progress_bar, $percent_downloaded)
+			$newgetbytesread = StringTrimLeft(IniRead($lilidownloader_ini,"CurrentDownload","status",""),12)
+			#cs
+			$dif = TimerDiff($begin)
+
+			If $dif > 1000 Then
+				$bytes_per_ms = ($newgetbytesread - $oldgetbytesread) / $dif
+				$estimated_time = HumanTime(($total_size - $newgetbytesread) / (1000 * $bytes_per_ms))
+				$begin = TimerInit()
+				$oldgetbytesread = $newgetbytesread
+			EndIf
+			#ce
+			_ProgressSetText($progress_bar, $percent_downloaded & "% ( " & RoundForceDecimal($newgetbytesread / (1024 * 1024)) & " / " & $iso_size_mb & " " & "MB" & " ) " & $estimated_time)
+		EndIf
+		Sleep(100)
+	Until $download_status = "error" OR  $download_status = "completed" OR FileExists($destination_filename)
+
+	_ProgressSet($progress_bar, 100)
+	_ProgressSetText($progress_bar, "100% ( " & Round($iso_size / (1024 * 1024)) & " / " & Round($iso_size / (1024 * 1024)) & " " & "MB" & " )")
+
+	UpdateStatusStep2(Translate("Download complete") & @CRLF & Translate("Check will begin shortly"))
+	Sleep(3000)
+	_ProgressDelete($progress_bar)
+	GUI_Hide_Step2_Download_Menu()
+
+	Check_source_integrity($destination_filename)
+	SendReport("End-Download_State")
+EndFunc
 
 Func Download_State()
 	SendReport("Start-Download_State")
@@ -876,6 +931,7 @@ Func GUI_Check_HideFiles()
 EndFunc
 
 Func GUI_Launch_Creation()
+	GUICtrlSetState($combo,$GUI_DISABLE)
 	Local $return=""
 
 	if Not FileExists($usb_letter&"\") Then
@@ -890,7 +946,7 @@ Func GUI_Launch_Creation()
 	EndIf
 
 	SendReport("Start-GUI_Launch_Creation")
-	SendReport(LogSystemConfig())
+	InitLog()
 	; Disable the controls and re-enable after creation
 
 
@@ -928,36 +984,36 @@ Func GUI_Launch_Creation()
 		; Cleaning old installs only if needed
 		If $file_set_mode <> "img" Then
 			if InitializeFilesInSource($file_set)=-1 Then Return -1
-			If GUICtrlRead($formater) <> $GUI_CHECKED Then Clean_old_installs($usb_letter, $release_number)
+			If GUICtrlRead($formater) <> $GUI_CHECKED Then Clean_old_installs()
 		EndIf
 
 		If GUICtrlRead($virtualbox) == $GUI_CHECKED Then $virtualbox_check = Download_virtualBox()
 
 		; Uncompressing ou copying files on the key
 		If $file_set_mode = "iso" Then
-			Uncompress_ISO_on_key($usb_letter, $file_set, $release_number)
+			Uncompress_ISO_on_key($file_set)
 		ElseIf $file_set_mode = "folder" Then
-			Create_Stick_From_CD($usb_letter, $file_set)
+			Create_Stick_From_CD($file_set)
 		ElseIf $file_set_mode = "img" Then
-			if Create_Stick_From_IMG($usb_letter, $file_set)=-1 Then Return -1
+			if Create_Stick_From_IMG($file_set)=-1 Then Return -1
 		EndIf
 
 		; If it's not an IMG file, we have to do all these things :
 		If $file_set_mode <> "img" Then
-			Rename_and_move_files($usb_letter, $release_number)
+			Rename_and_move_files()
 
-			Create_persistence_file($usb_letter, $release_number, GUICtrlRead($slider_visual), GUICtrlRead($hide_files))
+			Create_persistence_file(GUICtrlRead($slider_visual), GUICtrlRead($hide_files))
 
-			Create_boot_menu($usb_letter, $release_number)
+			Create_boot_menu()
 
-			Install_boot_sectors($usb_letter,$release_number, GUICtrlRead($hide_files))
+			Install_boot_sectors(GUICtrlRead($hide_files))
 
 			; Create Autorun menu
-			Create_autorun($usb_letter, $release_number)
+			Create_autorun()
 
-			CreateUninstaller($usb_letter,$release_number)
+			CreateUninstaller()
 
-			If (GUICtrlRead($hide_files) == $GUI_CHECKED) Then Hide_live_files($usb_letter)
+			If (GUICtrlRead($hide_files) == $GUI_CHECKED) Then Hide_live_files()
 
 			If GUICtrlRead($virtualbox) == $GUI_CHECKED And $virtualbox_check >= 1 Then
 
@@ -966,10 +1022,10 @@ Func GUI_Launch_Creation()
 				; maybe check downloaded file ?
 
 				; Next step : installing vbox on the key
-				Install_virtualbox_on_key($usb_letter)
+				Install_virtualbox_on_key()
 
 				UpdateStatus("Applying VirtualBox settings")
-				Setup_RAM_for_VM($usb_letter,$release_number)
+				Setup_RAM_for_VM()
 
 				;Run($usb_letter & "\Portable-VirtualBox\Launch_usb.exe", @ScriptDir, @SW_HIDE)
 
@@ -997,6 +1053,7 @@ Func GUI_Launch_Creation()
 		UpdateStatus("Please validate step 1 to 3")
 	EndIf
 	SendReport("End-GUI_Launch_Creation")
+	GUICtrlSetState($combo,$GUI_ENABLE)
 EndFunc   ;==>GUI_Launch_Creation
 
 

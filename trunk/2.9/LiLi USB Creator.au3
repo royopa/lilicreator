@@ -1,13 +1,12 @@
 #NoTrayIcon
 #RequireAdmin
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
-#AutoIt3Wrapper_Version=beta
 #AutoIt3Wrapper_icon=tools\img\lili.ico
 #AutoIt3Wrapper_Compression=0
 #AutoIt3Wrapper_UseUpx=n
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.9.88.50
+#AutoIt3Wrapper_Res_Fileversion=2.9.88.54
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_SaveSource=y
@@ -15,7 +14,6 @@
 #AutoIt3Wrapper_Res_Field=Compile Date|%date% %time%
 #AutoIt3Wrapper_Res_Field=Site|http://www.linuxliveusb.com
 #AutoIt3Wrapper_AU3Check_Parameters=-w 4
-#AutoIt3Wrapper_AutoIt3="C:\Program Files (x86)\AutoIt3\Beta\autoit3.exe"
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -28,14 +26,14 @@
 ; License          : GPL v3.0
 ; Download         : http://www.linuxliveusb.com
 ; Support          : http://www.linuxliveusb.com/bugs/
-; Compiled with    : AutoIT v3.3.6.1
+; Compiled with    : AutoIT v3.3.8.0
 
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////// Software constants and variables              ///////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ; Global constants
-Global Const $software_version = "2.9 Beta"
+Global Const $software_version = "2.9 Alpha"
 Global $lang_folder = @ScriptDir & "\tools\languages\"
 Global $lang_ini
 Global $verbose_logging
@@ -43,6 +41,7 @@ Global Const $settings_ini = @ScriptDir & "\tools\settings\settings.ini"
 Global Const $compatibility_ini = @ScriptDir & "\tools\settings\compatibility_list.ini"
 Global Const $updates_ini = @ScriptDir & "\tools\settings\updates.ini"
 Global Const $blacklist_ini = @ScriptDir & "\tools\settings\black_list.ini"
+Global Const $lilidownloader_ini = @ScriptDir & "\tools\settings\lili-downloader.ini"
 Global Const $log_dir = @ScriptDir & "\logs\"
 Global $logfile = $log_dir & @YEAR & "-" & @MON & "-" & @MDAY & ".log"
 Global Const $check_updates_url = "https://www.linuxliveusb.com/updates/"
@@ -139,12 +138,13 @@ Global $already_create_a_key = 0
 ; ///////////////////////////////// Global Variables for selected USB device      ///////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Global $usb_letter=">>"
+Global $usb_letter="->"
 Global $usb_filesystem=""
 Global $usb_space_total=0
 Global $usb_space_free=""
 Global $usb_space_after_lili_MB=0
 Global $usb_isvalid_filesystem=false
+
 
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////// Global Variables for selected distribution     ///////////////////////////////////////////////////////////////////////////////
@@ -168,9 +168,10 @@ Global $release_install_size=0
 Global $release_description=""
 Global $release_mirrors=""
 Global $release_mirrors_status=0
+Global $release_recognition_method=""
 
 $selected_drive = "->"
-$file_set = 0;
+$file_set = 0
 $file_set_mode = "none"
 $annuler = 0
 $combo_updated = 0
@@ -607,10 +608,13 @@ GUICtrlSetOnEvent(-1, "GUI_Choose_Drive")
 GUICtrlSetData($splash_status, "   " & Translate("Getting drive list"))
 Refresh_DriveList()
 
-; Sending anonymous statistics
+; Logging system configuration
 GUICtrlSetData($splash_status, "   " & Translate("Logging system configuration"))
+InitLog()
+
+; Sending anonymous statistics
 SendStats()
-SendReport(LogSystemConfig())
+
 
 GUIRegisterMsg($WM_PAINT, "DrawAll")
 WinActivate($for_winactivate)

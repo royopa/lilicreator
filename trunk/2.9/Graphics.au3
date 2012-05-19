@@ -10,7 +10,7 @@ Global Const $WM_LBUTTONDOWN = 0x0201
 #ce
 
 ; For Drag and Drop
-Global Const $WM_DROPFILES = 0x233
+;Global Const $WM_DROPFILES = 0x233
 Global $gaDropFiles[1]
 
 Func GetVertOffset($hgui)
