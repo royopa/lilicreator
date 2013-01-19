@@ -272,6 +272,8 @@ Func AutoDetectSyslinuxVersion($drive_letter)
 		$isolinux_bin = $drive_letter&"\isolinux\isolinux.bin"
 	ElseIf FileExists($drive_letter&"\boot\isolinux\isolinux.bin") Then
 		$isolinux_bin = $drive_letter&"\boot\isolinux\isolinux.bin"
+	ElseIf FileExists($drive_letter&"\slax\boot\isolinux.bin") Then
+		$isolinux_bin = $drive_letter&"\slax\boot\isolinux.bin"
 	ElseIf FileExists($drive_letter&"\isolinux.bin") Then
 		$isolinux_bin = $drive_letter&"\isolinux.bin"
 	Else

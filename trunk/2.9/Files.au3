@@ -272,6 +272,8 @@ Func AutoDetectSyslinuxVersion()
 		$isolinux_bin = $usb_letter&"\isolinux\isolinux.bin"
 	ElseIf FileExists($usb_letter&"\boot\isolinux\isolinux.bin") Then
 		$isolinux_bin = $usb_letter&"\boot\isolinux\isolinux.bin"
+	ElseIf FileExists($usb_letter&"\slax\boot\isolinux.bin") Then
+		$isolinux_bin = $usb_letter&"\slax\boot\isolinux.bin"
 	ElseIf FileExists($usb_letter&"\isolinux.bin") Then
 		$isolinux_bin = $usb_letter&"\isolinux.bin"
 	Else

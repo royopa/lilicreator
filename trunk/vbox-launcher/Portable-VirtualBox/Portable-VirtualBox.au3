@@ -1,16 +1,17 @@
 #NoTrayIcon
 #RequireAdmin
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
-#AutoIt3Wrapper_icon=VirtualBox.ico
+#AutoIt3Wrapper_Icon=VirtualBox.ico
 #AutoIt3Wrapper_UseUpx=n
+#AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
-; AutoIt Version : 3.3.6.1
-; AutoIt Compiler: 3.3.6.1
+; AutoIt Version : 3.3.8.1
+; AutoIt Compiler: 3.3.8.1
 ; Language       : multilanguage
-; Author         : Michael Meyer (michaelm_007)
+; Author         : Michael Meyer (michaelm_007) et al.
 ; e-Mail         : email.address@gmx.de
 ; License        : http://creativecommons.org/licenses/by-nc-sa/3.0/
-; Version        : 6.4.5
+; Version        : 6.4.9.0
 ; Download       : http://www.vbox.me
 ; Support        : http://www.win-lite.de/wbb/index.php?page=Board&boardID=153
 ; Modified by Thibaut lauziere for LinuxLive USB Creator
@@ -24,8 +25,10 @@
 #include <ProcessConstants.au3>
 #include <String.au3>
 #include <WinAPIError.au3>
+
 ; LinuxLive modifications : New include and No tray
 #include <LinuxLive.au3>
+
 #cs
 Opt ("GUIOnEventMode", 1)
 Opt ("TrayAutoPause", 0)
@@ -37,10 +40,13 @@ TraySetState ()
 TraySetToolTip ("Portable-VirtualBox")
 #ce
 
-Global $version = "6.4.5"
+Global $version = "6.4.9.0"
 Global $var1 = @ScriptDir&"\data\settings\settings.ini"
 Global $var2 = @ScriptDir&"\data\language\"
 Global $lng = IniRead ($var1, "language", "key", "NotFound")
+Global $pwd = @ScriptDir
+Global $updateUrl = IniRead (@ScriptDir&"\data\settings\vboxinstall.ini", "download", "update", "NotFound")
+
 
 Global $new1 = 0, $new2 = 0
 
@@ -158,7 +164,7 @@ EndIf
 $lng = IniRead ($var1, "language", "key", "NotFound")
 #cs LinuxLive modifications : No auto-update because it would mess the LinuxLive Launcher
 If IniRead ($var1, "update", "key", "NotFound") = 1 Then
-  Local $hDownload = InetGet ("http://www.vbox.me/update/update.dat", @TempDir&"\update.ini", 1, 1)
+  Local $hDownload = InetGet ($updateUrl&"update.dat", @TempDir&"\update.ini", 1, 1)
   Do
     Sleep (250)
   Until InetGetInfo ($hDownload, 2)
@@ -272,10 +278,10 @@ If $new1 = 1 OR $new2 = 1 Then
 
   GUICtrlCreateButton (IniRead ($var2 & $lng &".ini", "check", "10", "NotFound"), 32, 116, 100, 33, 0)
   GUICtrlSetFont (-1, 9, 800, "Arial")
-  GUICtrlSetOnEvent (-1, "UpdateYes")
+  ;GUICtrlSetOnEvent (-1, "UpdateYes")
   GUICtrlCreateButton (IniRead ($var2 & $lng &".ini", "check", "11", "NotFound"), 160, 116, 100, 33, 0)
   GUICtrlSetFont (-1, 9, 800, "Arial")
-  GUICtrlSetOnEvent (-1, "UpdateNo")
+  ;GUICtrlSetOnEvent (-1, "UpdateNo")
 
   GUISetState ()
 
@@ -289,8 +295,11 @@ If IniRead (@ScriptDir&"\data\settings\settings.ini", "update", "key", "NotFound
   FileDelete (@TempDir&"\update.ini")
 EndIf
 
+; Thibaut : use Hybrid Mode if available
+;HybridMode()
+
 If NOT (FileExists (@ScriptDir&"\app32") OR FileExists (@ScriptDir&"\app64")) Then
-  Global $Checkbox100, $Checkbox110, $Checkbox120, $Checkbox130
+  Global $Checkbox100, $Checkbox110, $Checkbox130;, $Checkbox120
   Global $Input100, $Input200
   Global $install = 1
 
@@ -317,7 +326,7 @@ If NOT (FileExists (@ScriptDir&"\app32") OR FileExists (@ScriptDir&"\app64")) Th
 
   $Checkbox100 = GUICtrlCreateCheckbox (IniRead ($var2 & $lng &".ini", "download", "07", "NotFound"), 32, 151, 460, 26)
   $Checkbox110 = GUICtrlCreateCheckbox (IniRead ($var2 & $lng &".ini", "download", "08", "NotFound"), 32, 175, 460, 26)
-  $Checkbox120 = GUICtrlCreateCheckbox (IniRead ($var2 & $lng &".ini", "download", "09", "NotFound"), 32, 199, 460, 26)
+  ;$Checkbox120 = GUICtrlCreateCheckbox (IniRead ($var2 & $lng &".ini", "download", "09", "NotFound"), 32, 199, 460, 26)
   $Checkbox130 = GUICtrlCreateCheckbox (IniRead ($var2 & $lng &".ini", "download", "10", "NotFound"), 32, 223, 460, 26)
 
   GUICtrlCreateLabel (IniRead ($var2 & $lng &".ini", "download", "11", "NotFound"), 32, 247, 436, 26)
@@ -468,7 +477,8 @@ If (FileExists (@ScriptDir&"\app32\virtualbox.exe") OR FileExists (@ScriptDir&"\
     EndIf
   Else
     MsgBox (0, IniRead ($var2 & $lng &".ini", "download", "15", "NotFound"), IniRead ($var2 & $lng &".ini", "download", "16", "NotFound"))
-  EndIf
+EndIf
+
 
   If FileExists (@ScriptDir&"\"& $arch & "\VirtualBox.exe") AND FileExists (@ScriptDir&"\"& $arch & "\VBoxSVC.exe") AND FileExists (@ScriptDir&"\"& $arch & "\VBoxC.dll") Then
     If NOT ProcessExists ("VirtualBox.exe") OR NOT ProcessExists ("VBoxManage.exe") Then
@@ -565,7 +575,7 @@ If (FileExists (@ScriptDir&"\app32\virtualbox.exe") OR FileExists (@ScriptDir&"\
           $shift6 = "SHIFT"
           $plus18 = "+"
         EndIf
-		#cs
+		#cs LinuxLive = No tray
         TrayCreateItem (IniRead ($var2 & $lng &".ini", "tray", "01", "NotFound") &" (" & $ctrl1 & $plus01 & $alt1 & $plus07 & $shift1 & $plus13 & IniRead ($var1, "hotkeys", "19", "NotFound") & ")")
         TrayItemSetOnEvent (-1, "ShowWindows_VM")
         TrayCreateItem (IniRead ($var2 & $lng &".ini", "tray", "02", "NotFound") &" (" & $ctrl2 & $plus02 & $alt2 & $plus08 & $shift2 & $plus14 & IniRead ($var1, "hotkeys", "20", "NotFound") & ")")
@@ -635,7 +645,7 @@ If (FileExists (@ScriptDir&"\app32\virtualbox.exe") OR FileExists (@ScriptDir&"\
       Endif
 
       RunWait ($arch&"\VBoxSVC.exe /reregserver", @ScriptDir, @SW_HIDE)
-      RunWait ("regsvr32.exe /S "& $arch &"\VBoxC.dll", @ScriptDir, @SW_HIDE)
+      RunWait (@SystemDir&"\regsvr32.exe /S "& $arch &"\VBoxC.dll", @ScriptDir, @SW_HIDE)
       DllCall ($arch&"\VBoxRT.dll", "hwnd", "RTR3Init")
 	  ; LinuxLive Modifications : splash off after
       ;SplashOff ()
@@ -692,15 +702,15 @@ If (FileExists (@ScriptDir&"\app32\virtualbox.exe") OR FileExists (@ScriptDir&"\
         If RegRead ("HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\VBoxNetFlt", "DisplayName") <> "VBoxNetFlt Service" Then
           If @OSArch = "x86" Then
             RunWait (@ScriptDir&"\data\tools\snetcfg_x86.exe -v -u sun_VBoxNetFlt", @ScriptDir, @SW_HIDE)
-            RunWait (@ScriptDir&"\data\tools\snetcfg_x86.exe -v -l .\"& $arch &"\drivers\network\netflt\VBoxNetFlt.inf -m .\"& $arch &"\drivers\network\netflt\VBoxNetFlt_m.inf -c s -i sun_VBoxNetFlt", @ScriptDir, @SW_HIDE)
+            RunWait (@ScriptDir&"\data\tools\snetcfg_x86.exe -v -l .\"& $arch &"\drivers\network\netflt\VBoxNetFlt.inf -m .\"& $arch &"\drivers\network\netflt\VBoxNetFltM.inf -c s -i sun_VBoxNetFlt", @ScriptDir, @SW_HIDE)
           EndIf
           If @OSArch = "x64" Then
             RunWait (@ScriptDir&"\data\tools\snetcfg_x64.exe -v -u sun_VBoxNetFlt", @ScriptDir, @SW_HIDE)
-            RunWait (@ScriptDir&"\data\tools\snetcfg_x64.exe -v -l .\"& $arch &"\drivers\network\netflt\VBoxNetFlt.inf -m .\"& $arch &"\drivers\network\netflt\VBoxNetFlt_m.inf -c s -i sun_VBoxNetFlt", @ScriptDir, @SW_HIDE)
+            RunWait (@ScriptDir&"\data\tools\snetcfg_x64.exe -v -l .\"& $arch &"\drivers\network\netflt\VBoxNetFlt.inf -m .\"& $arch &"\drivers\network\netflt\VBoxNetFltM.inf -c s -i sun_VBoxNetFlt", @ScriptDir, @SW_HIDE)
           EndIf
-          FileCopy (@ScriptDir&"\"& $arch &"\drivers\network\netflt\VBoxNetFltNotify.dll", @SystemDir, 9)
+          FileCopy (@ScriptDir&"\"& $arch &"\drivers\network\netflt\VBoxNetFltNobj.dll", @SystemDir, 9)
           FileCopy (@ScriptDir&"\"& $arch &"\drivers\network\netflt\VBoxNetFlt.sys", @SystemDir&"\drivers", 9)
-          RunWait ("regsvr32.exe /S "& @SystemDir &"\VBoxNetFltNotify.dll", @ScriptDir, @SW_HIDE)
+          RunWait (@SystemDir&"\regsvr32.exe /S "& @SystemDir &"\VBoxNetFltNobj.dll", @ScriptDir, @SW_HIDE)
           Local $NET = 1
         Else
           Local $NET = 0
@@ -764,9 +774,8 @@ If (FileExists (@ScriptDir&"\app32\virtualbox.exe") OR FileExists (@ScriptDir&"\
         ProcessWaitClose ("VirtualBox.exe")
         ProcessWaitClose ("VBoxManage.exe")
       EndIf
-
 	  ; LinuxLive modifications :  Changing splash text
-      ; SplashTextOn ("Portable-VirtualBox", "Exit Portable-VirtualBox", 220, 40, -1, -1, 1, "arial", 12)
+      ; SplashTextOn ("Portable-VirtualBox", IniRead ($var2 & $lng &".ini", "messages", "07", "NotFound"), 220, 40, -1, -1, 1, "arial", 12)
 	  SplashTextOn ("Portable-VirtualBox", "Exit Portable-VirtualBox"&@CRLF&"Please do not unplug your key !", 300, 60, -1, -1, 1, "arial", 12)
 
       ProcessWaitClose ("VBoxSVC.exe")
@@ -800,7 +809,7 @@ If (FileExists (@ScriptDir&"\app32\virtualbox.exe") OR FileExists (@ScriptDir&"\
       Wend
 
       RunWait ($arch&"\VBoxSVC.exe /unregserver", @ScriptDir, @SW_HIDE)
-      RunWait ("regsvr32.exe /S /U "& $arch &"\VBoxC.dll", @ScriptDir, @SW_HIDE)
+      RunWait (@SystemDir&"\regsvr32.exe /S /U "& $arch &"\VBoxC.dll", @ScriptDir, @SW_HIDE)
 
       If $DRV = 1 Then
         RunWait ("sc stop VBoxDRV", @ScriptDir, @SW_HIDE)
@@ -840,9 +849,9 @@ If (FileExists (@ScriptDir&"\app32\virtualbox.exe") OR FileExists (@ScriptDir&"\
         If @OSArch = "x64" Then
           RunWait (@ScriptDir&"\data\tools\snetcfg_x64.exe -v -u sun_VBoxNetFlt", @ScriptDir, @SW_HIDE)
         EndIf
-        RunWait ("regsvr32.exe /S /U "&@SystemDir&"\VBoxNetFltNotify.dll", @ScriptDir, @SW_HIDE)
+        RunWait (@SystemDir&"\regsvr32.exe /S /U "&@SystemDir&"\VBoxNetFltNobj.dll", @ScriptDir, @SW_HIDE)
         RunWait ("sc delete VBoxNetFlt", @ScriptDir, @SW_HIDE)
-        FileDelete (@SystemDir&"\VBoxNetFltNotify.dll")
+        FileDelete (@SystemDir&"\VBoxNetFltNobj.dll")
         FileDelete (@SystemDir&"\drivers\VBoxNetFlt.sys")
       EndIf
 
@@ -1522,22 +1531,26 @@ Func ExitScript ()
 EndFunc
 
 Func DownloadFile ()
-  Local $download1 = InetGet (IniRead (@ScriptDir&"\data\settings\vboxinstall.ini", "download", "key1", "NotFound"), "VirtualBox.exe", 1, 1)
+  Local $download1 = InetGet (IniRead (@ScriptDir&"\data\settings\vboxinstall.ini", "download", "key1", "NotFound"), $pwd&"\VirtualBox.exe", 1, 1)
   Local $download2 = IniRead (@ScriptDir&"\data\settings\vboxinstall.ini", "download", "key1", "NotFound")
   Do
     Sleep (250)
     Local $bytes = 0
     $bytes = InetGetInfo($download1, 0)
-    GUICtrlSetData ($Input200, IniRead ($var2 & $lng &".ini", "status", "01", "NotFound") &" "& @LF & $download2 & @LF & "Bytes = " & $bytes)
+	$total_bytes = InetGetInfo($download1, 1)
+    GUICtrlSetData ($Input200, IniRead ($var2 & $lng &".ini", "status", "01", "NotFound") &" "& $download2 & @LF & DisplayDownloadStatus($bytes,$total_bytes) )
+	;GUICtrlSetData($ProgressBar1,Round(100*$bytes/$total_bytes)) ; <<<TODO: Ticket 3509714
   Until InetGetInfo ($download1, 2)
   InetClose ($download1)
-  Local $download3 = InetGet (IniRead (@ScriptDir&"\data\settings\vboxinstall.ini", "download", "key2", "NotFound"), "Extension", 1, 1)
+  Local $download3 = InetGet (IniRead (@ScriptDir&"\data\settings\vboxinstall.ini", "download", "key2", "NotFound"), $pwd&"\Extension", 1, 1)
   Local $download4 = IniRead (@ScriptDir&"\data\settings\vboxinstall.ini", "download", "key2", "NotFound")
+  $total_bytes = InetGetInfo($download3, 1)
   Do
     Sleep (250)
     Local $bytes = 0
     $bytes = InetGetInfo($download3, 0)
-    GUICtrlSetData ($Input200, $download4 & @LF & "Bytes = " & $bytes)
+	$total_bytes = InetGetInfo($download3, 1)
+    GUICtrlSetData ($Input200, $download4 & @LF & DisplayDownloadStatus($bytes,$total_bytes))
   Until InetGetInfo ($download3, 2)
   InetClose ($download3)
   If FileExists (@ScriptDir&"\virtualbox.exe") Then
@@ -1546,6 +1559,23 @@ Func DownloadFile ()
   GUICtrlSetData ($Input200, @LF & IniRead ($var2 & $lng &".ini", "status", "02", "NotFound"))
   $bytes = 0
 EndFunc
+
+Func DisplayDownloadStatus($downloaded_bytes,$total_bytes)
+	if $total_bytes > 0 Then
+		Return RoundForceDecimalMB($downloaded_bytes)& "MB / "&RoundForceDecimalMB($total_bytes)&"MB ("&Round(100*$downloaded_bytes/$total_bytes)&"%)"
+	Else
+		Return RoundForceDecimalMB($downloaded_bytes)& "MB"
+	EndIf
+EndFunc
+
+Func RoundForceDecimalMB($number)
+	$rounded = Round($number/1048576, 1)
+	If Not StringInStr($rounded, ".") Then
+		Return $rounded & ".0"
+	Else
+		Return $rounded
+	EndIf
+EndFunc   ;==>RoundForceDecimal
 
 Func SearchFile ()
   Local $FilePath = FileOpenDialog (IniRead ($var2 & $lng &".ini", "status", "03", "NotFound"), @ScriptDir, "(*.exe)", 1+2)
@@ -1595,7 +1625,7 @@ Func UseSettings ()
   If GUICtrlRead ($Checkbox100) = $GUI_CHECKED AND FileExists (@ScriptDir&"\temp") Then
     GUICtrlSetData ($Input200, @LF & IniRead ($var2 & $lng &".ini", "status", "05", "NotFound"))
     RunWait ("cmd /c ren ""%CD%\temp\*_x86.msi"" x86.msi", @ScriptDir, @SW_HIDE)
-    RunWait ("cmd /c msiexec.exe /a ""%CD%\temp\x86.msi"" TARGETDIR=""%CD%\temp\x86""", @ScriptDir, @SW_HIDE)
+    RunWait ("cmd /c msiexec.exe /quiet /a ""%CD%\temp\x86.msi"" TARGETDIR=""%CD%\temp\x86""", @ScriptDir, @SW_HIDE)
     DirCopy (@ScriptDir&"\temp\x86\PFiles\Oracle VM VirtualBox", @ScriptDir&"\app32", 1)
     FileCopy (@ScriptDir&"\temp\x86\PFiles\Oracle VM VirtualBox\*", @ScriptDir&"\app32", 9)
     DirRemove (@ScriptDir&"\app32\accessible", 1)
@@ -1605,16 +1635,18 @@ Func UseSettings ()
   If GUICtrlRead ($Checkbox110) = $GUI_CHECKED AND FileExists (@ScriptDir&"\temp") Then
     GUICtrlSetData ($Input200, @LF & IniRead ($var2 & $lng &".ini", "status", "05", "NotFound"))
     RunWait ("cmd /c ren ""%CD%\temp\*_amd64.msi"" amd64.msi", @ScriptDir, @SW_HIDE)
-    RunWait ("cmd /c msiexec.exe /a ""%CD%\temp\amd64.msi"" TARGETDIR=""%CD%\temp\x64""", @ScriptDir, @SW_HIDE)
+    RunWait ("cmd /c msiexec.exe /quiet /a ""%CD%\temp\amd64.msi"" TARGETDIR=""%CD%\temp\x64""", @ScriptDir, @SW_HIDE)
     DirCopy (@ScriptDir&"\temp\x64\PFiles\Oracle VM VirtualBox", @ScriptDir&"\app64", 1)
     FileCopy (@ScriptDir&"\temp\x64\PFiles\Oracle VM VirtualBox\*", @ScriptDir&"\app64", 9)
     DirRemove (@ScriptDir&"\app64\accessible", 1)
     DirRemove (@ScriptDir&"\app64\sdk", 1)
   EndIf
 
+#cs
   If GUICtrlRead ($Checkbox120) = $GUI_CHECKED Then
     GUICtrlSetData ($Input200, @LF & IniRead ($var2 & $lng &".ini", "status", "06", "NotFound"))
     If FileExists (@ScriptDir&"\app32") AND GUICtrlRead ($Checkbox100) = $GUI_CHECKED Then
+	  ; Thibaut : some files will trigger Virus alerts if compressed ( VBoxTestOGL.exe and VBoxNetDHCP.exe)
       FileCopy (@ScriptDir&"\data\tools\upx.exe", @ScriptDir&"\app32")
       RunWait ("cmd /c upx VRDPAuth.dll", @ScriptDir&"\app32", @SW_HIDE)
       RunWait ("cmd /c upx VirtualBox.exe", @ScriptDir&"\app32", @SW_HIDE)
@@ -1660,8 +1692,7 @@ Func UseSettings ()
       RunWait ("cmd /c mpress vboxwebsrv.exe", @ScriptDir&"\app64", @SW_HIDE)
       RunWait ("cmd /c mpress VBoxVRDP.dll", @ScriptDir&"\app64", @SW_HIDE)
       RunWait ("cmd /c mpress VBoxVMM.dll", @ScriptDir&"\app64", @SW_HIDE)
-      ; LiLi : avoid virus alert
-	  ;RunWait ("cmd /c mpress VBoxTestOGL.exe", @ScriptDir&"\app64", @SW_HIDE)
+      ;RunWait ("cmd /c mpress VBoxTestOGL.exe", @ScriptDir&"\app64", @SW_HIDE)
       RunWait ("cmd /c mpress VBoxSVC.exe", @ScriptDir&"\app64", @SW_HIDE)
       RunWait ("cmd /c mpress VBoxSharedFolders.dll", @ScriptDir&"\app64", @SW_HIDE)
       RunWait ("cmd /c mpress VBoxSharedCrOpenGL.dll", @ScriptDir&"\app64", @SW_HIDE)
@@ -1672,7 +1703,6 @@ Func UseSettings ()
       RunWait ("cmd /c mpress VBoxOGLrenderspu.dll", @ScriptDir&"\app64", @SW_HIDE)
       RunWait ("cmd /c mpress VBoxOGLhosterrorspu.dll", @ScriptDir&"\app64", @SW_HIDE)
       RunWait ("cmd /c mpress VBoxOGLhostcrutil.dll", @ScriptDir&"\app64", @SW_HIDE)
-	  ; LiLi : avoid virus alert
       ;RunWait ("cmd /c mpress VBoxNetDHCP.exe", @ScriptDir&"\app64", @SW_HIDE)
       ;RunWait ("cmd /c mpress VBoxManage.exe", @ScriptDir&"\app64", @SW_HIDE)
       RunWait ("cmd /c mpress VBoxHeadless.exe", @ScriptDir&"\app64", @SW_HIDE)
@@ -1691,13 +1721,15 @@ Func UseSettings ()
       FileDelete (@ScriptDir&"\app64\mpress.exe")
     EndIf
   EndIf
+#ce
 
   If GUICtrlRead ($Checkbox100) = $GUI_CHECKED AND GUICtrlRead ($Checkbox110) = $GUI_CHECKED Then
     GUICtrlSetData ($Input200, @LF & "Please wait, delete files and folders.")
     DirCopy (@ScriptDir&"\temp\x86\PFiles\Oracle VM VirtualBox\", @ScriptDir&"\vboxadditions", 1)
     DirCopy (@ScriptDir&"\temp\ExtensionPacks\", @ScriptDir&"\vboxadditions\ExtensionPacks", 1)
+
 	; LiLi : lighter pack, useless on Vista and Seven.
-    ;FileCopy (@ScriptDir&"\temp\x86\PFiles\Oracle VM VirtualBox\*.iso", @ScriptDir&"\vboxadditions\guestadditions\*.iso", 9)
+	;FileCopy (@ScriptDir&"\temp\x86\PFiles\Oracle VM VirtualBox\*.iso", @ScriptDir&"\vboxadditions\guestadditions\*.iso", 9)
     DirRemove (@ScriptDir&"\vboxadditions\accessible", 1)
     DirRemove (@ScriptDir&"\vboxadditions\drivers", 1)
     DirRemove (@ScriptDir&"\vboxadditions\sdk", 1)
@@ -1743,9 +1775,10 @@ Func ExitExtraction ()
   Exit
 EndFunc
 
+#cs LinuxLive : No update
 Func UpdateYes ()
   If $new1 = 1 Then
-    Local $hDownload = InetGet ("http://www.vbox.me/update/vboxinstall.dat", @ScriptDir&"\data\settings\vboxinstall.ini", 1, 1)
+    Local $hDownload = InetGet ($updateUrl&"vboxinstall.dat", @ScriptDir&"\data\settings\vboxinstall.ini", 1, 1)
     Do
       Sleep (250)
     Until InetGetInfo ($hDownload, 2)
@@ -1770,10 +1803,10 @@ Func UpdateYes ()
     DirCreate (@ScriptDir&"\update\")
     GUICtrlSetData ($Input300, IniRead ($var2 & $lng &".ini", "status", "10", "NotFound"))
 
-    Local $vboxdown = IniRead ("http://www.vbox.me/update/download.ini", "download", "key", "NotFound")
-    IniWrite ("http://www.vbox.me/update/download.ini", "download", "key", $vboxdown + 1)
+    Local $vboxdown = IniRead ($updateUrl&"download.ini", "download", "key", "NotFound")
+    IniWrite ($updateUrl&"download.ini", "download", "key", $vboxdown + 1)
 
-    Local $hDownload = InetGet ("http://www.vbox.me/update/vbox.7z", @ScriptDir&"\update\vbox.7z", 1, 1)
+    Local $hDownload = InetGet ($updateUrl&"vbox.7z", @ScriptDir&"\update\vbox.7z", 1, 1)
     Do
       Sleep (250)
     Until InetGetInfo ($hDownload, 2)
@@ -1829,4 +1862,49 @@ EndFunc
 Func UpdateNo ()
   GUIDelete ()
   $update = 0
+EndFunc
+#ce
+; Check if virtualbox is installed and run from it
+Func HybridMode()
+	if @OSArch="X64" Then
+		$append_arch="64"
+	Else
+		$append_arch=""
+	EndIf
+
+	; Version of VirtualBox 4.X
+	$version_new = RegRead("HKLM"&$append_arch&"\SOFTWARE\Oracle\VirtualBox","Version")
+
+	; Since 4.0.8 ... Version is in VersionExt key in registry
+	if $version_new = "%VER%" Then
+		$version_new = RegRead("HKLM"&$append_arch&"\SOFTWARE\Oracle\VirtualBox","VersionExt")
+	EndIf
+
+	; Version of VirtualBox 3.X if any is installed => Cannot run Portable 4.X or it will corrupt it
+	$version_old = RegRead("HKLM"&$append_arch&"\SOFTWARE\Sun\VirtualBox","Version")
+
+	; if old version => Exit to avoid corruption of services
+	if ($version_new <> "" AND Int(StringLeft($version_new,1))<4 ) OR $version_old <> "" Then
+		MsgBox(16,"Sorry","Please update your version of VirtualBox to 4.X or uninstall it from your computer to be able to run this portable version"&@CRLF&@CRLF&"This is a security in order to avoid corrupting your current installed version."&@CRLF&@CRLF &"Thank you for your comprehension.")
+		Exit
+	EndIf
+
+	; Setting VBOX_USER_HOME to portable virtualbox directory (VM settings stays in this one)
+	EnvSet("VBOX_USER_HOME",@ScriptDir&"\data\.VirtualBox")
+
+	; Testing if major version of regular vbox is 4 then running from it
+	If $version_new <> "" AND StringLeft($version_new,1)>=4 Then
+
+		; Getting the installation directory of regular VirtualBox from registry
+		$nonportable_install_dir=RegRead("HKLM"&$append_arch&"\SOFTWARE\Oracle\VirtualBox","InstallDir")
+
+		if $CmdLine[0] = 1 Then
+			Run('cmd /c ""'&$nonportable_install_dir&'VBoxManage.exe" startvm "'&$CmdLine[1]&'""',@ScriptDir,@SW_HIDE)
+		Else
+			Run($nonportable_install_dir&"VirtualBox.exe")
+		EndIf
+
+		; Does not need to wait since it's a regular version of VirtualBox
+		Exit
+	EndIf
 EndFunc

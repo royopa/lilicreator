@@ -2,29 +2,9 @@
 ; ///////////////////////////////// Graphical Part                                ///////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#cs  Useless in AutoIT 3.3.6.1 ?
-; Global variables for Graphical Part
-Global Const $LWA_ALPHA = 0x2
-Global Const $LWA_COLORKEY = 0x1
-Global Const $WM_LBUTTONDOWN = 0x0201
-#ce
-
 ; For Drag and Drop
 ;Global Const $WM_DROPFILES = 0x233
 Global $gaDropFiles[1]
-
-Func GetVertOffset($hgui)
-;Const $SM_CYCAPTION = 4
-    Const $SM_CXFIXEDFRAME = 7
-    Local $wtitle, $wclient, $wsize,$wside,$ans,$AC_SRC_ALPHA = 1
-    ;$wclient = WinGetClientSize($hgui)
-    ;$wsize = WinGetPos($hgui)
-    $wtitle = DllCall('user32.dll', 'int', 'GetSystemMetrics', 'int', $SM_CYCAPTION)
-    $wside = DllCall('user32.dll', 'int', 'GetSystemMetrics', 'int', $SM_CXFIXEDFRAME)
-    ;$ans = $wsize[3] - $wclient[1] - $wtitle[0] - 2 * $wside[0] +25
-	$ans = $wtitle[0] + $wside[0]
-    Return $ans
-EndFunc  ;==>GetVertOffset
 
 Func WM_NCHITTEST($hWnd, $iMsg, $iwParam, $ilParam)
 	If ($hWnd = $GUI) And ($iMsg = $WM_NCHITTEST) Then
@@ -56,99 +36,6 @@ Func SetBitmap($hGUI, $hImage, $iOpacity)
 	_WinAPI_DeleteDC($hMemDC)
 EndFunc   ;==>SetBitmap
 
-;############# EndExample #########
-
-;===============================================================================
-;
-; Function Name: _WinAPI_SetLayeredWindowAttributes
-; Description:: Sets Layered Window Attributes:) See MSDN for more informaion
-; Parameter(s):
-; $hwnd - Handle of GUI to work on
-; $i_transcolor - Transparent color
-; $Transparency - Set Transparancy of GUI
-; $isColorRef - If True, $i_transcolor is a COLORREF( 0x00bbggrr ), else an RGB-Color
-; Requirement(s): Layered Windows
-; Return Value(s): Success: 1
-; Error: 0
-; @error: 1 to 3 - Error from DllCall
-; @error: 4 - Function did not succeed - use
-; _WinAPI_GetLastErrorMessage or _WinAPI_GetLastError to get more information
-; Author(s): Prog@ndy
-;
-; Link : @@MsdnLink@@ SetLayeredWindowAttributes
-; Example : Yes
-;===============================================================================
-#cs
-Func _WinAPI_SetLayeredWindowAttributes($hWnd, $i_transcolor, $Transparency = 255, $dwFlages = 0x03, $isColorRef = False)
-	; #############################################
-	; You are NOT ALLOWED to remove the following lines
-	; Function Name: _WinAPI_SetLayeredWindowAttributes
-	; Author(s): Prog@ndy
-	; #############################################
-	If $dwFlages = Default Or $dwFlages = "" Or $dwFlages < 0 Then $dwFlages = 0x03
-
-	If Not $isColorRef Then
-		$i_transcolor = Hex(String($i_transcolor), 6)
-		$i_transcolor = Execute('0x00' & StringMid($i_transcolor, 5, 2) & StringMid($i_transcolor, 3, 2) & StringMid($i_transcolor, 1, 2))
-	EndIf
-	Local $Ret = DllCall("user32.dll", "int", "SetLayeredWindowAttributes", "hwnd", $hWnd, "long", $i_transcolor, "byte", $Transparency, "long", $dwFlages)
-	Select
-		Case @error
-			Return SetError(@error, 0, 0)
-		Case $Ret[0] = 0
-			Return SetError(4, _WinAPI_GetLastError(), 0)
-		Case Else
-			Return 1
-	EndSelect
-EndFunc   ;==>_WinAPI_SetLayeredWindowAttributes
-
-;===============================================================================
-;
-; Function Name: _WinAPI_GetLayeredWindowAttributes
-; Description:: Gets Layered Window Attributes:) See MSDN for more informaion
-; Parameter(s):
-; $hwnd - Handle of GUI to work on
-; $i_transcolor - Returns Transparent color ( dword as 0x00bbggrr or string "0xRRGGBB")
-; $Transparency - Returns Transparancy of GUI
-; $isColorRef - If True, $i_transcolor will be a COLORREF( 0x00bbggrr ), else an RGB-Color
-; Requirement(s): Layered Windows
-; Return Value(s): Success: Usage of LWA_ALPHA and LWA_COLORKEY (use BitAnd)
-; Error: 0
-; @error: 1 to 3 - Error from DllCall
-; @error: 4 - Function did not succeed
-; - use _WinAPI_GetLastErrorMessage or _WinAPI_GetLastError to get more information
-; - @extended contains _WinAPI_GetLastError
-; Author(s): Prog@ndy
-;
-; Link : @@MsdnLink@@ GetLayeredWindowAttributes
-; Example : Yes
-;===============================================================================
-;
-Func _WinAPI_GetLayeredWindowAttributes($hWnd, ByRef $i_transcolor, ByRef $Transparency, $asColorRef = False)
-	; #############################################
-	; You are NOT ALLOWED to remove the following lines
-	; Function Name: _WinAPI_SetLayeredWindowAttributes
-	; Author(s): Prog@ndy
-	; #############################################
-	$i_transcolor = -1
-	$Transparency = -1
-	Local $Ret = DllCall("user32.dll", "int", "GetLayeredWindowAttributes", "hwnd", $hWnd, "long*", $i_transcolor, "byte*", $Transparency, "long*", 0)
-	Select
-		Case @error
-			Return SetError(@error, 0, 0)
-		Case $Ret[0] = 0
-			Return SetError(4, _WinAPI_GetLastError(), 0)
-		Case Else
-			If Not $asColorRef Then
-				$Ret[2] = Hex(String($Ret[2]), 6)
-				$Ret[2] = '0x' & StringMid($Ret[2], 5, 2) & StringMid($Ret[2], 3, 2) & StringMid($Ret[2], 1, 2)
-			EndIf
-			$i_transcolor = $Ret[2]
-			$Transparency = $Ret[3]
-			Return $Ret[4]
-	EndSelect
-EndFunc   ;==>_WinAPI_GetLayeredWindowAttributes
-#ce
 #cs ----------------------------------------------------------------------------
 
 	AutoIt Version: 3.2.12.0
@@ -160,7 +47,6 @@ EndFunc   ;==>_WinAPI_GetLayeredWindowAttributes
 	Remarks: Theres an example from Line 22 to line 112 ( between the first #Region - #Endregion Tags
 
 #ce ----------------------------------------------------------------------------
-
 
 Global $_Progress_ahCallBack[3] = [-1, -1, 0], $_Progress_Bars[1][15] = [[-1]], $iPercent = 0;
 
@@ -728,11 +614,11 @@ EndFunc   ;==>_CreateGradientImg
 #Region Internal
 
 Func _Paint_Bars_Procedure2()
-	AdlibUnRegister("Control_Hover")
+	;AdlibUnRegister("Control_Hover")
 	For $i = 1 To UBound($_Progress_Bars) - 1
 		If Not ($_Progress_Bars[$i][0] = -1) Then _ProgressRefresh($i)
 	Next
-	AdlibRegister("Control_Hover", 150)
+	;AdlibRegister("Control_Hover", 150)
 EndFunc   ;==>_Paint_Bars_Procedure
 
 

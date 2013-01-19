@@ -108,6 +108,10 @@ Global $LAUNCH_PNG, $LAUNCH_HOVER_PNG
 ; Font size (8.5 is default value)
 Global $font_size = 8.5
 
+; Areas for drawing
+Global $EXIT_AREA, $MIN_AREA,$ISO_AREA,$CD_AREA,$DOWNLOAD_AREA,$LAUNCH_AREA,$BACK_AREA,$REFRESH_AREA
+
+
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////// Other Global Variables                        ///////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -257,6 +261,8 @@ EndIf
 #include "INet.au3"
 #include "WinHTTP.au3"
 #include "Crypt.au3"
+
+#include "GUICtrlOnHover.au3"
 
 ; LiLi's components
 #include "Languages.au3"
@@ -424,40 +430,59 @@ GUICtrlSetFont(-1, $font_size + 1.5, 400, 0, "Tahoma")
 ; Clickable parts of images
 $EXIT_AREA = GUICtrlCreateLabel("", 335 + $offsetx0, -20 + $offsety0, 20, 20)
 GUICtrlSetCursor(-1, 0)
-GUICtrlSetOnEvent(-1, "GUI_Exit")
+;GUICtrlSetOnEvent(-1, "GUI_Exit")
+_GUICtrl_OnHoverRegister($EXIT_AREA, "_Hover_Control","_Leave_Hover_Control","_Clicked_Down","_Clicked_Up")
+
 $MIN_AREA = GUICtrlCreateLabel("", 305 + $offsetx0, -20 + $offsety0, 20, 20)
 GUICtrlSetCursor(-1, 0)
-GUICtrlSetOnEvent(-1, "GUI_Minimize")
+;GUICtrlSetOnEvent(-1, "GUI_Minimize")
+_GUICtrl_OnHoverRegister($MIN_AREA, "_Hover_Control","_Leave_Hover_Control","_Clicked_Down","_Clicked_Up")
+
 $REFRESH_AREA = GUICtrlCreateLabel("", 300 + $offsetx0, 145 + $offsety0, 20, 20)
 GUICtrlSetCursor(-1, 0)
-GUICtrlSetOnEvent(-1, "GUI_Refresh_Drives")
+;GUICtrlSetOnEvent(-1, "GUI_Refresh_Drives")
+_GUICtrl_OnHoverRegister($REFRESH_AREA, "_Hover_Control","_Leave_Hover_Control","_Clicked_Down","_Clicked_Up")
+
 $ISO_AREA = GUICtrlCreateLabel("", 38 + $offsetx0, 231 + $offsety0, 75, 75)
 GUICtrlSetCursor(-1, 0)
-GUICtrlSetOnEvent(-1, "GUI_Choose_ISO_From_GUI")
+;GUICtrlSetOnEvent(-1, "GUI_Choose_ISO_From_GUI")
+_GUICtrl_OnHoverRegister($ISO_AREA, "_Hover_Control","_Leave_Hover_Control","_Clicked_Down","_Clicked_Up")
+
 $CD_AREA = GUICtrlCreateLabel("", 146 + $offsetx0, 231 + $offsety0, 75, 75)
 GUICtrlSetCursor(-1, 0)
-GUICtrlSetOnEvent(-1, "GUI_Choose_CD")
+;GUICtrlSetOnEvent(-1, "GUI_Choose_CD")
+_GUICtrl_OnHoverRegister($CD_AREA, "_Hover_Control","_Leave_Hover_Control","_Clicked_Down","_Clicked_Up")
+
 $DOWNLOAD_AREA = GUICtrlCreateLabel("", 260 + $offsetx0, 230 + $offsety0, 75, 75)
 GUICtrlSetCursor(-1, 0)
-GUICtrlSetOnEvent(-1, "GUI_Download")
+;GUICtrlSetOnEvent(-1, "GUI_Download")
+_GUICtrl_OnHoverRegister($DOWNLOAD_AREA, "_Hover_Control","_Leave_Hover_Control","_Clicked_Down","_Clicked_Up")
+
+
 $LAUNCH_AREA = GUICtrlCreateLabel("", 35 + $offsetx0, 600 + $offsety0, 22, 43)
 GUICtrlSetCursor(-1, 0)
-GUICtrlSetOnEvent(-1, "GUI_Launch_Creation")
+;GUICtrlSetOnEvent(-1, "GUI_Launch_Creation")
+_GUICtrl_OnHoverRegister($LAUNCH_AREA, "_Hover_Control","_Leave_Hover_Control","_Clicked_Down","_Clicked_Up")
+
 $HELP_STEP1_AREA = GUICtrlCreateLabel("", 335 + $offsetx0, 105 + $offsety0, 20, 20)
 GUICtrlSetCursor(-1, 0)
-GUICtrlSetOnEvent(-1, "GUI_Help_Step1")
+;GUICtrlSetOnEvent(-1, "GUI_Help_Step1")
+_GUICtrl_OnHoverRegister($HELP_STEP1_AREA, "_Hover_Control","_Leave_Hover_Control","_Clicked_Down","_Clicked_Up")
+
 $HELP_STEP2_AREA = GUICtrlCreateLabel("", 335 + $offsetx0, 201 + $offsety0, 20, 20)
 GUICtrlSetCursor(-1, 0)
-GUICtrlSetOnEvent(-1, "GUI_Help_Step2")
+;GUICtrlSetOnEvent(-1, "GUI_Help_Step2")
+_GUICtrl_OnHoverRegister($HELP_STEP2_AREA, "_Hover_Control","_Leave_Hover_Control","_Clicked_Down","_Clicked_Up")
+
 $HELP_STEP3_AREA = GUICtrlCreateLabel("", 335 + $offsetx0, 339 + $offsety0, 20, 20)
 GUICtrlSetCursor(-1, 0)
-GUICtrlSetOnEvent(-1, "GUI_Help_Step3")
+;GUICtrlSetOnEvent(-1, "GUI_Help_Step3")
+_GUICtrl_OnHoverRegister($HELP_STEP3_AREA, "_Hover_Control","_Leave_Hover_Control","_Clicked_Down","_Clicked_Up")
+
 $HELP_STEP4_AREA = GUICtrlCreateLabel("", 335 + $offsetx0, 451 + $offsety0, 20, 20)
 GUICtrlSetCursor(-1, 0)
-GUICtrlSetOnEvent(-1, "GUI_Help_Step4")
-;$HELP_STEP5_AREA = GUICtrlCreateLabel("", 335 + $offsetx0, 565 + $offsety0, 20, 20)
-;GUICtrlSetCursor(-1, 0)
-;GUICtrlSetOnEvent(-1, "GUI_Help_Step5")
+;GUICtrlSetOnEvent(-1, "GUI_Help_Step4")
+_GUICtrl_OnHoverRegister($HELP_STEP4_AREA, "_Hover_Control","_Leave_Hover_Control","_Clicked_Down","_Clicked_Up")
 
 GUISetBkColor(0x121314)
 
@@ -488,7 +513,7 @@ Step3_Check("bad")
 SendReport("Creating GUI (buttons)")
 
 ; Hovering Buttons
-AdlibRegister("Control_Hover", 150)
+;AdlibRegister("Control_Hover", 150)
 
 ; Text for step 2
 GUICtrlCreateLabel(Translate("STEP 2 : CHOOSE A SOURCE"), 28 + $offsetx0, 204 + $offsety0, 400, 30)
@@ -615,7 +640,6 @@ InitLog()
 ; Sending anonymous statistics
 SendStats()
 
-
 GUIRegisterMsg($WM_PAINT, "DrawAll")
 WinActivate($for_winactivate)
 GUISetState($GUI_SHOW, $CONTROL_GUI)
@@ -655,9 +679,74 @@ While 1
 		GUICtrlSetData($combo, GUICtrlRead($combo))
 		$combo_updated = 1
 	EndIf
-	Sleep(10000)
-	;DrawAll()
+
 WEnd
+
+Func _Hover_Control($iCtrlID, $iParam)
+	; Hovered
+	Switch $iCtrlID
+		Case $EXIT_AREA
+			$EXIT_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $EXIT_OVER, 0, 0, 20, 20, 335 + $offsetx0, -20 + $offsety0, 20, 20)
+		Case $MIN_AREA
+			$MIN_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $MIN_OVER, 0, 0, 20, 20, 305 + $offsetx0, -20 + $offsety0, 20, 20)
+		Case $ISO_AREA
+			If $step2_display_menu = 0 Then $DRAW_ISO = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $ISO_HOVER_PNG, 0, 0, 75, 75, 38 + $offsetx0, 231 + $offsety0, 75, 75)
+		Case $CD_AREA
+			If $step2_display_menu = 0 Then $DRAW_CD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $CD_HOVER_PNG, 0, 0, 75, 75, 146 + $offsetx0, 231 + $offsety0, 75, 75)
+		Case $DOWNLOAD_AREA
+			If $step2_display_menu = 0 Then $DRAW_DOWNLOAD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $DOWNLOAD_HOVER_PNG, 0, 0, 75, 75, 260 + $offsetx0, 230 + $offsety0, 75, 75)
+		Case $LAUNCH_AREA
+			$DRAW_LAUNCH = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $LAUNCH_HOVER_PNG, 0, 0, 22, 43, 35 + $offsetx0, 600 + $offsety0, 22, 43)
+		Case $BACK_AREA
+			If $step2_display_menu >= 1 Then $DRAW_BACK_HOVER = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $BACK_HOVER_PNG, 0, 0, 32, 32, 5 + $offsetx0, 300 + $offsety0, 32, 32)
+	EndSwitch
+EndFunc
+
+
+Func _Leave_Hover_Control($iCtrlID, $iParam)
+	; Not hovered (On *Leave* Hover process)
+	Switch $iCtrlID
+		Case $EXIT_AREA
+			$EXIT_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $EXIT_NORM, 0, 0, 20, 20, 335 + $offsetx0, -20 + $offsety0, 20, 20)
+		Case $MIN_AREA
+			$MIN_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $MIN_NORM, 0, 0, 20, 20, 305 + $offsetx0, -20 + $offsety0, 20, 20)
+		Case $ISO_AREA
+			If $step2_display_menu = 0 Then $DRAW_ISO = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $ISO_PNG, 0, 0, 75, 75, 38 + $offsetx0, 231 + $offsety0, 75, 75)
+		Case $CD_AREA
+			If $step2_display_menu = 0 Then $DRAW_CD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $CD_PNG, 0, 0, 75, 75, 146 + $offsetx0, 231 + $offsety0, 75, 75)
+		Case $DOWNLOAD_AREA
+			If $step2_display_menu = 0 Then $DRAW_DOWNLOAD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $DOWNLOAD_PNG, 0, 0, 75, 75, 260 + $offsetx0, 230 + $offsety0, 75, 75)
+		Case $LAUNCH_AREA
+			$DRAW_LAUNCH = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $LAUNCH_PNG, 0, 0, 22, 43, 35 + $offsetx0, 600 + $offsety0, 22, 43)
+		Case $BACK_AREA
+			If $step2_display_menu >= 1 Then $DRAW_BACK = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $BACK_PNG, 0, 0, 32, 32, 5 + $offsetx0, 300 + $offsety0, 32, 32)
+		EndSwitch
+EndFunc
+
+Func _Clicked_Down($iCtrlID)
+	; Do nothing
+EndFunc
+
+Func _Clicked_Up($iCtrlID)
+	Switch $iCtrlID
+		Case $EXIT_AREA
+			GUI_Exit()
+		Case $MIN_AREA
+			GUI_Minimize()
+		Case $ISO_AREA
+			GUI_Choose_ISO_From_GUI()
+		Case $CD_AREA
+			GUI_Choose_CD()
+		Case $DOWNLOAD_AREA
+			GUI_Download()
+		Case $LAUNCH_AREA
+			GUI_Launch_Creation()
+		Case $BACK_AREA
+			GUI_Back_Download()
+		Case $REFRESH_AREA
+			GUI_Refresh_Drives()
+	EndSwitch
+EndFunc
 
 Func MoveGUI($hW)
 	_SendMessage($GUI, $WM_SYSCOMMAND, 0xF012, 0)
@@ -718,7 +807,9 @@ Func Redraw_Traffic_Lights()
 EndFunc   ;==>Redraw_Traffic_Lights
 
 
+#cs
 Func Control_Hover()
+
 	Local $CursorCtrl
 	If WinActive("LinuxLive USB Creator") Or WinActive("LiLi USB Creator") Then
 		$CursorCtrl = GUIGetCursorInfo()
@@ -766,7 +857,7 @@ Func Control_Hover()
 	EndIf
 	_CALLBACKQUEUE()
 EndFunc   ;==>Control_Hover
-
+#ce
 
 ; Received a message from the secondary lili's process
 Func ReceiveFromSecondary($message)

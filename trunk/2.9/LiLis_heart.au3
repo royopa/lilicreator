@@ -769,7 +769,7 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func isSyslinuxCfgPresent()
 	SendReport("Start-isSyslinuxCfgPresent")
-	$config_found = (FileExists($usb_letter&"\boot\syslinux\syslinux.cfg") OR FileExists($usb_letter&"\syslinux\syslinux.cfg") OR FileExists($usb_letter&"\syslinux.cfg") OR FileExists($usb_letter & "\HBCD\syslinux.cfg"))
+	$config_found = (FileExists($usb_letter&"\boot\syslinux\syslinux.cfg") OR FileExists($usb_letter&"\syslinux\syslinux.cfg") OR FileExists($usb_letter&"\syslinux.cfg") OR FileExists($usb_letter & "\HBCD\syslinux.cfg") OR FileExists($usb_letter & "\slax\boot\syslinux.cfg"))
 	SendReport("End-isSyslinuxCfgPresent : Found = "&$config_found)
 	Return $config_found
 EndFunc
@@ -822,6 +822,13 @@ Func Install_boot_sectors($hide_it)
 	If FileExists($usb_letter & "\HBCD\syslinux.cfg") Then
 		SendReport("IN-Install_boot_sectors :  Hiren's boot CD detected, using syslinux folder HBCD\ ")
 		$syslinux_menu_folder = "/HBCD"
+	Else
+		$syslinux_menu_folder = 0
+	EndIf
+
+	If FileExists($usb_letter & "\slax\boot\syslinux.cfg") Then
+		SendReport("IN-Install_boot_sectors :  Slax > 7 detected, using syslinux folder slax\boot\ ")
+		$syslinux_menu_folder = "/slax/boot"
 	Else
 		$syslinux_menu_folder = 0
 	EndIf

@@ -370,7 +370,8 @@ Func GUI_Show_Back_Button()
 	$BACK_AREA = GUICtrlCreateLabel("", 5 + $offsetx0, 300 + $offsety0, 32, 32)
 	$DRAW_BACK = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $BACK_PNG, 0, 0, 32, 32, 5 + $offsetx0, 300 + $offsety0, 32, 32)
 	GUICtrlSetCursor($BACK_AREA, 0)
-	GUICtrlSetOnEvent($BACK_AREA, "GUI_Back_Download")
+	;GUICtrlSetOnEvent($BACK_AREA, "GUI_Back_Download")
+	_GUICtrl_OnHoverRegister($BACK_AREA, "_Hover_Control","_Leave_Hover_Control","_Clicked_Down","_Clicked_Up")
 EndFunc
 
 Func GUI_Hide_Back_Button()
@@ -585,8 +586,8 @@ Func DownloadRelease($release_in_list, $automatic_download)
 			;AND StringInStr($download_folder,":")>0
 
 			$destination_filename = $download_folder&"\"&$filename
-
-
+			_ProgressDelete($progress_bar)
+			; Launch download
 			If ReadSetting( "Advanced", "force_old_downloadmethod") <> "yes" Then
 				SendReport("Downloading Linux to "&$download_folder&"\"&$filename&" using new method")
 				DownloadDistribution($best_mirror,$destination_filename)
@@ -616,7 +617,7 @@ Func DisplayMirrorList($latency_table, $release_in_list)
 
 	; Create GUI
 	Opt("GUIOnEventMode", 0)
-	AdlibUnRegister("Control_Hover")
+	;AdlibUnRegister("Control_Hover")
 	$gui_mirrors = GUICreate("Select the mirror", 350, 250)
 	$hListView = GUICtrlCreateListView("  " & Translate("Latency") & "  |  " & Translate("Server Name") & "  | ", 0, 0, 350, 200)
 	_GUICtrlListView_SetColumnWidth($hListView, 0, 80)
@@ -699,7 +700,7 @@ Func DisplayMirrorList($latency_table, $release_in_list)
 	wend
 	Opt("GUIOnEventMode", 1)
 	GUIDelete($gui_mirrors)
-	AdlibRegister("Control_Hover", 150)
+	;AdlibRegister("Control_Hover", 150)
 	GUIRegisterMsg($WM_PAINT, "DrawAll")
 	WinActivate($for_winactivate)
 	GUISetState($GUI_SHOW, $CONTROL_GUI)
@@ -763,6 +764,7 @@ Func Download_State()
 	$oldgetbytesread = InetGetInfo($current_download, 0)
 
 	$iso_size_mb = RoundForceDecimal($iso_size / (1024 * 1024))
+
 	Do
 		$percent_downloaded = Int((100 * InetGetInfo($current_download, 0) / $iso_size))
 		_ProgressSet($progress_bar, $percent_downloaded)
@@ -775,7 +777,7 @@ Func Download_State()
 			$oldgetbytesread = $newgetbytesread
 		EndIf
 		_ProgressSetText($progress_bar, $percent_downloaded & "% ( " & RoundForceDecimal($newgetbytesread / (1024 * 1024)) & " / " & $iso_size_mb & " " & "MB" & " ) " & $estimated_time)
-		Sleep(300)
+		Sleep(3000)
 	Until InetGetInfo($current_download, 2)
 	$file_set = StringReplace($temp_filename,".lili-download","")
 	FileMove($temp_filename,$file_set)
@@ -789,6 +791,7 @@ Func Download_State()
 
 
 	Check_source_integrity($file_set)
+
 	SendReport("End-Download_State")
 EndFunc   ;==>Download_State
 
