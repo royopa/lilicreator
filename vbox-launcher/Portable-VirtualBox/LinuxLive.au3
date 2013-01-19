@@ -112,6 +112,15 @@ Func PrepareForLinuxLive($installdir="")
 	UpdateLog("VMDK File is "&$vmdkfile)
 
 	$physical_drive=GiveMePhysicalDisk()
+
+	; For partitions manage
+	If StringLen(IniRead($settings_ini, "Force_disk", "disk_partitions", "")) > 0 Then
+		UpdateLog("PrepareForLinuxLive: Found partitions disk setting - using " & IniRead($settings_ini, "Force_disk", "disk_partitions", ""))
+		$disk_partitions = " -partitions " & IniRead($settings_ini, "Force_disk", "disk_partitions", "")
+	Else
+		$disk_partitions = ""
+	EndIf
+
 	  If FileExists (@ScriptDir&"\app32\") AND FileExists (@ScriptDir&"\app64\") Then
 			If @OSArch = "x86" Then
 			  Global $arch = "app32"
@@ -132,9 +141,9 @@ Func PrepareForLinuxLive($installdir="")
 
 	; recreating LinuxLive virtual Disk
 	if $installdir="" Then
-		$biou='"'&$arch & '\VBoxManage.exe" internalcommands createrawvmdk -filename "' & $vmdkfile & '" -rawdisk ' & $physical_drive
+		$biou='"'&$arch & '\VBoxManage.exe" internalcommands createrawvmdk -filename "' & $vmdkfile & '" -rawdisk ' & $physical_drive & $disk_partitions
 	Else
-		$biou='"'&$installdir & 'VBoxManage.exe" internalcommands createrawvmdk -filename "' & $vmdkfile & '" -rawdisk ' & $physical_drive
+		$biou='"'&$installdir & 'VBoxManage.exe" internalcommands createrawvmdk -filename "' & $vmdkfile & '" -rawdisk ' & $physical_drive & $disk_partitions
 	EndIf
 	UpdateLog("Updating VMDK File using CLI : "&$biou)
 	RunWait3($biou)

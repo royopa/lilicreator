@@ -9,14 +9,14 @@ Opt("TrayOnEventMode",1)
 Opt("TrayMenuMode",1)
 Opt('GUIOnEventMode', 1)
 
-
+#include <GUIConstantsEx.au3>
 #include <StaticConstants.au3>
 #include <Constants.au3>
 #include "Toast.au3"
 
 Global $ToastOn = False
 Global $toast_label
-Global $begin,$progressbar,$toast_text,$toast_message,$human_time="",$oldgetbytesread
+Global $begin,$progressbar,$progressbar_text,$toast_text,$toast_message,$human_time="",$oldgetbytesread
 
 HotKeySet("{ESC}", "GUI_Exit")
 TraySetOnEvent($TRAY_EVENT_PRIMARYUP,"SwitchToast")
@@ -98,7 +98,8 @@ Func CreateToast()
 	;$toast_text =  GUICtrlCreateLabel($toast_message,10,10,60,100)
 	$progressbar = GUICtrlCreateProgress(10,$aRet[1] - 60, $aRet[0] - 20,20)
 	GuiCtrlSetData($progressbar,$percent_dl)
-
+	$progressbar_text = GUICtrlCreateLabel("BIOU",10,$aRet[1] - 60, $aRet[0] - 20,20,$SS_CENTER)
+	Guictrlsetbkcolor(-1, $GUI_BKCOLOR_TRANSPARENT)
 	GUICtrlCreateButton("Cancel download",130,$aRet[1]-30,140,25)
 	GUICtrlSetOnEvent(-1,"GUI_Exit")
 
@@ -113,11 +114,20 @@ Func CreateToast()
 EndFunc
 
 Func UpdateToast()
-	WriteSetting("status","downloading-"&InetGetInfo($current_dl, 0))
+		WriteSetting("status","downloading-"&InetGetInfo($current_dl, 0))
 		$current_dl_size = InetGetInfo($current_dl, 0)
 		$current_dl_size_MB = Round($current_dl_size / (1024 * 1024), 0)
 		$percent_dl = Percent($current_dl_size, $current_dl_total_size)
-		GUICtrlSetData($progressbar, $percent_dl)
+		$percent_dl_text=$percent_dl&"%"
+
+
+		If GUICtrlRead($progressbar_text) <> $percent_dl_text Then
+			GUICtrlSetData($progressbar, $percent_dl)
+			GUICtrlSetData($progressbar_text,$percent_dl_text)
+
+		Else
+			ConsoleWrite("SAME DATA"&@CRLF)
+		EndIf
 
 		;TrayItemSetText($progress, $percent_dl & "% (" & $current_dl_size_MB & "MB / " & $current_dl_total_size_mb & "MB)")
 		SetProgressIcon($percent_dl)
@@ -134,6 +144,7 @@ Func UpdateToast()
 		EndIf
 		$toast_message = "Downloading "&unix_path_to_name($download_url)&@CRLF&$percent_dl & "% (" & $current_dl_size_MB & "MB / " & $current_dl_total_size_mb & "MB)"&@CRLF&$human_time&@CRLF&@CRLF&@CRLF&@CRLF
 		GUICtrlSetData($toast_label,$toast_message&@CRLF&@CRLF&@CRLF)
+
 		if InetGetInfo($current_dl, 3) Then CompleteDownload()
 EndFunc
 

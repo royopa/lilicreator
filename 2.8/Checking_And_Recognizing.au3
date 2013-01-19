@@ -250,20 +250,15 @@ Func Check_source_integrity($linux_live_file)
 					$release_number = FindReleaseFromCodeName( "fedora14-last")
 				Elseif StringInStr($shortname, "13") Then
 					$release_number = FindReleaseFromCodeName( "fedora13-last")
-				Elseif StringInStr($shortname, "12") Then
-					$release_number = FindReleaseFromCodeName( "fedora-12")
-				Elseif StringInStr($shortname, "11") Then
-					$release_number = FindReleaseFromCodeName( "fedora-11")
 				Else
 					$release_number = FindReleaseFromCodeName( "fedora-last")
 				EndIf
-
 				if ReleaseGetCodename($release_number)="default" Then
 					$release_number = FindReleaseFromCodeName( "fedora-last")
 				EndIf
 			ElseIf StringInStr($shortname, "soas") Then
 				; Sugar on a stick
-				$release_number = FindReleaseFromCodeName( "sugar-last")
+				$release_number = FindReleaseFromCodeName( "fedorasoas-last")
 			ElseIf StringInStr($shortname, "peppermint") Then
 				; PepperMint
 				if StringInStr($shortname, "ice") Then
@@ -381,6 +376,13 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "chakra") Then
 				; Chakra
 				$release_number = FindReleaseFromCodeName( "chakra-last")
+			ElseIf StringInStr($shortname, "manjaro") Then
+				; Manjaro
+				if StringInStr($shortname, "mate") Then
+					$release_number = FindReleaseFromCodeName( "manjaro-mate-last")
+				Else
+					$release_number = FindReleaseFromCodeName( "manjaro-openbox-last")
+				EndIf
 			ElseIf StringInStr($shortname, "crunch") Then
 				; CrunchBang Based
 				if StringInStr($shortname, "openbox") Then
@@ -407,21 +409,21 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "xange") Then
 				; Xange variants
 				$release_number = FindReleaseFromCodeName( "openxange-last")
-			ElseIf StringInStr($shortname, "SimplyMEPIS") OR StringInStr($shortname, "MEPIS") Then
-				; SimplyMEPIS variants
-				$release_number = FindReleaseFromCodeName( "simplymepis-last")
 			ElseIf StringInStr($shortname, "puredyne") Then
 				; Puredyne
 				$release_number = FindReleaseFromCodeName( "puredyne-last")
 			ElseIf StringInStr($shortname, "64studio") Then
 				; 64studio
 				$release_number = FindReleaseFromCodeName( "64studio-last")
-			ElseIf StringInStr($shortname, "antix") Then
+			ElseIf StringInStr($shortname, "antix") OR StringInStr($shortname, "MEPIS") Then
 				; Antix MEPIS variants
 				$release_number = FindReleaseFromCodeName( "antix-last")
 			ElseIf StringInStr($shortname, "peasy") Then
 				; Easy Peasy
 				$release_number = FindReleaseFromCodeName( "easypeasy-last")
+			ElseIf StringInStr($shortname, "solus") Then
+				; SolusOS
+				$release_number = FindReleaseFromCodeName( "solusos-last")
 			ElseIf StringInStr($shortname, "ylmf") Then
 				; Ylmf OS
 				$release_number = FindReleaseFromCodeName( "ylmf-last")
@@ -456,6 +458,9 @@ Func Check_source_integrity($linux_live_file)
 				Else
 					$release_number = FindReleaseFromCodeName( "opensuse"&$append&"-last")
 				EndIf
+			ElseIf StringInStr($shortname, "geex") Then
+				; GeexBox
+				$release_number = FindReleaseFromCodeName( "geexbox-last")
 			ElseIf StringInStr($shortname, "Pinguy") Then
 				; PinguyOS
 				$release_number = FindReleaseFromCodeName( "pinguyos-last")
@@ -513,7 +518,9 @@ Func Check_source_integrity($linux_live_file)
 				$clean_name=StringReplace($shortname,".iso","")
 				$clean_name=StringReplace($clean_name,".x86_64","")
 				; VMware vSphere Hypervisor (ESXi)
-				if  StringInStr($clean_name, "5.") > 0 Then
+				if  StringInStr($clean_name, "5.0") > 0 Then
+					$release_number = FindReleaseFromCodeName( "esxi-5.0")
+				Elseif StringInStr($clean_name, "5.1") > 0 Then
 					$release_number = FindReleaseFromCodeName( "esxi-last")
 				Else
 					$release_number = FindReleaseFromCodeName( "esxi4-last")
@@ -542,6 +549,9 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "fuduntu") Then
 				; Fuduntu
 				$release_number = FindReleaseFromCodeName( "fuduntu-last")
+			ElseIf StringInStr($shortname, "netrun") Then
+				; Netrunner
+				$release_number = FindReleaseFromCodeName( "netrunner-last")
 			ElseIf StringInStr($shortname, "zenix") Then
 				; Fuduntu
 				$release_number = FindReleaseFromCodeName( "zenix-last")
@@ -571,7 +581,7 @@ Func Check_source_integrity($linux_live_file)
 				$release_number = FindReleaseFromCodeName( "scientific-last")
 			ElseIf StringInStr($shortname, "pear") Then
 				; Pear OS
-				$release_number = FindReleaseFromCodeName( "pear-last")
+				$release_number = FindReleaseFromCodeName( "pearlinux-last")
 			ElseIf StringInStr($shortname, "lps") Then
 				; Lightweight Portable Security
 				$release_number = FindReleaseFromCodeName( "lps-last")
@@ -585,7 +595,7 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "pure") Then
 				; Pure OS
 				$release_number = FindReleaseFromCodeName( "pureos-last")
-			ElseIf StringInStr($shortname, "win") OR StringInStr($shortname, "microsoft") OR StringInStr($shortname, "seven") OR StringInStr($shortname, "vista") Then
+			ElseIf StringInStr($shortname, "win") OR StringInStr($shortname, "microsoft") OR StringInStr($shortname, "seven") OR StringInStr($shortname, "vista") OR StringInStr($shortname, "eight") Then
 				; Windows 7
 				if StringInStr($shortname, "2008") and StringInStr($shortname, "R2") Then
 					$release_number = FindReleaseFromCodeName( "windows2008r2")

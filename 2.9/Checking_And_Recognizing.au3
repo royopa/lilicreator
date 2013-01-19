@@ -221,9 +221,9 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "aptosid") OR StringInStr($shortname, "sidux") Then
 				; Aptosid (ex-Sidux)
 				if StringInStr($shortname, "xfce") Then
-					$release_number = FindReleaseFromCodeName( "aptosid-xfce-last")
+					$temp_index = FindReleaseFromCodeName( "aptosid-xfce-last")
 				Else
-					$release_number = FindReleaseFromCodeName( "aptosid-kdelite-last")
+					$temp_index = FindReleaseFromCodeName( "aptosid-kdelite-last")
 				EndIf
 			ElseIf StringInStr($shortname, "android-x86") Then
 				; Android x86
@@ -258,20 +258,15 @@ Func Check_source_integrity($linux_live_file)
 					$temp_index = FindReleaseFromCodeName( "fedora14-last")
 				Elseif StringInStr($shortname, "13") Then
 					$temp_index = FindReleaseFromCodeName( "fedora13-last")
-				Elseif StringInStr($shortname, "12") Then
-					$temp_index = FindReleaseFromCodeName( "fedora-12")
-				Elseif StringInStr($shortname, "11") Then
-					$temp_index = FindReleaseFromCodeName( "fedora-11")
 				Else
 					$temp_index = FindReleaseFromCodeName( "fedora-last")
 				EndIf
-
 				if ReleaseGetCodename($temp_index)="default" Then
 					$temp_index = FindReleaseFromCodeName( "fedora-last")
 				EndIf
 			ElseIf StringInStr($shortname, "soas") Then
 				; Sugar on a stick
-				$temp_index = FindReleaseFromCodeName( "sugar-last")
+				$temp_index = FindReleaseFromCodeName( "fedorasoas-last")
 			ElseIf StringInStr($shortname, "peppermint") Then
 				; PepperMint
 				if StringInStr($shortname, "ice") Then
@@ -389,6 +384,13 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "chakra") Then
 				; Chakra
 				$temp_index = FindReleaseFromCodeName( "chakra-last")
+			ElseIf StringInStr($shortname, "manjaro") Then
+				; Manjaro
+				if StringInStr($shortname, "mate") Then
+					$temp_index = FindReleaseFromCodeName( "manjaro-mate-last")
+				Else
+					$temp_index = FindReleaseFromCodeName( "manjaro-openbox-last")
+				EndIf
 			ElseIf StringInStr($shortname, "crunch") Then
 				; CrunchBang Based
 				if StringInStr($shortname, "openbox") Then
@@ -415,21 +417,21 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "xange") Then
 				; Xange variants
 				$temp_index = FindReleaseFromCodeName( "openxange-last")
-			ElseIf StringInStr($shortname, "SimplyMEPIS") OR StringInStr($shortname, "MEPIS") Then
-				; SimplyMEPIS variants
-				$temp_index = FindReleaseFromCodeName( "simplymepis-last")
 			ElseIf StringInStr($shortname, "puredyne") Then
 				; Puredyne
 				$temp_index = FindReleaseFromCodeName( "puredyne-last")
 			ElseIf StringInStr($shortname, "64studio") Then
 				; 64studio
 				$temp_index = FindReleaseFromCodeName( "64studio-last")
-			ElseIf StringInStr($shortname, "antix") Then
+			ElseIf StringInStr($shortname, "antix") OR StringInStr($shortname, "MEPIS") Then
 				; Antix MEPIS variants
 				$temp_index = FindReleaseFromCodeName( "antix-last")
 			ElseIf StringInStr($shortname, "peasy") Then
 				; Easy Peasy
 				$temp_index = FindReleaseFromCodeName( "easypeasy-last")
+			ElseIf StringInStr($shortname, "solus") Then
+				; SolusOS
+				$temp_index = FindReleaseFromCodeName( "solusos-last")
 			ElseIf StringInStr($shortname, "ylmf") Then
 				; Ylmf OS
 				$temp_index = FindReleaseFromCodeName( "ylmf-last")
@@ -464,6 +466,9 @@ Func Check_source_integrity($linux_live_file)
 				Else
 					$temp_index = FindReleaseFromCodeName( "opensuse"&$append&"-last")
 				EndIf
+			ElseIf StringInStr($shortname, "geex") Then
+				; GeexBox
+				$temp_index = FindReleaseFromCodeName( "geexbox-last")
 			ElseIf StringInStr($shortname, "Pinguy") Then
 				; PinguyOS
 				$temp_index = FindReleaseFromCodeName( "pinguyos-last")
@@ -521,14 +526,16 @@ Func Check_source_integrity($linux_live_file)
 				$clean_name=StringReplace($shortname,".iso","")
 				$clean_name=StringReplace($clean_name,".x86_64","")
 				; VMware vSphere Hypervisor (ESXi)
-				if  StringInStr($clean_name, "5.") > 0 Then
+				if  StringInStr($clean_name, "5.0") > 0 Then
+					$temp_index = FindReleaseFromCodeName( "esxi-5.0")
+				Elseif StringInStr($clean_name, "5.1") > 0 Then
 					$temp_index = FindReleaseFromCodeName( "esxi-last")
 				Else
 					$temp_index = FindReleaseFromCodeName( "esxi4-last")
 				EndIf
 			ElseIf StringInStr($shortname, "matriux") Then
 				; Matriux
-				$release_number = FindReleaseFromCodeName( "matriux-last")
+				$temp_index = FindReleaseFromCodeName( "matriux-last")
 			ElseIf StringInStr($shortname, "dban") Then
 				; Darik's Boot And Nuke (DBAN)
 				$temp_index = FindReleaseFromCodeName( "dban-last")
@@ -550,6 +557,9 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "fuduntu") Then
 				; Fuduntu
 				$temp_index = FindReleaseFromCodeName( "fuduntu-last")
+			ElseIf StringInStr($shortname, "netrun") Then
+				; Netrunner
+				$temp_index = FindReleaseFromCodeName( "netrunner-last")
 			ElseIf StringInStr($shortname, "zenix") Then
 				; Fuduntu
 				$temp_index = FindReleaseFromCodeName( "zenix-last")
@@ -579,7 +589,7 @@ Func Check_source_integrity($linux_live_file)
 				$temp_index = FindReleaseFromCodeName( "scientific-last")
 			ElseIf StringInStr($shortname, "pear") Then
 				; Pear OS
-				$temp_index = FindReleaseFromCodeName( "pear-last")
+				$temp_index = FindReleaseFromCodeName( "pearlinux-last")
 			ElseIf StringInStr($shortname, "lps") Then
 				; Lightweight Portable Security
 				$temp_index = FindReleaseFromCodeName( "lps-last")
@@ -593,7 +603,7 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "pure") Then
 				; Pure OS
 				$temp_index = FindReleaseFromCodeName( "pureos-last")
-			ElseIf StringInStr($shortname, "win") OR StringInStr($shortname, "microsoft") OR StringInStr($shortname, "seven") OR StringInStr($shortname, "vista") Then
+			ElseIf StringInStr($shortname, "win") OR StringInStr($shortname, "microsoft") OR StringInStr($shortname, "seven") OR StringInStr($shortname, "vista") OR StringInStr($shortname, "eight") Then
 				; Windows 7
 				if StringInStr($shortname, "2008") and StringInStr($shortname, "R2") Then
 					$temp_index = FindReleaseFromCodeName( "windows2008r2")

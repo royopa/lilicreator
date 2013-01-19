@@ -258,6 +258,31 @@ Func Default_WriteTextCFG($selected_drive)
 			$foundfile = FileFindNextFile($search)
 			If @error Then ExitLoop
 			DefaultBootTweaks($selected_drive,$selected_drive&"\arch\boot\syslinux\"&$foundfile)
+			SendReport("Found file : "&$selected_drive&"\arch\boot\syslinux\"&$foundfile)
+		WEnd
+		FileClose($search)
+	EndIf
+
+	; Manjaro
+	$search = FileFindFirstFile($selected_drive&"\manjaro\boot\i686\syslinux\*.cfg")
+	If $search <> -1 Then
+		While 1
+			$foundfile = FileFindNextFile($search)
+			If @error Then ExitLoop
+			DefaultBootTweaks($selected_drive,$selected_drive&"\manjaro\boot\i686\syslinux\"&$foundfile)
+			SendReport("Found file : "&$selected_drive&"\manjaro\boot\i686\syslinux\"&$foundfile)
+		WEnd
+		FileClose($search)
+	EndIf
+
+	; Manjaro x64
+	$search = FileFindFirstFile($selected_drive&"\manjaro\boot\x86_64\syslinux\*.cfg")
+	If $search <> -1 Then
+		While 1
+			$foundfile = FileFindNextFile($search)
+			If @error Then ExitLoop
+			DefaultBootTweaks($selected_drive,$selected_drive&"\manjaro\boot\x86_64\syslinux\"&$foundfile)
+			SendReport("Found file : "&$selected_drive&"\manjaro\boot\x86_64\syslinux\"&$foundfile)
 		WEnd
 		FileClose($search)
 	EndIf
@@ -322,8 +347,12 @@ Func DefaultBootTweaks($selected_drive,$filename)
 		If $file = -1 Then
 			SendReport("IN-DefaultBootTweaks => ERROR : cannot write to file "&$filename)
 		Else
-			SendReport("IN-DefaultBootTweaks => setting rootdelay=15 in file "&$filename)
-			FileWrite($file,StringReplace($content,"APPEND ","APPEND rootdelay=15 "))
+			SendReport("IN-DefaultBootTweaks => setting rootdelay=15 and from=hd,usb,cd  in file "&$filename)
+			$new_append="from=hd,usb,cd "
+			if Not StringInStr($content,"rootdelay") Then
+				$new_append &= "rootdelay=15 "
+			EndIf
+			FileWrite($file,StringReplace($content,"APPEND ","APPEND "&$new_append))
 			FileClose($file)
 		EndIf
 	Elseif StringInStr($content,"ESXi-5" )>0 Then
@@ -354,8 +383,8 @@ Func DefaultBootTweaks($selected_drive,$filename)
 		If Not FileExists($selected_drive&"\ks.cfg") Then
 			FileCopy(@ScriptDir&"\tools\boot-menus\esxi-ks.cfg",$selected_drive&"\ks.cfg")
 		EndIf
-	Elseif StringInStr($content,"isolabel" )>0 OR StringInStr($content,"isolabel" )>0 Then
-		; Modifying Boot menu for ArchLinux And Chakra
+	Elseif StringInStr($content,"isolabel" )>0 Then
+		; Modifying Boot menu for ArchLinux / Chakra / Manjaro
 		; setting boot device UUID
 		if StringInStr($content,"archisolabel" )>0 Then
 			$isolabel_text="archisolabel="
@@ -363,13 +392,22 @@ Func DefaultBootTweaks($selected_drive,$filename)
 		Elseif StringInStr($content,"chakraisolabel" )>0 Then
 			$isolabel_text="chakraisolabel="
 			$isolabel_replacement = "chakraisodevice="
+		Elseif StringInStr($content,"misolabel" )>0 Then
+			; Manjaro
+			$isolabel_text="misolabel="
+			$isolabel_replacement = "misodevice="
 		Else
 			SendReport("IN-DefaultBootTweaks => Warning : Found an unknown isolabel setting.")
 			Return 0
 		EndIf
+		SendReport("IN-DefaultBootTweaks => Found isolabel setting : "&$isolabel_text)
 		$array1 = _StringBetween($content, $isolabel_text, ' ')
+		; Won't work if at the end of the line so double checking
+		If @error Then
+			$array1 = _StringBetween($content, $isolabel_text, @LF)
+		EndIf
 		if NOT @error Then
-			SendReport("IN-DefaultBootTweaks => ArchLinux detected in file "&$filename)
+			SendReport("IN-DefaultBootTweaks => isolabel detected in file "&$filename)
 			$uuid = Get_Disk_UUID($selected_drive)
 			$new_content=StringReplace($content,$isolabel_text&$array1[0],$isolabel_replacement&"/dev/disk/by-uuid/"&$uuid)
 			$file = FileOpen($filename, 2)
@@ -718,9 +756,15 @@ Func Fedora_WriteTextCFG($drive_letter,$release_in_list)
 				 & @LF & "label local" _
 				 & @LF & "  menu label Boot from local drive" _
 				 & @LF & "  localboot 0xffff"
-		Else
-			; Boot menus for superior versions
-			$boot_text &= @LF & "default vesamenu.c32" _
+			 Else
+
+				if GenericVersionCode($distrib_version) >= 18 Then
+					$liveimg_text="rd.live.image"
+				Else
+					$liveimg_text="liveimg"
+				Endif
+				; Boot menus for superior versions
+				$boot_text &= @LF & "default vesamenu.c32" _
 				 & @LF & "timeout 100" _
 				 & @LF & "menu background splash.png" _
 				 & @LF & "menu title Welcome to your LinuxLive Key !" _
@@ -746,28 +790,28 @@ Func Fedora_WriteTextCFG($drive_letter,$release_in_list)
 				 & @LF & "label live" _
 				 & @LF & "  menu label " & Translate("Live Mode") _
 				 & @LF & "  kernel vmlinuz0" _
-				 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat ro liveimg quiet rhgb rd.luks=0 rd.md=0 rd.dm=0" _
+				 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat ro "&$liveimg_text&" quiet rhgb rd.luks=0 rd.md=0 rd.dm=0" _
 				 & @LF & "  menu default"
 
 			If FileExists($drive_letter & '\LiveOS\overlay-' & StringReplace(DriveGetLabel($drive_letter)," ", "_") & '-' & $uuid) Then
 				 $boot_text&= @LF & "label persist" _
 				 & @LF & "  menu label " & Translate("Persistent Mode") _
 				 & @LF & "  kernel vmlinuz0" _
-				 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat rw liveimg overlay=UUID=" & $uuid & " quiet rhgb rd.luks=0 rd.md=0 rd.dm=0"
+				 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat rw "&$liveimg_text&" overlay=UUID=" & $uuid & " quiet rhgb rd.luks=0 rd.md=0 rd.dm=0"
 			EndIf
 				$boot_text&=@LF &"menu begin ^Troubleshooting" _
 				 & @LF & "    menu title Troubleshooting" _
 				 & @LF & "  label basic0" _
 				 & @LF & "    menu label Start in ^basic graphics mode." _
 				 & @LF & "    kernel vmlinuz0" _
-				 & @LF & "    append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat ro liveimg quiet  rhgb rd.luks=0 rd.md=0 rd.dm=0 xdriver=vesa nomodeset" _
+				 & @LF & "    append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat ro "&$liveimg_text&" quiet  rhgb rd.luks=0 rd.md=0 rd.dm=0 xdriver=vesa nomodeset" _
  				 & @LF & "   text help" _
 				 & @LF & "        Try this option out if you're having trouble installing Fedora 16." _
  				 & @LF & "   endtext" _
 				 & @LF & "  label check0" _
 				 & @LF & "    menu label "& Translate("File Integrity Check") _
 				 & @LF & "    kernel vmlinuz0" _
-				 & @LF & "    append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat ro liveimg quiet  rhgb rd.luks=0 rd.md=0 rd.dm=0 rd.live.check" _
+				 & @LF & "    append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat ro "&$liveimg_text&" quiet  rhgb rd.luks=0 rd.md=0 rd.dm=0 rd.live.check" _
 				 & @LF & "  label memtest" _
 				 & @LF & "    menu label "& Translate("Memory Test") _
 				 & @LF & "    text help" _
