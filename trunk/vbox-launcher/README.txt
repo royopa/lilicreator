@@ -1,5 +1,6 @@
 -> Change versions in LinuxLive\settings.ini
 -> Run one time and : create LinuxLive VM + Add LinuxLive VMDK + Deactivate updates
+-> Don't forget to change Disk Controller name to "LILI-DISK"
 -> Copy .VirtualBox over the old one
 -> Modify absolute path in VirtualBox.xml
 -> Supprimer VBoxSDL.exe

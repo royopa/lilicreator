@@ -76,11 +76,12 @@ Func SpaceAfterLinuxLiveMB($disk)
 		SendReport("Install size from ReleaseGetSize")
 	EndIf
 
-	SendReport("Install size = "&$install_size&" - vbox size = "&$virtualbox_default_realsize)
+
+	SendReport("Install size = "&$install_size&" - vbox size = "&$virtualbox_size)
 
 	If GUICtrlRead($virtualbox) == $GUI_CHECKED Then
 		; Need some MB for VirtualBox
-		$install_size = $install_size + $virtualbox_default_realsize
+		$install_size = $install_size + $virtualbox_size
 	EndIf
 
 	SendReport("Install size (with vbox added)= "&$install_size)
@@ -121,11 +122,27 @@ Func SpaceAfterLinuxLiveGB($disk)
 	Return $space
 EndFunc   ;==>SpaceAfterLinuxLiveGB
 
+; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+; ///////////////////////////////// Fetching Physical disks                       ///////////////////////////////////////////////////////////////////////////////
+; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 ; returns the physical disk (\\.\PhysicalDiskX) corresponding to a drive letter
 Func GiveMePhysicalDisk($drive_letter)
+	UpdateLog("Start-GiveMePhysicalDisk of : "&$drive_letter)
+	$drive_infos = _WinAPI_GetDriveNumber($drive_letter)
+	If NOT @error AND IsArray($drive_infos) Then
+		UpdateLog("End-GiveMePhysicalDisk ( SUCCESS : "&$drive_letter&" is on physical disk "&$drive_infos[1]&" )")
+		Return $drive_infos[1]
+	Else
+		UpdateLog("IN-GiveMePhysicalDisk ( WARNING : Falling back to WMI Mode )")
+		Return GiveMePhysicalDiskWMI($drive_letter)
+	EndIf
+EndFunc
+
+Func GiveMePhysicalDiskWMI($drive_letter)
 	Local $physical_drive,$g_eventerror
 
-	UpdateLog("GiveMePhysicalDisk of : "&$drive_letter)
+	UpdateLog("Start-GiveMePhysicalDiskWMI of : "&$drive_letter)
 
 	Local $wbemFlagReturnImmediately, $wbemFlagForwardOnly, $objWMIService, $colItems, $objItem, $found_usb, $usb_model, $usb_size
 	$wbemFlagReturnImmediately = 0x10
@@ -134,15 +151,15 @@ Func GiveMePhysicalDisk($drive_letter)
 
 	$objWMIService = ObjGet("winmgmts:\\.\root\CIMV2")
 	if @error OR $g_eventerror OR NOT IsObj($objWMIService) Then
-		UpdateLog("ERROR with WMI : Trying alternate method (WMI impersonation)")
+		UpdateLog("IN-GiveMePhysicalDiskWMI ( ERROR with WMI : Trying alternate method (WMI impersonation) )")
 		$g_eventerror =0
 		$objWMIService = ObjGet("winmgmts:{impersonationLevel=Impersonate}!//.")
 	EndIf
 
 	if @error OR $g_eventerror then
-		UpdateLog("ERROR with WMI")
+		UpdateLog("IN-GiveMePhysicalDiskWMI ( ERROR with WMI )")
 	Elseif IsObj($objWMIService) Then
-		UpdateLog("WMI seems to work")
+		UpdateLog("IN-GiveMePhysicalDiskWMI ( WMI seems to work )")
 
 		$colItems = $objWMIService.ExecQuery("SELECT Caption, DeviceID FROM Win32_DiskDrive", "WQL", $wbemFlagReturnImmediately + $wbemFlagForwardOnly)
 
@@ -161,19 +178,72 @@ Func GiveMePhysicalDisk($drive_letter)
 		Next
 
 	Else
-		UpdateLog("ERROR with WMI : object not created, cannot find PhysicalDisk")
+		UpdateLog("IN-GiveMePhysicalDiskWMI ( ERROR with WMI : object not created, cannot find PhysicalDisk)")
 	endif
 
 	if $physical_drive Then
-		UpdateLog("PhysicalDisk is : "& $physical_drive)
-		Return StringReplace($physical_drive,"\\.\PHYSICALDRIVE","")
+		$physical_drive_number=StringReplace($physical_drive,"\\.\PHYSICALDRIVE","")
+		UpdateLog("End-GiveMePhysicalDiskWMI ( SUCCESS : "&$drive_letter&" is on physical disk "&$physical_drive_number&" )")
+		Return $physical_drive_number
 	Else
+		UpdateLog("End-GiveMePhysicalDiskWMI ( ERROR : No physical disk found for: "& $drive_letter&" )")
 		Return "ERROR"
 	EndIf
-EndFunc   ;==>GiveMePhysicalDisk
+EndFunc
 
+; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+; ///////////////////////////////// Fetching Signature of disks drive (a.k.a MBR ID in MBR mode)/////////////////////////////////////////////////////////////////
+; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Func Get_MBR_ID($drive_letter,$clean_trailing_zeroes=1)
+	UpdateLog("Start-Get_MBR_ID of : "&$drive_letter)
+	$mbrid_temp = _WinAPI_GetDriveSignature($drive_letter)
+	if Not @error Then
+		if $mbrid_temp <> "0" AND $clean_trailing_zeroes = 1 Then
+			$mbrid_temp = StringLower(CleanTrailingZeroes($mbrid_temp))
+		EndIf
+		UpdateLog("END-Get_MBR_ID ( SUCCESS : MBR ID of "&$drive_letter&" is "&$mbrid_temp&" )")
+		Return $mbrid_temp
+	Else
+		UpdateLog("END-Get_MBR_ID ( WARNING : Falling back to WMI Mode )")
+		Return Get_MBR_ID_WMI($drive_letter,$clean_trailing_zeroes=1)
+	EndIf
+EndFunc
+
+Func _WinAPI_GetDriveSignature($sDrive)
+	; Needs WinAPI.au3
+	; Based on work from KaFu and JFX (http://www.autoitscript.com/forum/topic/136907-need-help-with-ioctl-disk-get-drive-layout-ex/)
+	$_DRIVE_LAYOUT = DllStructCreate('dword PartitionStyle; dword PartitionCount; byte union[40]; byte PartitionEntry[8192]')
+	$hDrive = _WinAPI_CreateFileEx('\\.\' & $sDrive, 2,0)
+	if $hDrive = 0 Then Return "ERROR"
+
+	Local $Ret = DllCall("kernel32.dll", "int", "DeviceIoControl", "hwnd", $hDrive, "dword", 0x00070050, "ptr", 0, "dword", 0, "ptr", DllStructGetPtr($_DRIVE_LAYOUT), "dword", DllStructGetSize($_DRIVE_LAYOUT), "dword*", 0, "ptr", 0)
+	If __CheckErrorCloseHandle($Ret, $hDrive) Then Return SetError(@error, @extended, -1)
+
+	Switch DllStructGetData($_DRIVE_LAYOUT, "PartitionStyle")
+		Case 0 ; MBR
+			$data = DllStructGetData($_DRIVE_LAYOUT, "union")
+			$binaryStruct = DllStructCreate('byte[8192]')
+			DllStructSetData($binaryStruct, 1, $data)
+			$DriveMBRInfo = DllStructCreate('ULONG Signature;', DllStructGetPtr($binaryStruct))
+			$mbr_signature = Hex(DllStructGetData($DriveMBRInfo, "Signature"), 8)
+			Return $mbr_signature
+		Case 1 ; GPT
+			$data = DllStructGetData($_DRIVE_LAYOUT, "union")
+			$binaryStruct = DllStructCreate('byte[8192]')
+			DllStructSetData($binaryStruct, 1, $data)
+			$DriveGPTInfo = DllStructCreate('byte Guid[16]; int64 StartingUsableOffset;int64 UsableLength;ulong MaxPartitionCount;', DllStructGetPtr($binaryStruct))
+			$GUID = StringLower(DllStructGetData($DriveGPTInfo, "Guid"))
+			If StringLeft($GUID, 2) = '0x' Then $GUID = StringTrimLeft($GUID, 2)
+			Return $GUID
+			; Use this code to format GUID like that : {11139dac-cc66-3247-be07-28480bbf}
+			; Return '{' & StringLeft($GUID, 8) & '-' & StringMid($GUID, 9, 4) & '-' & StringMid($GUID, 13, 4) & '-' & StringMid($GUID, 17, 4) & '-' & StringRight($GUID, 8) & '}'
+		Case 2 ; RAW (no signature / no letter ...)
+			Return "ERROR"
+	EndSwitch
+EndFunc
+
+Func Get_MBR_ID_WMI($drive_letter,$clean_trailing_zeroes=1)
 	Local $physical_drive,$g_eventerror
 
 	UpdateLog("Get_MBR_identifier of : "&$drive_letter)
@@ -219,12 +289,9 @@ Func Get_MBR_ID($drive_letter,$clean_trailing_zeroes=1)
 	if $found=1 Then
 
 		$mbr_hex = 	StringLower(Hex($mbr_signature))
-		;Signature can be 0 when formatted using a Macintosh
+		; Signature can be 0 when formatted using a Macintosh
 		if $mbr_signature <> "0" AND $clean_trailing_zeroes = 1 Then
-			; Trimming left trailing zeroes
-			While StringLeft($mbr_hex,1)="0"
-				$mbr_hex=StringTrimLeft($mbr_hex,1)
-			WEnd
+			$mbr_hex = CleanTrailingZeroes($mbr_hex)
 		EndIf
 		UpdateLog("MBR identifier of "&$drive_letter&" is : "& $mbr_signature&" ("&$mbr_hex&")")
 		Return $mbr_hex
@@ -234,9 +301,42 @@ Func Get_MBR_ID($drive_letter,$clean_trailing_zeroes=1)
 	EndIf
 EndFunc
 
+Func CleanTrailingZeroes($to_clean)
+	; Only clean the zeroes at the beginning
+	While StringLeft($to_clean,1)="0"
+		$to_clean=StringTrimLeft($to_clean,1)
+	WEnd
+	Return $to_clean
+EndFunc
+
+; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+; ///////////////////////////////// Fetching Serial numbers of partitions (a.k.a UUID)          /////////////////////////////////////////////////////////////////
+; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Func Get_Disk_UUID($drive_letter)
-	SendReport("Start-Get_Disk_UUID ( Drive : " & $drive_letter & " )")
+	UpdateLog("Start-Get_Disk_UUID of : "&$drive_letter)
+	$uuid_temp = DriveGetSerial( $drive_letter )
+	if Not @error Then
+		$hex_number = Hex(Int($uuid_temp),8)
+		$uuid = StringTrimRight($hex_number, 4) & "-" & StringTrimLeft($hex_number, 4)
+		UpdateLog("End-Get_Disk_UUID ( SUCCESS : UUID of "&$drive_letter&" is "&$uuid&" )")
+		Return $uuid
+	Else
+		$volume_infos = _WinAPI_GetVolumeInformation($drive_letter&"\")
+		If Not @error AND isArray($volume_infos) Then
+			$hex_number = Hex(Int($volume_infos[1]),8)
+			$uuid = StringTrimRight($hex_number, 4) & "-" & StringTrimLeft($hex_number, 4)
+			UpdateLog("End-Get_Disk_UUID ( SUCCESS : UUID of "&$drive_letter&" is "&$uuid&" )")
+			Return $uuid
+		Else
+			UpdateLog("END-Get_Disk_UUID ( WARNING : Falling back to WMI Mode )")
+			Return Get_Disk_UUID_WMI($drive_letter)
+		EndIf
+	EndIf
+EndFunc
+
+Func Get_Disk_UUID_WMI($drive_letter)
+	UpdateLog("Start-Get_Disk_UUID_WMI ( Drive : " & $drive_letter & " )")
 	Local $uuid = "EEEEEEEE"
 	Local $g_eventerror
 	Local $wbemFlagReturnImmediately, $wbemFlagForwardOnly, $objWMIService, $colItems, $objItem
@@ -246,13 +346,13 @@ Func Get_Disk_UUID($drive_letter)
 
 	$objWMIService = ObjGet("winmgmts:\\.\root\CIMV2")
 	if @error OR $g_eventerror OR NOT IsObj($objWMIService) Then
-		UpdateLog("ERROR with WMI : Trying alternate method (WMI impersonation)")
+		UpdateLog("IN-Get_Disk_UUID_WMI ( ERROR with WMI : Trying alternate method (WMI impersonation) )")
 		$g_eventerror =0
 		$objWMIService = ObjGet("winmgmts:{impersonationLevel=Impersonate}!//.")
 	EndIf
 
 	if @error OR $g_eventerror then
-		SendReport("End-Get_Disk_UUID : FATAL error with WMI")
+		UpdateLog("IN-Get_Disk_UUID_WMI ( ERROR with WMI )")
 		Return $uuid
 	Elseif IsObj($objWMIService) Then
 		$o_ColListOfProcesses = $objWMIService.ExecQuery("SELECT * FROM Win32_LogicalDisk WHERE Name = '" & $drive_letter & "'")
@@ -260,11 +360,13 @@ Func Get_Disk_UUID($drive_letter)
 			$uuid = $o_ObjProcess.VolumeSerialNumber
 		Next
 		If $uuid = "EEEEEEEE" Then
-			SendReport("IN-Get_Disk_UUID : ERROR : UUID was not found (EEEE-EEEE)")
+			UpdateLog("IN-Get_Disk_UUID_WMI ( ERROR : UUID was not found (EEEE-EEEE) )")
+		Else
+			$result=StringTrimRight($uuid, 4) & "-" & StringTrimLeft($uuid, 4)
+			UpdateLog("End-Get_Disk_UUID_WMI ( SUCCESS : UUID of "&$drive_letter&" is "&$result&" )")
+			Return $result
 		EndIf
-		$result=StringTrimRight($uuid, 4) & "-" & StringTrimLeft($uuid, 4)
-		SendReport("End-Get_Disk_UUID : UUID is "&$result)
-		Return $result
+
 	EndIf
 EndFunc   ;==>Get_Disk_UUID
 
@@ -306,3 +408,15 @@ Func FAT32Format($drive,$label)
 		Return "ERROR"
 	EndIf
 EndFunc   ;==>RunWait3
+
+func SetDriveLabel($drive,$label)
+	SendReport("Start-SetDriveLabel ( Drive : " & $drive & " - Label : "&$label&" )")
+	DriveSetLabel ( $drive, $label )
+	if DriveGetLabel ( $drive ) = $label Then
+		SendReport("END-SetDriveLabel ( success )")
+		return 1
+	Else
+		SendReport("END-SetDriveLabel ( [ERROR] Could not set label on drive )")
+		return "ERROR"
+	EndIf
+EndFunc

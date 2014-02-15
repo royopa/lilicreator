@@ -1,19 +1,10 @@
-;#=#INDEX#==================================================================#
-;#  Title .........: _Error Handler.au3                                     #
-;#  Description....: AutoIt3 Error Handler & Debugger                       #
-;#  Date ..........: 7.9.08                                                 #
-;#  Authors .......: jennico (jennicoattminusonlinedotde)                   #
-;#                   @MrCreatoR                                             #
-;#                   MadExcept (GUI inspiration by mrRevoked)               #
-;#==========================================================================#
-
 #include-once
 
 Global Const $MHVersionInformation = "V1.04"
 
 Global $MHSendDataToFunc = " _DefaultMsgFunc"
 Global $MHhwmd_Receiver
-Global $MHAdditionalIdentifier = "_CAL987qwerty2468";just to make the window titles a little bit more unique
+Global $MHAdditionalIdentifier = "_CAL7qwesdfsdf68";just to make the window titles a little bit more unique
 
 ; Windows Definitions;
 Global Const $StructDef_COPYDATA = "dword none;dword count;ptr pointer"
@@ -29,6 +20,7 @@ Global  $last_actions[30] = [ "" , "" , "" ,"" , "" , "" ,"" , "" , "" , "","" ,
 Global $sending_status
 Global $current_crashlog = @ScriptDir & "\logs\crash-report-" & @YEAR & "-" & @MON & "-" &  @MDAY& " (" & @HOUR & "h" & @MIN & "s" & @SEC & ").log"
 Global $current_logfile = @ScriptDir & "\logs\" & @YEAR & "-" & @MON & "-" & @MDAY&".log"
+Global Const $STATS_URL = "https://ssl.google-analytics.com/collect?tid=UA-7719594-8&aip=1&v=1&an=LiLi&cid="&$anonymous_id&"&av="&_URIEncode(GetDisplayVersion())&"&"
 Global $user_system
 Global $email_address,$problem_details,$report_gui
 Global $current_dl
@@ -37,6 +29,9 @@ Global $oMyRet[2]
 Global $oMyError,$crash_detected=0
 
 Global $iPID
+
+
+
 $lang = _Language()
 
 ; Apply proxy settings
@@ -63,9 +58,19 @@ Else
 	HttpSetProxy($proxy_mode)
 EndIf
 
+
 OnAutoItExitRegister( "CallBack_Exit" )
 
 _OnAutoItError()
+
+;#=#INDEX#==================================================================#
+;#  Title .........: _Error Handler.au3                                     #
+;#  Description....: AutoIt3 Error Handler & Debugger                       #
+;#  Date ..........: 7.9.08                                                 #
+;#  Authors .......: jennico (jennicoattminusonlinedotde)                   #
+;#                   @MrCreatoR                                             #
+;#                   MadExcept (GUI inspiration by mrRevoked)               #
+;#==========================================================================#
 
 ;#=#Function#===============================================================#
 ;#  Title .........: _OnAutoItError()                                       #
@@ -80,11 +85,14 @@ _OnAutoItError()
 Func _OnAutoItError()
     If StringInStr($CmdLineRaw,"/AutoIt3ExecuteScript") Then Return
     Opt("TrayIconHide",1)
+
     ;   run a second instance
     $iPID=Run(@AutoItExe&' /ErrorStdOut /AutoIt3ExecuteScript "'&@ScriptFullPath&'"',@ScriptDir,0,6)
-    ProcessWait($iPID)
+	ProcessWait($iPID)
     $sErrorMsg=""
+
 	$hwnd = _SetAsReceiver("lili-Reporter")
+
 	$myFunc = _SetReceiverFunction("_ReceiveReport")
 
 	$timer_check=TimerInit()
@@ -93,17 +101,29 @@ Func _OnAutoItError()
 	;   trap the error message
     While 1
         $sErrorMsg&=StdoutRead($iPID)
-        If @error and NOT $current_dl Then ExitLoop
-		;if TimerDiff($timer_check) > 5000 AND $update_checked=0 Then
-			;Check_for_compatibility_list_updates()
-			;$update_checked=1
-		;EndIf
+        If @error and NOT $current_dl Then
+			ExitLoop
+		EndIf
         Sleep(500)
     WEnd
-    If StringStripWS($sErrorMsg, 8)="" Then
+
+	If StringStripWS($sErrorMsg, 8)="" Then
 		ProcessClose("LiLi USB Creator.exe")
 		Exit
 	EndIf
+
+	if ReadSetting( "Advanced", "skip_stats") = "no" Then
+			if StringInStr($sErrorMsg,"==> ") > 0 Then
+				$temp =StringSplit($sErrorMsg,"==>",3)
+				; Clean the first part containting path to keep only the error
+				$message =$temp[1]
+
+			Else
+				$message = $sErrorMsg
+			EndIf
+			InetGet($STATS_URL&"t=exception&exf=1&exd="&_URIEncode($message),"",3,1)
+	EndIf
+
 	; Updating last log file with crash report
 	$report=ConstructReport()
 	_FileWriteLog($current_logfile,"!!!!!! Crash Detected : "&$sErrorMsg)
@@ -285,14 +305,19 @@ Func _ReceiveReport($report)
 	If StringLeft($report, 12) = @CRLF & "----------" Then
 		$last_config = $report
 	ElseIf StringLeft($report, 6) = "stats-" Then
-		$stats = StringTrimLeft($report, 6)
-		InetGet("https://www.linuxliveusb.com/stats/?"&$stats,"",3,1)
+		if ReadSetting( "Advanced", "skip_stats") = "no" Then
+			$stats = StringTrimLeft($report, 6)
+			;InetGet("https://www.linuxliveusb.com/stats/?"&$stats,"",3,1)
+			InetGet($STATS_URL&$stats,"",3,1)
+		EndIf
 	ElseIf StringLeft($report, 8) = "distrib-" Then
-		$distrib=StringTrimLeft($report, 8)
-		$distrib=StringReplace($distrib,"(1)","")
-		$splits=StringSplit($distrib,"#",2)
-		If Ubound($splits)==2 then
-			InetGet("https://www.linuxliveusb.com/stats/?distrib="&$splits[0]&"&md5_hash="&$splits[1],"",3,1)
+		if ReadSetting( "Advanced", "skip_stats") = "no" Then
+			$distrib=StringTrimLeft($report, 8)
+			$distrib=StringReplace($distrib,"(1)","")
+			$splits=StringSplit($distrib,"#",2)
+			If Ubound($splits)==2 then
+				InetGet("https://www.linuxliveusb.com/stats/?distrib="&$splits[0]&"&md5_hash="&$splits[1],"",3,1)
+			EndIf
 		EndIf
 	;ElseIf StringLeft($report, 17) = "check_for_updates" Then
 		;Check_for_updates()

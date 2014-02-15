@@ -248,9 +248,10 @@ EndFunc
 Func ReleaseGetMirror($release_in_list,$mirror_number=0)
 	if $release_in_list <=0 Then Return "NotFound"
 	if StringInStr($releases[$release_in_list][$R_MIRROR1],"::") Then
-		$split=StringSplit($releases[$release_in_list][$R_MIRROR1],"::",2)
+		$split=StringSplit($releases[$release_in_list][$R_MIRROR1],"::",3)
 		if Ubound($split)==2 Then
-			Return IniRead(@ScriptDir&"\tools\settings\common_mirrors.ini",$split[0],"Mirrors","")
+			$common_mirror_path = IniRead($common_mirrors_ini,$split[0],"Mirror"&($mirror_number+1),"")
+			Return StringStripWS($common_mirror_path&$split[1],3)
 		Else
 			Return ""
 		EndIf
@@ -262,8 +263,8 @@ EndFunc
 Func ReleaseGetMirrors($release_in_list)
 	if $release_in_list <=0 Then Return "NotFound"
 	$all_mirrors=""
-	For $i=0 To $i=9
-			$all_mirrors &= ReleaseGetMirror($release_in_list,$i)&"##"
+	For $i = 0 To 9
+		$all_mirrors &= ReleaseGetMirror($release_in_list,$i)&"##"
 	Next
 	Return StringSplit(StringTrimRight($all_mirrors,2),"##",1)
 EndFunc
@@ -271,8 +272,8 @@ EndFunc
 Func ReleaseGetMirrorStatus($release_in_list)
 	if $release_in_list <=0 Then Return 0
 	$available_mirrors=0
-	For $i=$R_MIRROR1 To $R_MIRROR10
-		if StringStripWS($releases[$release_in_list][$i],3) <> "" Then
+	For $m = 0 To 9
+		if  ReleaseGetMirror($release_in_list,$m) <> "" Then
 			$available_mirrors+=1
 		EndIf
 	Next
@@ -310,6 +311,7 @@ Func ReleaseGetSupportedFeatures($release_in_list)
 	Return StringStripWS($releases[$release_in_list][$R_FEATURES],3)
 EndFunc
 
+
 Func ReleaseInitializeVariables($release_in_list)
 	if $release_in_list <=0 Then Return "NotFound"
 	Global $release_number=$release_in_list
@@ -332,6 +334,28 @@ Func ReleaseInitializeVariables($release_in_list)
 	Global $release_mirrors_status=ReleaseGetMirrorStatus($release_number)
 EndFunc
 
+Func ReleaseHasFeature($feature_to_check)
+	if StringInStr($release_supported_features,$feature_to_check,0) <> 0 Then
+		Return True
+	Else
+		Return False
+	EndIf
+EndFunc
+
+; Get value for a feature such as copy-module:value
+; if same option specified multiple times, returns a string with format value1|value2|value3
+Func ReleaseGetFeatureValue($feature_to_check)
+	$feature_value=""
+	$features_array=StringSplit($release_supported_features,",",2)
+	FOR $feature IN $features_array
+		if StringInStr($feature,$feature_to_check&":")<>0 Then
+			$feature_value &= StringReplace($feature,"keep-module:","")&"|"
+		EndIf
+	Next
+	If StringRight($feature_value,1) == "|" Then $feature_value=StringTrimRight($feature_value,1)
+	Return $feature_value
+EndFunc
+
 Func ReleaseGetVBoxRAM($release_in_list)
 	$features=ReleaseGetSupportedFeatures($release_in_list)
 	$feature_list = StringSplit($features,",")
@@ -342,6 +366,49 @@ Func ReleaseGetVBoxRAM($release_in_list)
 		EndIf
 	Next
 	Return "256"
+EndFunc
+
+Func ReleaseGetVBoxStorageController($release_in_list)
+	$features=ReleaseGetSupportedFeatures($release_in_list)
+	if StringInStr($features,"vboxdisk-piix4") Then
+		Return "PIIX4"
+	Elseif StringInStr($features,"vboxdisk-ich6") Then
+		Return "ICH6"
+	Elseif StringInStr($features,"vboxdisk-piix3") Then
+		Return "PIIX3"
+	Elseif StringInStr($features,"vboxdisk-ide") Then
+		Return "PIIX4"
+	Elseif StringInStr($features,"vboxdisk-lsilogicsas") Then
+		Return "LsiLogicSas"
+	Elseif StringInStr($features,"vboxdisk-sas") Then
+		Return "LsiLogicSas"
+	Elseif StringInStr($features,"vboxdisk-ahci") Then
+		Return "AHCI"
+	Elseif StringInStr($features,"vboxdisk-sata") Then
+		Return "AHCI"
+	Elseif StringInStr($features,"vboxdisk-buslogic") Then
+		Return "BusLogic"
+	Else
+		; Default value is SCSI (LsiLogic)
+		Return "LsiLogic"
+	EndIf
+EndFunc
+
+Func GetDefaultVBOXStorageCtrlPortCount($controller)
+	if $controller = "PIIX4" Then
+		Return 2
+	Elseif $controller = "ICH6" Then
+		Return 2
+	Elseif $controller = "PIIX3" Then
+		Return 2
+	Elseif $controller = "LsiLogicSas" Then
+		Return 8
+	Elseif $controller = "AHCI" Then
+		Return 16
+	Else
+		; For LsiLogic / BusLogic / SCSI
+		Return 16
+	EndIf
 EndFunc
 
 Func URLToHostname($url)

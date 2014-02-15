@@ -17,7 +17,6 @@ Func Run7zip($cmd, $taille)
 		If $percentage > 0 And $percentage < 101 Then
 			UpdateStatusNoLog(Translate("Extracting ISO file on key") & " ( " & $percentage & "% )")
 		EndIf
-		;If @error Then ExitLoop
 		Sleep(500)
 		$line &= StdoutRead($foo)
 		If @error Then ExitLoop
@@ -223,15 +222,6 @@ Func Run2($soft, $arg1, $arg2)
 	UpdateLog("                   " & $line)
 	SendReport("End-Run2")
 EndFunc   ;==>Run2
-
-Func DownloadDistribution($file_to_download,$destination_file)
-	SendReport("Start-DownloadDistribution (file : " & $file_to_download )
-	Local $cmd, $line
-	$cmd = @ScriptDir & '\tools\lili-downloader.exe "' & $file_to_download & '" "' & $destination_file & '"'
-	UpdateLog($cmd)
-	Run($cmd, @ScriptDir, @SW_HIDE)
-	SendReport("End-DownloadDistribution")
-EndFunc   ;==>Create_Empty_File
 
 ;===============================================================================
 ;

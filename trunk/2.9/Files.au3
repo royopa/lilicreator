@@ -32,13 +32,17 @@ EndFunc   ;==>FileDelete2
 
 Func HideFilesInDir($list_of_files)
 	SendReport("Start-HideFilesInDir")
-	if (Ubound($list_of_files)=0) Then
+	if Not IsArray($list_of_files) Then
 		SendReport("End-HideFilesInDir : list of files is not an array !")
 		return "ERROR"
+	Else
+		SendReport("IN-HideFilesInDir : "&Ubound($list_of_files)&" files/folders will be hidden")
 	EndIf
 	For $file In $list_of_files
-		HideFile($selected_drive & "\" & $file)
+		UpdateLog("hiding file "&$usb_letter & "\" & $file)
+		HideFile($usb_letter & "\" & $file)
 	Next
+	SendReport("End-HideFilesInDir")
 EndFunc   ;==>HideFilesInDir
 
 Func isDir($file_to_test)
@@ -52,10 +56,10 @@ Func DeleteFilesInDir($list_of_files)
 		return "ERROR"
 	EndIf
 	For $file In $list_of_files
-		If isDir($selected_drive & "\" & $file) Then
-			DirRemove2($selected_drive & "\" & $file, 1)
+		If isDir($usb_letter & "\" & $file) Then
+			DirRemove2($usb_letter & "\" & $file, 1)
 		Else
-			FileDelete2($selected_drive & "\" & $file)
+			FileDelete2($usb_letter & "\" & $file)
 		EndIf
 	Next
 	SendReport("End-DeleteFilesInDir")
@@ -114,11 +118,11 @@ Func FileCopyShell($fromFile, $tofile)
 EndFunc   ;==>_FileCopy
 
 Func FileCopy2($arg1, $arg2 , $advanced=1)
-	Local $status="Copying File : " & $arg1 & " to " & $arg2
+	Local $status="Copying File : " & $arg1 & " to " & $arg2 & "(options = "&$advanced&")"
 	If FileCopy($arg1, $arg2,$advanced) Then
 		$status &=" -> " &"Copied successfully"
 	Else
-		if FileExists($arg1) Then
+		if NOT FileExists($arg1) Then
 			$status &=" -> " & "Not copied (source file does not exist)"
 		Else
 			$status &=" -> " & "Not copied (error)"
@@ -209,7 +213,6 @@ EndFunc   ;==>InitializeFilesInSource
 Func AnalyzeFileList()
 	SendReport("Start-AnalyzeFileList")
 	Local $line, $filelist, $files[1]
-	Global $files_in_source
 	$filelist = FileOpen(@ScriptDir & "\tools\filelist.txt", 0)
 	While 1
 		$line = FileReadLine($filelist)
@@ -228,7 +231,6 @@ EndFunc   ;==>AnalyzeFileList
 
 Func InitializeFilesInCD($searchdir)
 	Local $files[1]
-	Global $files_in_source
 	If StringRight($searchdir, 1) <> "\" Then $searchdir = $searchdir & "\"
 
 	$search = FileFindFirstFile($searchdir & "*")
@@ -306,8 +308,8 @@ Func DetectSyslinuxVersionInBin($file)
 		UpdateLog("Syslinux "&$major_revision&"."&$minor_revision&" detected in file "&$file)
 		Return $major_revision
 	Else
-		UpdateLog("Syslinux version could not be detected in file "&$file)
-		Return 0
+		UpdateLog("Syslinux version could not be detected in file "&$file& " => Falling back to the old method")
+		Return DetectSyslinuxVersionInBinold($file)
 	EndIf
 EndFunc
 
@@ -333,7 +335,7 @@ Func DetectSyslinuxVersionInBinold($file)
 		UpdateLog("Syslinux 1.X detected in file "&$file)
 		Return 2
 	Else
-		UpdateLog("Syslinux version could not be detected in file "&$file)
+		UpdateLog("[WARNING] Syslinux version could not be detected in file "&$file)
 		Return 0
 	EndIf
 EndFunc
@@ -345,14 +347,38 @@ Func CleanFilename($filename_to_clean)
 	return $filename_to_clean
 EndFunc
 
-Func FileOverWrite($filename,$content)
-	$file = FileOpen($filename, 2)
+; Mode can be 128 for example to use UTF8
+Func FileOverWrite($filename,$content,$mode=0)
+	$file = FileOpen($filename, (2+$mode))
 	If $file = -1 Then
 		SendReport("Could not overwrite file "&$filename)
 		return -1
 	EndIf
 	FileWrite($file,$content)
 	FileClose($file)
+EndFunc
+
+Func FileReplaceBetween($file,$start,$end,$new_value)
+	UpdateLog("Start-FileReplaceBetween : Replacing "&$start&"%VALUE%"&$end&" with value : "&$new_value)
+	$file_content = FileRead($file)
+	if @error Then
+		UpdateLog("End-FileReplaceBetween : Warning, Could not open "&$file&" in read mode ")
+		Return 0
+	EndIf
+	$old_value = _StringBetween ($file_content, $start, $end)
+
+	If NOt @error AND isArray($old_value) Then
+		UpdateLog("Start-FileReplaceBetween : value to be replaced is "&$old_value[0])
+		$new_content=StringReplace ($file_content, $start & $old_value[0] & $end,$start & $new_value &$end)
+		if @extended > 0 Then
+			FileOverWrite($file,$new_content)
+			SendReport("End-FileReplaceBetween : SUCCESS")
+		Else
+			SendReport("End-FileReplaceBetween : WARNING (no match found to be replaced)")
+		EndIf
+	Else
+		SendReport("End-FileReplaceBetween : ERROR => No value found")
+	EndIf
 EndFunc
 
 Func unix_path_to_extension($filepath)
@@ -363,3 +389,20 @@ Func unix_path_to_extension($filepath)
 		Return "ERROR"
 	EndIf
 EndFunc   ;==>unix_path_to_extension
+
+Func HumanSize($size_in_bytes)
+	$value = $size_in_bytes
+	$suffix = "B"
+	If $value < 2 ^ 10 Then
+		Return $value & " " & $suffix
+	ElseIf $value < 2 ^ 20 Then
+		Return Round($value / 2 ^ 10, 2) & " k" & $suffix
+	ElseIf $value < 2 ^ 30 Then
+		Return Round($value / 2 ^ 20, 2) & " M" & $suffix
+	ElseIf $value < 2 ^ 40 Then
+		Return Round($value / 2 ^ 30, 2) & " G" & $suffix
+	Else
+		Return Round($value / 2 ^ 40, 2) & " T" & $suffix
+	EndIf
+EndFunc
+

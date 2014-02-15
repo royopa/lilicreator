@@ -17,10 +17,10 @@ Func GUI_Options_Menu()
 	GUICtrlSetResizing(-1, $GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
 	$tab_general = GUICtrlCreateTabItem(Translate("General"))
 	$logo = GUICtrlCreatePic(@ScriptDir & "\tools\img\logo.jpg", 32, 45, 344, 107)
-	$version = GUICtrlCreateLabel("LiLi : "&$software_version, 88, 196, 250, 25)
+	$version = GUICtrlCreateLabel(Translate("Current version")&" : "&GetDisplayVersion(), 88, 196, 250, 25)
 	GUICtrlSetFont($version, 14)
-	$compat_version = GUICtrlCreateLabel(Translate("Compatibility List")&" : "&IniRead($compatibility_ini, "Compatibility_List", "Version","none"), 88, 231, 250, 25)
-	GUICtrlSetFont($compat_version, 14)
+	$last_version_available = GUICtrlCreateLabel(Translate("Last version")&" : "&GetLastAvailableVersion(), 88, 231, 250, 25)
+	GUICtrlSetFont($last_version_available, 14)
 	$group_version = GUICtrlCreateGroup(Translate("Versions"), 56, 160, 307, 123)
 	GUICtrlCreateGroup("", -99, -99, 1, 1)
 	$donate = GUICtrlCreateButton(Translate("Make a donation"), 32, 319, 153, 33, $WS_GROUP)
@@ -161,7 +161,7 @@ Func GUI_Options_Menu()
 	;Check_Internet_Status()
 	;GUISetState(@SW_DISABLE, $GUI)
 	GUISetState(@SW_DISABLE, $CONTROL_GUI)
-	;AdlibUnRegister("Control_Hover")
+	AdlibUnRegister("Control_Hover")
 	GUISetState(@SW_SHOW, $main_menu)
 	If ReadSetting("Internal","restart_language") ="yes" Then
 		GuiCtrlSetState($tab_language,$GUI_SHOW)
@@ -177,7 +177,7 @@ Func GUI_Options_Menu()
 				if CheckCustomRecognition() Then
 					Opt("GUIOnEventMode", 1)
 					GUIDelete($main_menu)
-					;AdlibRegister("Control_Hover", 150)
+					AdlibRegister("Control_Hover", 150)
 					GUISetState(@SW_ENABLE, $CONTROL_GUI)
 					ControlFocus("LinuxLive USB Creator", "", $REFRESH_AREA)
 					GUISwitch($CONTROL_GUI)
@@ -198,7 +198,7 @@ Func GUI_Options_Menu()
 				if CheckCustomRecognition() Then
 					Opt("GUIOnEventMode", 1)
 					GUIDelete($main_menu)
-					;AdlibRegister("Control_Hover", 150)
+					AdlibRegister("Control_Hover", 150)
 					GUISetState(@SW_ENABLE, $CONTROL_GUI)
 					ControlFocus("LinuxLive USB Creator", "", $REFRESH_AREA)
 					GUISwitch($CONTROL_GUI)
@@ -218,7 +218,7 @@ Func GUI_Options_Menu()
 			Case $licence
 				ShellExecute("http://www.linuxliveusb.com/about/license")
 			Case $donate
-				ShellExecute("https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=8297661")
+				ShellExecute("http://www.linuxliveusb.com/donations")
 			Case $language_list
 				$language_selected=GUICtrlRead($language_list)
 				if $language_selected="Automatic" OR StringInStr($language_selected,"—")>0 Then
@@ -437,7 +437,7 @@ Func InitUpdateTab()
 
 	Setting_To_Checkbox($check_for_updates,"Updates", "check_for_updates")
 
-	if (isBeta() OR ReadSetting( "Updates", "check_for_beta_versions") = "yes") Then
+	if (ReadSetting( "Updates", "check_for_beta_versions") = "yes") Then
 		GUICtrlSetState($all_release,$GUI_CHECKED)
 	Else
 		GUICtrlSetState($stable_only,$GUI_CHECKED)

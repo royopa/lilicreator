@@ -1,6 +1,6 @@
-#include <File.au3>
-#include <Array.au3>
-
+#include  "File.au3"
+#include  "Array.au3"
+#include  "WinAPIFiles.au3"
 
 Global $vmdkfile, $vbox_output, $vbox_config
 Global $g_eventerror = 0 ; to be checked to know if com error occurs. Must be reset after handling.
@@ -110,8 +110,8 @@ Func PrepareForLinuxLive($installdir="")
 	If FileExists($vmdkfile) Then FileDelete($vmdkfile)
 
 	UpdateLog("VMDK File is "&$vmdkfile)
-
-	$physical_drive=GiveMePhysicalDisk()
+	$drive_letter = StringLeft(@ScriptDir, 2)
+	$physical_drive=GiveMePhysicalDisk($drive_letter)
 
 	; For partitions manage
 	If StringLen(IniRead($settings_ini, "Force_disk", "disk_partitions", "")) > 0 Then
@@ -184,17 +184,30 @@ Func RunWait3($soft)
 EndFunc   ;==>RunWait3
 
 ; returns the physical disk (\\.\PhysicalDiskX) corresponding to a drive letter
-Func GiveMePhysicalDisk()
-	UpdateLog("Start-GiveMePhysicalDisk")
-	Local $physical_drive = 0
-	$drive_letter = StringLeft(@ScriptDir, 2)
-	UpdateLog("GiveMePhysicalDisk of : " & $drive_letter)
-
+Func GiveMePhysicalDisk($drive_letter)
+	UpdateLog("Start-GiveMePhysicalDisk of : "&$drive_letter)
 	$windows_drive_letter = StringLeft(@WindowsDir, 2)
+
 	if $drive_letter = $windows_drive_letter Then
 		$return = MsgBox(262144+52+256,"Warning !", "You are trying to virtualize your Windows drive."&@crlf&@crlf&"Please be aware that this could lead to data corruption !!"&@CRLF&@CRLF&"If you know what you are doing and accept the risk, click YES."&@CRLF&"If you are not sure then click NO (recommended).")
 		if $return=7 or $return=-1 then Exit
 	EndIf
+
+	$drive_infos = _WinAPI_GetDriveNumber($drive_letter)
+	If NOT @error AND IsArray($drive_infos) Then
+		$physical_drive="\\.\PHYSICALDRIVE"&$drive_infos[1]
+		UpdateLog("End-GiveMePhysicalDisk ( SUCCESS : "&$drive_letter&" is on physical disk "&$physical_drive&" )")
+		Return $physical_drive
+	Else
+		UpdateLog("IN-GiveMePhysicalDisk ( WARNING : Falling back to WMI Mode )")
+		Return GiveMePhysicalDiskWMI($drive_letter)
+	EndIf
+EndFunc
+
+Func GiveMePhysicalDiskWMI($drive_letter)
+	Local $physical_drive,$g_eventerror
+
+	UpdateLog("Start-GiveMePhysicalDiskWMI of : "&$drive_letter)
 
 	Local $wbemFlagReturnImmediately, $wbemFlagForwardOnly, $objWMIService, $colItems, $objItem, $found_usb, $usb_model, $usb_size
 	$wbemFlagReturnImmediately = 0x10
@@ -202,25 +215,25 @@ Func GiveMePhysicalDisk()
 	$colItems = ""
 
 	$objWMIService = ObjGet("winmgmts:\\.\root\CIMV2")
-	If @error Or $g_eventerror Or Not IsObj($objWMIService) Then
-		UpdateLog("ERROR with WMI : Trying alternate method (WMI impersonation)")
-		$g_eventerror = 0
+	if @error OR $g_eventerror OR NOT IsObj($objWMIService) Then
+		UpdateLog("IN-GiveMePhysicalDiskWMI ( ERROR with WMI : Trying alternate method (WMI impersonation) )")
+		$g_eventerror =0
 		$objWMIService = ObjGet("winmgmts:{impersonationLevel=Impersonate}!//.")
 	EndIf
 
-	If @error Or $g_eventerror Then
-		UpdateLog("ERROR with WMI")
-	ElseIf IsObj($objWMIService) Then
-		UpdateLog("WMI seems to work")
+	if @error OR $g_eventerror then
+		UpdateLog("IN-GiveMePhysicalDiskWMI ( ERROR with WMI )")
+	Elseif IsObj($objWMIService) Then
+		UpdateLog("IN-GiveMePhysicalDiskWMI ( WMI seems to work )")
 
 		$colItems = $objWMIService.ExecQuery("SELECT Caption, DeviceID FROM Win32_DiskDrive", "WQL", $wbemFlagReturnImmediately + $wbemFlagForwardOnly)
 
 		For $objItem In $colItems
+
 			$colItems2 = $objWMIService.ExecQuery("ASSOCIATORS OF {Win32_DiskDrive.DeviceID='" & $objItem.DeviceID & "'} WHERE AssocClass = Win32_DiskDriveToDiskPartition", "WQL", $wbemFlagReturnImmediately + $wbemFlagForwardOnly)
 			For $objItem2 In $colItems2
 				$colItems3 = $objWMIService.ExecQuery("ASSOCIATORS OF {Win32_DiskPartition.DeviceID='" & $objItem2.DeviceID & "'} WHERE AssocClass = Win32_LogicalDiskToPartition", "WQL", $wbemFlagReturnImmediately + $wbemFlagForwardOnly)
 				For $objItem3 In $colItems3
-					UpdateLog("Found a mounted disk in WMI : "&$objItem3.DeviceID &" mounted on "&$objItem.DeviceID)
 					If $objItem3.DeviceID = $drive_letter Then
 						$physical_drive = $objItem.DeviceID
 					EndIf
@@ -230,21 +243,21 @@ Func GiveMePhysicalDisk()
 		Next
 
 	Else
-		UpdateLog("ERROR with WMI : object not created")
-	EndIf
+		UpdateLog("IN-GiveMePhysicalDiskWMI ( ERROR with WMI : object not created, cannot find PhysicalDisk)")
+	endif
 
-	If $physical_drive Then
-		UpdateLog("END-GiveMePhysicalDisk : PhysicalDisk is : " & $physical_drive)
+	if $physical_drive Then
+		UpdateLog("End-GiveMePhysicalDiskWMI ( SUCCESS : "&$drive_letter&" is on physical disk "&$physical_drive&" )")
 		Return $physical_drive
 	Else
 		If StringIsDigit(IniRead($settings_ini, "Force_disk", "disk_number", "none")) Then
 			UpdateLog("END-GiveMePhysicalDisk : ERROR - PhysicalDisk NOT FOUND but found a force disk setting - returning \\.\PHYSICALDRIVE" & IniRead($settings_ini, "Force_disk", "disk_number", "none"))
 			Return "\\.\PHYSICALDRIVE" & IniRead($settings_ini, "Force_disk", "disk_number", "none")
 		EndIf
-		UpdateLog("END-GiveMePhysicalDisk : ERROR - PhysicalDisk NOT FOUND - Returning an ERROR")
+		UpdateLog("End-GiveMePhysicalDiskWMI ( ERROR : No physical disk found for: "& $drive_letter&" )")
 		Return "ERROR"
 	EndIf
-EndFunc   ;==>GiveMePhysicalDisk
+EndFunc
 
 ; returns the physical disk (\\.\PhysicalDiskX) corresponding to a drive letter
 Func LegacyVMDK()
@@ -272,7 +285,7 @@ Func LegacyVMDK()
 		$colItems = $objWMIService.ExecQuery("SELECT * FROM Win32_DiskDrive", "WQL", $wbemFlagReturnImmediately + $wbemFlagForwardOnly)
 
 		For $objItem In $colItems
-			if ($objItem.DeviceID=GiveMePhysicalDisk()) Then
+			if ($objItem.DeviceID=GiveMePhysicalDisk($drive_letter)) Then
 							UpdateLog("Found a matching DiskDrive in WMI : "&$objItem.Caption)
 							$file = FileOpen($vmdkfile, 2)
 							FileWrite($file, '# Disk DescriptorFile' & @LF)
