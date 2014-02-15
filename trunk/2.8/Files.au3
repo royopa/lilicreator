@@ -306,8 +306,8 @@ Func DetectSyslinuxVersionInBin($file)
 		UpdateLog("Syslinux "&$major_revision&"."&$minor_revision&" detected in file "&$file)
 		Return $major_revision
 	Else
-		UpdateLog("Syslinux version could not be detected in file "&$file)
-		Return 0
+		UpdateLog("Syslinux version could not be detected in file "&$file& " => Falling back to the old method")
+		Return DetectSyslinuxVersionInBinold($file)
 	EndIf
 EndFunc
 
@@ -333,7 +333,7 @@ Func DetectSyslinuxVersionInBinold($file)
 		UpdateLog("Syslinux 1.X detected in file "&$file)
 		Return 2
 	Else
-		UpdateLog("Syslinux version could not be detected in file "&$file)
+		UpdateLog("[WARNING] Syslinux version could not be detected in file "&$file)
 		Return 0
 	EndIf
 EndFunc

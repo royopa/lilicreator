@@ -432,6 +432,9 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 	$features = ReleaseGetSupportedFeatures($release_in_list)
 	$codename = ReleaseGetCodename($release_in_list)
 
+	AutoDetectINITRD($selected_drive&"\casper\")
+	AutoDetectVMLINUZ($selected_drive&"\casper\")
+
 	#cs
 	------------ Old BackTrack compatibility mode
 	If $ubuntu_variant = "backtrack" Then
@@ -443,7 +446,9 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 	EndIf
 	#ce
 
-	; Ubuntu versions > 9.10 use an initrd.lz instead of initrd.gz file
+	#cs
+	UpdateLog("Type of initrd file : " &$initrd_file &"( for Generic Version Code ="&GenericVersionCode($distrib_version)&" )" )
+	 Old method => using version number instead of autodetection
 	If GenericVersionCodeWithoutMinor($distrib_version) >= 910 Then
 		$initrd_file = "initrd.lz"
 	Else
@@ -451,8 +456,8 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 	EndIf
 
 	if $ubuntu_variant = "ylmfos" Then $initrd_file="initrd.img"
-
 	UpdateLog("Type of initrd file : " &$initrd_file &"( for Generic Version Code ="&GenericVersionCode($distrib_version)&" )" )
+	#ce
 
 	; For Mint, only syslinux.cfg need to be modified
 	If $ubuntu_variant = "mint" Then
@@ -481,7 +486,7 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 				 & @LF & "menu hidden" _
 				 & @LF & "menu hiddenrow 5"
 
-		$boot_text &= Ubuntu_BootMenu($initrd_file,"mint")
+		$boot_text &= Ubuntu_BootMenu("mint")
 
 		UpdateLog("Creating syslinux.cfg file for Mint :" & @CRLF & $boot_text)
 		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
@@ -492,7 +497,7 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 	EndIf
 
 	If $ubuntu_variant = "crunchbang" OR $ubuntu_variant = "kuki"  OR $ubuntu_variant = "element" Then
-		$boot_text=Ubuntu_BootMenu($initrd_file,"custom") & @LF & "DISPLAY isolinux.txt"& @LF &"TIMEOUT 300"& @LF &"PROMPT 1" & @LF & "default persist"
+		$boot_text=Ubuntu_BootMenu("custom") & @LF & "DISPLAY isolinux.txt"& @LF &"TIMEOUT 300"& @LF &"PROMPT 1" & @LF & "default persist"
 		UpdateLog("Creating syslinux.cfg file for "&$ubuntu_variant&" :" & @CRLF & $boot_text)
 		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
 		FileWrite($file, $boot_text)
@@ -510,7 +515,7 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 		& @LF &"timeout 300" _
 		& @LF &"menu title UberStudent" _
 		& @LF &"menu background splash.png" _
-		& @LF &"menu color title 1;37;44 #c0ffffff #00000000 std"&Ubuntu_BootMenu($initrd_file,"custom")
+		& @LF &"menu color title 1;37;44 #c0ffffff #00000000 std"&Ubuntu_BootMenu("custom")
 		UpdateLog("Creating syslinux.cfg file for "&$ubuntu_variant&" :" & @CRLF & $boot_text)
 		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
 		FileWrite($file, $boot_text)
@@ -529,7 +534,7 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 		& @LF &"menu TABMSG  http://www.caine-live.net" _
 		& @LF &"menu background splash.png" _
 		& @LF &"menu color sel	7;37;40  #e0000000 #f0ff8000 all" _
-		& @LF &"menu color title 1;37;24 #c0ffffff #00000000 std" &Ubuntu_BootMenu($initrd_file,"custom")
+		& @LF &"menu color title 1;37;24 #c0ffffff #00000000 std" &Ubuntu_BootMenu("custom")
 		UpdateLog("Creating syslinux.cfg file for "&$ubuntu_variant&" :" & @CRLF & $boot_text)
 		$file = FileOpen($selected_drive & "\syslinux\syslinux.cfg", 2)
 		FileWrite($file, $boot_text)
@@ -539,7 +544,7 @@ Func Ubuntu_WriteTextCFG($selected_drive, $release_in_list)
 	EndIf
 
 	; For official Ubuntu variants and most others, only text.cfg need to be modified
-	$boot_text = Ubuntu_BootMenu($initrd_file,AutomaticPreseed($selected_drive,$ubuntu_variant))
+	$boot_text = Ubuntu_BootMenu(AutomaticPreseed($selected_drive,$ubuntu_variant))
 	UpdateLog("Creating text.cfg file for Ubuntu variants :" & @CRLF & $boot_text)
 
 	If GenericVersionCodeWithoutMinor($distrib_version) >= 1010  Then
@@ -567,6 +572,9 @@ Func Debian_WriteTextCFG($selected_drive, $release_in_list)
 	$features = ReleaseGetSupportedFeatures($release_in_list)
 	$codename = ReleaseGetCodename($release_in_list)
 
+	AutoDetectINITRD($selected_drive&"\live\")
+	AutoDetectVMLINUZ($selected_drive&"\live\")
+
 	If $variant="mint" Then
 			$boot_text = "default vesamenu.c32" _
 				 & @LF & "timeout 100" _
@@ -593,10 +601,11 @@ Func Debian_WriteTextCFG($selected_drive, $release_in_list)
 		FileClose($file)
 	Elseif $variant="crunchbang" Then
 		If FileExists($selected_drive&"\live-rw") Then
+
 			$prepend = "label persist" _
 			& @LF & "menu label Persistent" _
-			& @LF & "kernel /live/vmlinuz1" _
-			& @LF & "append initrd=/live/initrd1.img boot=live config persistent quiet"
+			& @LF & "kernel /live/"&$vmlinuz_file _
+			& @LF & "append initrd=/live/"&$initrd_file&" boot=live config persistent quiet"
 
 			; read original boot menu
 			$original_boot=FileRead($selected_drive & "\syslinux\live.cfg")
@@ -612,9 +621,17 @@ Func Debian_WriteTextCFG($selected_drive, $release_in_list)
 		$append_debian="boot=live initrd=/casper/initrd.lz live-media-path=/casper quiet splash --"
 		If FileExists($selected_drive&"\live-rw") Then
 			$prepend = @LF& "label persist" & @LF & "menu label ^Persistent" _
-				& @LF & "  kernel /live/vmlinuz" _
-				& @LF & "  append initrd=/live/initrd.img boot=live config persistent quiet"
+				& @LF & "  kernel /live/"&$vmlinuz_file _
+				& @LF & "  append initrd=/live/"&$initrd_file&" boot=live config persistent quiet"
+
+			if FileExists($selected_drive&"\live\vmlinuz1") AND FileExists($selected_drive&"\live\initrd1.img") Then
+				$prepend &= @LF&"label persist2" _
+				& @LF & "menu label Persistent (486)" _
+				& @LF & "kernel /live/vmlinuz1" _
+				& @LF & "append initrd=/live/initrd1.img boot=live config persistent quiet"
 			EndIf
+
+		EndIf
 
 		$boot_menu=FileRead($selected_drive & "\syslinux\live.cfg")
 		FileMove($selected_drive & "\syslinux\live.cfg",$selected_drive & "\syslinux\live-orig.cfg")
@@ -654,7 +671,7 @@ Func AutomaticPreseed($selected_drive,$preseed_variant)
 	EndIf
 EndFunc
 
-Func Ubuntu_BootMenu($initrd_file,$seed_name)
+Func Ubuntu_BootMenu($seed_name)
 	Local $kbd_code,$boot_text="",$append_ubuntu
 	$kbd_code = GetKbdCode()
 	$lang_code = GetLangCode()
@@ -663,20 +680,20 @@ Func Ubuntu_BootMenu($initrd_file,$seed_name)
 
 	If FileExists($selected_drive&"\casper-rw") Then
 		$boot_text = @LF& "label persist" & @LF & "menu label ^" & Translate("Persistent Mode") _
-			& @LF & "  kernel /casper/vmlinuz" _
+			& @LF & "  kernel /casper/" & $vmlinuz_file _
 			& @LF & "  append  " & $kbd_code & $lang_code & " persistent "&$append_ubuntu
 	EndIf
 	$boot_text&= @LF & "label live" _
 		& @LF & "  menu label ^" & Translate("Live Mode") _
-		& @LF & "  kernel /casper/vmlinuz" _
+		& @LF & "  kernel /casper/" & $vmlinuz_file _
 		& @LF & "  append   " & $kbd_code & $lang_code & $append_ubuntu _
 		& @LF & "label live-install" _
 		& @LF & "  menu label ^" & Translate("Install") _
-		& @LF & "  kernel /casper/vmlinuz" _
+		& @LF & "  kernel /casper/" & $vmlinuz_file _
 		& @LF & "  append   " & $kbd_code & $lang_code & " only-ubiquity "& $append_ubuntu _
 		& @LF & "label check" _
 		& @LF & "  menu label ^" & Translate("File Integrity Check") _
-		& @LF & "  kernel /casper/vmlinuz" _
+		& @LF & "  kernel /casper/" & $vmlinuz_file _
 		& @LF & "  append   " & $kbd_code & $lang_code &  "noprompt boot=casper integrity-check initrd=/casper/" & $initrd_file & " splash --" _
 		& @LF & "label memtest" _
 		& @LF & "  menu label ^" & Translate("Memory Test") _
@@ -689,20 +706,20 @@ Func Debian_BootMenu($variant)
 	$kbd_code = GetKbdCode()
 	$lang_code = GetLangCode()
 
-	$append_debian="boot=live config initrd=/casper/initrd.lz live-media-path=/casper quiet splash --"
+	$append_debian="boot=live config initrd=/casper/"&$initrd_file&" live-media-path=/casper quiet splash --"
 	If FileExists($selected_drive&"\live-rw") Then
 		$boot_text = @LF& "label persist" & @LF & "menu label ^" & Translate("Persistent Mode") _
-			& @LF & "  kernel /casper/vmlinuz" _
+			& @LF & "  kernel /casper/" & $vmlinuz_file _
 			& @LF & "  append  " & $kbd_code & $lang_code & " persistent "&$append_debian
 	EndIf
 
 	$boot_text&= @LF & "label live" _
 		& @LF & "  menu label ^" & Translate("Live Mode") _
-		& @LF & "  kernel /casper/vmlinuz" _
+		& @LF & "  kernel /casper/"&$vmlinuz_file _
 		& @LF & "  append   " & $kbd_code & $lang_code & $append_debian _
 		& @LF & "label check" _
 		& @LF & "  menu label ^" & Translate("File Integrity Check") _
-		& @LF & "  kernel /casper/vmlinuz" _
+		& @LF & "  kernel /casper/"&$vmlinuz_file _
 		& @LF & "  append   " & $kbd_code & $lang_code & " integrity-check "&StringReplace($append_debian,"quiet splash","") _
 		& @LF & "label memtest" _
 		& @LF & "  menu label ^" & Translate("Memory Test") _
@@ -716,6 +733,10 @@ Func Fedora_WriteTextCFG($drive_letter,$release_in_list)
 	Local $boot_text = "", $uuid
 	$distrib_version = ReleaseGetDistributionVersion($release_in_list)
 	$uuid = Get_Disk_UUID($drive_letter)
+
+	AutoDetectINITRD($drive_letter&"\syslinux\")
+	AutoDetectVMLINUZ($drive_letter&"\syslinux\")
+
 	if GenericVersionCode($distrib_version) <= 15 Then
 		; Boot menus for Fedora <= 15
 		$boot_text &= @LF & "default vesamenu.c32" _
@@ -736,20 +757,20 @@ Func Fedora_WriteTextCFG($drive_letter,$release_in_list)
 				 & @LF & "menu hiddenrow 5" _
 				 & @LF & "label live" _
 				 & @LF & "  menu label " & Translate("Live Mode") _
-				 & @LF & "  kernel vmlinuz0" _
-				 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat ro liveimg quiet selinux=0 rhgb  rd_NO_LUKS rd_NO_MD noiswmd" _
+				 & @LF & "  kernel "&$vmlinuz_file _
+				 & @LF & "  append initrd="&$initrd_file&" root=UUID=" & $uuid & " rootfstype=vfat ro liveimg quiet selinux=0 rhgb  rd_NO_LUKS rd_NO_MD noiswmd" _
 				 & @LF & "  menu default"
 
 			If FileExists($drive_letter & '\LiveOS\overlay-' & StringReplace(DriveGetLabel($drive_letter)," ", "_") & '-' & $uuid) Then
 				 $boot_text&= @LF & "label persist" _
 				 & @LF & "  menu label " & Translate("Persistent Mode") _
-				 & @LF & "  kernel vmlinuz0" _
-				 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat rw liveimg overlay=UUID=" & $uuid & " quiet selinux=0 rhgb  rd_NO_LUKS rd_NO_MD noiswmd"
+				 & @LF & "  kernel "&$vmlinuz_file _
+				 & @LF & "  append initrd="&$initrd_file&" root=UUID=" & $uuid & " rootfstype=vfat rw liveimg overlay=UUID=" & $uuid & " quiet selinux=0 rhgb  rd_NO_LUKS rd_NO_MD noiswmd"
 			EndIf
 				$boot_text&=@LF &"label check0" _
 				 & @LF & "  menu label " & Translate("File Integrity Check") _
-				 & @LF & "  kernel vmlinuz0" _
-				 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat ro liveimg quiet  rhgb check" _
+				 & @LF & "  kernel "&$vmlinuz_file _
+				 & @LF & "  append initrd="&$initrd_file&" root=UUID=" & $uuid & " rootfstype=vfat ro liveimg quiet  rhgb check" _
 				 & @LF & "label memtest" _
 				 & @LF & " menu label " & Translate("Memory Test") _
 				 & @LF & "  kernel memtest" _
@@ -789,29 +810,29 @@ Func Fedora_WriteTextCFG($drive_letter,$release_in_list)
 				 & @LF & "menu color cmdline 0 #ffffffff #00000000 none" _
 				 & @LF & "label live" _
 				 & @LF & "  menu label " & Translate("Live Mode") _
-				 & @LF & "  kernel vmlinuz0" _
-				 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat ro "&$liveimg_text&" quiet rhgb rd.luks=0 rd.md=0 rd.dm=0" _
+				 & @LF & "  kernel "&$vmlinuz_file _
+				 & @LF & "  append initrd="&$initrd_file&" root=UUID=" & $uuid & " rootfstype=vfat ro "&$liveimg_text&" quiet rhgb rd.luks=0 rd.md=0 rd.dm=0" _
 				 & @LF & "  menu default"
 
 			If FileExists($drive_letter & '\LiveOS\overlay-' & StringReplace(DriveGetLabel($drive_letter)," ", "_") & '-' & $uuid) Then
 				 $boot_text&= @LF & "label persist" _
 				 & @LF & "  menu label " & Translate("Persistent Mode") _
-				 & @LF & "  kernel vmlinuz0" _
-				 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat rw "&$liveimg_text&" overlay=UUID=" & $uuid & " quiet rhgb rd.luks=0 rd.md=0 rd.dm=0"
+				 & @LF & "  kernel "&$vmlinuz_file _
+				 & @LF & "  append initrd="&$initrd_file&" root=UUID=" & $uuid & " rootfstype=vfat rw "&$liveimg_text&" overlay=UUID=" & $uuid & " quiet rhgb rd.luks=0 rd.md=0 rd.dm=0"
 			EndIf
 				$boot_text&=@LF &"menu begin ^Troubleshooting" _
 				 & @LF & "    menu title Troubleshooting" _
 				 & @LF & "  label basic0" _
 				 & @LF & "    menu label Start in ^basic graphics mode." _
-				 & @LF & "    kernel vmlinuz0" _
-				 & @LF & "    append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat ro "&$liveimg_text&" quiet  rhgb rd.luks=0 rd.md=0 rd.dm=0 xdriver=vesa nomodeset" _
+				 & @LF & "    kernel "&$vmlinuz_file _
+				 & @LF & "    append initrd="&$initrd_file&" root=UUID=" & $uuid & " rootfstype=vfat ro "&$liveimg_text&" quiet  rhgb rd.luks=0 rd.md=0 rd.dm=0 xdriver=vesa nomodeset" _
  				 & @LF & "   text help" _
 				 & @LF & "        Try this option out if you're having trouble installing Fedora 16." _
  				 & @LF & "   endtext" _
 				 & @LF & "  label check0" _
 				 & @LF & "    menu label "& Translate("File Integrity Check") _
-				 & @LF & "    kernel vmlinuz0" _
-				 & @LF & "    append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat ro "&$liveimg_text&" quiet  rhgb rd.luks=0 rd.md=0 rd.dm=0 rd.live.check" _
+				 & @LF & "    kernel "&$vmlinuz_file _
+				 & @LF & "    append initrd="&$initrd_file&" root=UUID=" & $uuid & " rootfstype=vfat ro "&$liveimg_text&" quiet  rhgb rd.luks=0 rd.md=0 rd.dm=0 rd.live.check" _
 				 & @LF & "  label memtest" _
 				 & @LF & "    menu label "& Translate("Memory Test") _
 				 & @LF & "    text help" _
@@ -842,6 +863,10 @@ Func CentOS_WriteTextCFG($drive_letter)
 	SendReport("Start-CentOS_WriteTextCFG ( Drive : " & $drive_letter & " )")
 	Local $boot_text = "", $uuid
 	$uuid = Get_Disk_UUID($drive_letter)
+
+	AutoDetectINITRD($drive_letter&"\syslinux\")
+	AutoDetectVMLINUZ($drive_letter&"\syslinux\")
+
 	$boot_text &= @LF & "default vesamenu.c32" _
 			 & @LF & "timeout 100" _
 			 & @LF & "menu background splash.jpg" _
@@ -862,14 +887,14 @@ Func CentOS_WriteTextCFG($drive_letter)
 	If FileExists($drive_letter & '\LiveOS\overlay-' & StringReplace(DriveGetLabel($drive_letter)," ", "_") & '-' & $uuid) Then
 			 $boot_text&= @LF & "label persist" _
 			 & @LF & "  menu label " & Translate("Persistent Mode") _
-			 & @LF & "  kernel vmlinuz0" _
-			 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat rw liveimg quiet overlay=UUID="&$uuid
+			 & @LF & "  kernel "&$vmlinuz_file _
+			 & @LF & "  append initrd="&$initrd_file&" root=UUID=" & $uuid & " rootfstype=vfat rw liveimg quiet overlay=UUID="&$uuid
 	EndIf
 
   $boot_text&= @LF & "label live" _
 			 & @LF & "  menu label " & Translate("Live Mode") _
-			 & @LF & "  kernel vmlinuz0" _
-			 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=vfat rw liveimg quiet " _
+			 & @LF & "  kernel "&$vmlinuz_file _
+			 & @LF & "  append initrd="&$initrd_file&" root=UUID=" & $uuid & " rootfstype=vfat rw liveimg quiet " _
 			 & @LF & "menu default" _
 			 & @LF & "label installer" _
 			 & @LF & "  menu label Network Installation" _
@@ -892,6 +917,10 @@ Func Mandriva_WriteTextCFG($drive_letter)
 	SendReport("Start-Mandriva_WriteTextCFG ( Drive : " & $drive_letter & " )")
 	Local $boot_text = ""
 	$uuid = Get_Disk_UUID($drive_letter)
+
+	AutoDetectINITRD($drive_letter&"\syslinux\")
+	AutoDetectVMLINUZ($drive_letter&"\syslinux\")
+
 	$boot_text &= @LF & "default vesamenu.c32" _
 			 & @LF & "font cyra8x16.psf" _
 			 & @LF & "timeout 100" _
@@ -912,19 +941,19 @@ Func Mandriva_WriteTextCFG($drive_letter)
 			 & @LF & "menu color cmdline 0 #ffffffff #00000000" _
 			 & @LF & "label live" _
 			 & @LF & "  menu label " & Translate("Live Mode") _
-			 & @LF & "  kernel vmlinuz0" _
-			 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=auto ro liveimg overlay=UUID=" & $uuid & " vga=788 desktop nopat rd_NO_LUKS rd_NO_MD noiswmd splash=silent" _
+			 & @LF & "  kernel "&$vmlinuz_file _
+			 & @LF & "  append initrd="&$initrd_file&" root=UUID=" & $uuid & " rootfstype=auto ro liveimg overlay=UUID=" & $uuid & " vga=788 desktop nopat rd_NO_LUKS rd_NO_MD noiswmd splash=silent" _
 			 & @LF & "menu default"
 	If FileExists($drive_letter & '\LiveOS\overlay-' & StringReplace(DriveGetLabel($drive_letter)," ", "_") & '-' & $uuid) Then
 		$boot_text &= @LF & "label persist" _
 			 & @LF & "  menu label " & Translate("Persistent Mode") _
-			 & @LF & "  kernel vmlinuz0" _
-			 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=auto rw liveimg overlay=UUID=" & $uuid & " vga=788 desktop nopat rd_NO_LUKS rd_NO_MD noiswmd splash=silent"
+			 & @LF & "  kernel "&$vmlinuz_file _
+			 & @LF & "  append initrd="&$initrd_file&" root=UUID=" & $uuid & " rootfstype=auto rw liveimg overlay=UUID=" & $uuid & " vga=788 desktop nopat rd_NO_LUKS rd_NO_MD noiswmd splash=silent"
 	EndIf
 		$boot_text &= @LF & "label install" _
 			 & @LF & "  menu label " & Translate("Install") _
-			 & @LF & "  kernel vmlinuz0" _
-			 & @LF & "  append initrd=initrd0.img root=UUID=" & $uuid & " rootfstype=auto ro liveimg install overlay=UUID=" & $uuid & " vga=788 desktop nopat rd_NO_LUKS rd_NO_MD noiswmd splash=silent" _
+			 & @LF & "  kernel "&$vmlinuz_file _
+			 & @LF & "  append initrd="&$initrd_file&" root=UUID=" & $uuid & " rootfstype=auto ro liveimg install overlay=UUID=" & $uuid & " vga=788 desktop nopat rd_NO_LUKS rd_NO_MD noiswmd splash=silent" _
 			 & @LF & "label local" _
 			 & @LF & "  menu label Boot from local drive" _
 			 & @LF & "  localboot 0xffff"
@@ -938,11 +967,14 @@ Func Crunchbang_WriteTextCFG($selected_drive,$release_in_list)
 	UpdateLog("Start-Crunchbang_WriteTextCFG : Creating live.cfg file for Crunchbang")
 	$features = ReleaseGetSupportedFeatures($release_in_list)
 
+	AutoDetectINITRD($selected_drive&"\live\")
+	AutoDetectVMLINUZ($selected_drive&"\live\")
+
 	If StringInStr($features,"debian-persistence") Then
 		$prepend = "label persist" _
 		& @LF & "menu label Persistent" _
-		& @LF & "kernel /live/vmlinuz1" _
-		& @LF & "append initrd=/live/initrd1.img boot=live config persistent quiet"
+		& @LF & "kernel /live/"&$vmlinuz_file _
+		& @LF & "append initrd=/live/"&$initrd_file&" boot=live config persistent quiet"
 
 		; read original boot menu
 		$original_boot=FileRead($selected_drive & "\syslinux\live.cfg")
@@ -960,6 +992,8 @@ Func XBMC_WriteTextCFG($selected_drive,$release_in_list)
 	UpdateLog("Start-XBMC_WriteTextCFG : Creating live.cfg file for Crunchbang")
 	$features = ReleaseGetSupportedFeatures($release_in_list)
 
+	AutoDetectINITRD($selected_drive&"\live\")
+	AutoDetectVMLINUZ($selected_drive&"\live\")
 
 	$prepend = "default 0" _
 		& @LF & "timeout 30" _
@@ -969,8 +1003,8 @@ Func XBMC_WriteTextCFG($selected_drive,$release_in_list)
 
 	If StringInStr($features,"debian-persistence") Then
 		$prepend &= @LF & @LF & "title XBMCLive Persistent" _
-			& @LF & "kernel /live/vmlinuz video=vesafb boot=live persistent xbmc=autostart,nodiskmount splash quiet loglevel=0 persistent quickreboot quickusbmodules notimezone noaccessibility noapparmor noaptcdrom noautologin noxautologin noconsolekeyboard nofastboot nognomepanel nohosts nokpersonalizer nolanguageselector nolocales nonetworking nopowermanagement noprogramcrashes nojockey nosudo noupdatenotifier nouser nopolkitconf noxautoconfig noxscreensaver nopreseed union=aufs" _
-			& @LF & "initrd /live/initrd.img"
+			& @LF & "kernel /live/"&$vmlinuz_file&" video=vesafb boot=live persistent xbmc=autostart,nodiskmount splash quiet loglevel=0 persistent quickreboot quickusbmodules notimezone noaccessibility noapparmor noaptcdrom noautologin noxautologin noconsolekeyboard nofastboot nognomepanel nohosts nokpersonalizer nolanguageselector nolocales nonetworking nopowermanagement noprogramcrashes nojockey nosudo noupdatenotifier nouser nopolkitconf noxautoconfig noxscreensaver nopreseed union=aufs" _
+			& @LF & "initrd /live/"&$initrd_file
 
 		; Default to Live (non persistent)
 		$prepend = StringReplace($prepend,"default 0","default 1")
@@ -996,4 +1030,77 @@ Func Set_OpenSuse_MBR_ID($drive_letter,$clean_trailing_zeroes=1)
 	FileWrite($drive_letter&"\boot\grub\mbrid",$mbr_id)
 	SendReport("End-Set_OpenSuse_MBR_ID : Successfully set MBR ID file to "&$mbr_id)
 EndFunc
+
+Func AutoDetectINITRD($base_path_initrd)
+	; Default value of initrd
+	$initrd_file="initrd.lz"
+	$autodetect_initrd_success=1
+
+	; Autodetection of initrd file (Ubuntu versions > 9.10 use an initrd.lz instead of initrd.gz file)
+	If FileExists($base_path_initrd & "initrd.gz") == 1 Then
+		$initrd_file = "initrd.gz"
+	Elseif FileExists($base_path_initrd & "initrd.lz") == 1 Then
+		$initrd_file = "initrd.lz"
+	Elseif FileExists($base_path_initrd & "initrd.img") == 1 Then
+		$initrd_file = "initrd.img"
+	Elseif FileExists($base_path_initrd & "initrd2.img") == 1 Then
+		$initrd_file = "initrd2.img"
+	Elseif FileExists($base_path_initrd & "initrd1.img") == 1 Then
+		$initrd_file = "initrd1.img"
+	Elseif FileExists($base_path_initrd & "initrd0.img") == 1 Then
+		$initrd_file = "initrd0.img"
+	Elseif FileExists($base_path_initrd & "initrd1") == 1 Then
+		$initrd_file = "initrd1"
+	Elseif FileExists($base_path_initrd & "initrd0") == 1 Then
+		$initrd_file = "initrd0"
+	Elseif FileExists($base_path_initrd & "initrd") == 1 Then
+		$initrd_file = "initrd"
+	Else
+		$autodetect_initrd_success=0
+		; Could add a search for the correct file
+	EndIf
+
+	; Log autodetection result
+	if $autodetect_initrd_success==1 then
+		SendReport("INITRD Autodetection : OK ( found file : "&$base_path_initrd&$initrd_file&" )")
+	Else
+		SendReport("INITRD Autodetection : ERROR ( using default file : "&$base_path_initrd&$initrd_file&" )")
+	EndIf
+
+	Return $initrd_file
+EndFunc
+
+Func AutoDetectVMLINUZ($base_path_vmlinuz)
+
+	; Default value of vmlinuz
+	$vmlinuz_file = "vmlinuz"
+	$autodetect_vmlinuz_success=1
+
+	; Autodetection of vmlinuz file (Ubuntu 13.04 and 12.04.2 x64 has an EFI compatible vmlinuz file)
+	If FileExists($base_path_vmlinuz & "vmlinuz.efi") == 1 Then
+		$vmlinuz_file = "vmlinuz.efi"
+	Elseif FileExists($base_path_vmlinuz & "vmlinuz") == 1 Then
+		$vmlinuz_file = "vmlinuz"
+	Elseif FileExists($base_path_vmlinuz & "vmlinuz2") == 1 Then
+		$vmlinuz_file = "vmlinuz2"
+	Elseif FileExists($base_path_vmlinuz & "vmlinuz1") == 1 Then
+		$vmlinuz_file = "vmlinuz1"
+	Elseif FileExists($base_path_vmlinuz & "vmlinuz0") == 1 Then
+		$vmlinuz_file = "vmlinuz0"
+	Else
+		$autodetect_vmlinuz_success=0
+		; Could add a search for the correct file
+	EndIf
+
+	; Log autodetection result
+	if $autodetect_vmlinuz_success==1 then
+		SendReport("VMLINUZ Autodetection : OK ( found file : "&$base_path_vmlinuz&$vmlinuz_file&" )")
+	Else
+		SendReport("VMLINUZ Autodetection : ERROR ( using default file : "&$base_path_vmlinuz&$vmlinuz_file&" )")
+	EndIf
+
+	Return $vmlinuz_file
+EndFunc
+
+
 

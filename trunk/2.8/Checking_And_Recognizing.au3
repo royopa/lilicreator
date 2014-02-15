@@ -131,18 +131,25 @@ Func Check_source_integrity($linux_live_file)
 				$temp_index = FindReleaseFromCodeName( "xbmc-last")
 			ElseIf StringInStr($shortname, "buntu") Then
 
-
-				if StringInStr($shortname, "11.10") OR StringInStr($shortname, "oneiric") OR StringInStr($shortname, "ocelot") Then
+				if StringInStr($shortname, "13.10") OR StringInStr($shortname, "saucy") OR StringInStr($shortname, "salam") Then
+					$ubuntu_version = "13.10"
+				Elseif StringInStr($shortname, "13.04") OR StringInStr($shortname, "rari") OR StringInStr($shortname, "ring") Then
+					$ubuntu_version = "13.04"
+				Elseif StringInStr($shortname, "12.10") OR StringInStr($shortname, "quant") OR StringInStr($shortname, "quet") Then
+					$ubuntu_version = "12.10"
+				Elseif StringInStr($shortname, "12.04") OR StringInStr($shortname, "preci") OR StringInStr($shortname, "pang") Then
+					$ubuntu_version = "12.04"
+				Elseif StringInStr($shortname, "11.10") OR StringInStr($shortname, "onei") OR StringInStr($shortname, "ocel") Then
 					$ubuntu_version = "11.10"
-				Elseif StringInStr($shortname, "11.04") OR StringInStr($shortname, "natty") OR StringInStr($shortname, "narwhal") Then
+				Elseif StringInStr($shortname, "11.04") OR StringInStr($shortname, "natty") OR StringInStr($shortname, "narw") Then
 					$ubuntu_version = "11.04"
-				Elseif StringInStr($shortname, "10.10") OR StringInStr($shortname, "maverick") OR StringInStr($shortname, "meerkat") Then
+				Elseif StringInStr($shortname, "10.10") OR StringInStr($shortname, "mave") OR StringInStr($shortname, "meer") Then
 					$ubuntu_version = "10.10"
 				Elseif StringInStr($shortname, "10.04") OR StringInStr($shortname, "lucid") OR StringInStr($shortname, "lynx") Then
 					$ubuntu_version = "10.04"
-				Elseif StringInStr($shortname, "9.10") OR StringInStr($shortname, "karmic") OR StringInStr($shortname, "koala") Then
+				Elseif StringInStr($shortname, "9.10") OR StringInStr($shortname, "karm") OR StringInStr($shortname, "koala") Then
 					$ubuntu_version = "9.10"
-				Elseif StringInStr($shortname, "9.04") OR StringInStr($shortname, "jaunty") OR StringInStr($shortname, "jackalope") Then
+				Elseif StringInStr($shortname, "9.04") OR StringInStr($shortname, "jaunt") OR StringInStr($shortname, "jacka") Then
 					$ubuntu_version = "9.04"
 				Else
 					$ubuntu_version = ""
@@ -195,12 +202,15 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "knoppix") Then
 				; Knoppix
 				$release_number = FindReleaseFromCodeName( "knoppix-last")
-			ElseIf StringInStr($shortname, "kuki") Then
-				; Kuki based (Ubuntu)
-				$release_number = FindReleaseFromCodeName( "kuki-last")
 			ElseIf StringInStr($shortname, "jolicloud") OR StringInStr($shortname, "joli-os") Then
 				; Jolicloud (Ubuntu)
 				$release_number = FindReleaseFromCodeName( "jolicloud-last")
+			ElseIf StringInStr($shortname, "elementa") Then
+				; Elementary OS (Ubuntu)
+				$release_number = FindReleaseFromCodeName( "elementary-last")
+			ElseIf StringInStr($shortname, "voyage") Then
+				; Voyager (Ubuntu)
+				$release_number = FindReleaseFromCodeName( "voyager-last")
 			ElseIf StringInStr($shortname, "element") Then
 				; Element (Ubuntu)
 				$release_number = FindReleaseFromCodeName( "element-last")
@@ -295,37 +305,34 @@ Func Check_source_integrity($linux_live_file)
 				$release_number = FindReleaseFromCodeName( "hiren-last")
 			ElseIf StringInStr($shortname, "debian") Then
 				; Debian Variants
-				if StringInStr($shortname,"6.") OR StringInStr($shortname,"sq") AND StringInStr($shortname, "live") Then
-					; Debian Live 6.X => Persistence
-					if StringInStr($shortname, "KDE") Then
-						$release_number = FindReleaseFromCodeName( "debianlivekde6-last")
-					elseif StringInStr($shortname, "LXDE") Then
-						$release_number = FindReleaseFromCodeName( "debianlivelxde6-last")
-					elseif StringInStr($shortname, "Xfce") Then
-						$release_number = FindReleaseFromCodeName( "debianlivexfce6-last")
-					elseif StringInStr($shortname, "gnome") Then
-						$release_number = FindReleaseFromCodeName( "debianlivegnome6-last")
-					elseif StringInStr($shortname, "standard") Then
-						$release_number = FindReleaseFromCodeName( "debianlivestandard6-last")
-					else
-						$release_number = FindReleaseFromCodeName( "debianlivegnome6-last")
+				if StringInStr($shortname, "live") Then
+					if StringInStr($shortname,"6.") OR StringInStr($shortname,"sq") Then
+						$debian_version=6
+					Else
+						; last version
+						$debian_version=""
 					EndIf
-				Elseif Not StringInStr($shortname, "live") Then
-					; Debian Non Live 6.X => No Persistence
-					$release_number = FindReleaseFromCodeName( "debiangeneric-last")
-				Elseif (Not StringInStr($shortname, "sq") AND Not StringInStr($shortname, "6.") ) OR StringInStr($shortname, "CD") OR StringInStr($shortname, "DVD") then
-					; Debian Live or Non-Live 5.X and others => No Persistence
-					$release_number = FindReleaseFromCodeName( "debiangeneric5-last")
-				Else
-					; Default mode
-					$release_number = FindReleaseFromCodeName( "default")
+
+					if StringInStr($shortname, "KDE") Then
+						$release_number = FindReleaseFromCodeName( "debianlivekde"&$debian_version&"-last")
+					elseif StringInStr($shortname, "LXDE") Then
+						$release_number = FindReleaseFromCodeName( "debianlivelxde"&$debian_version&"-last")
+					elseif StringInStr($shortname, "Xfce") Then
+						$release_number = FindReleaseFromCodeName( "debianlivexfce"&$debian_version&"-last")
+					elseif StringInStr($shortname, "gnome") Then
+						$release_number = FindReleaseFromCodeName( "debianlivegnome"&$debian_version&"-last")
+					elseif StringInStr($shortname, "standard") Then
+						$release_number = FindReleaseFromCodeName( "debianlivestandard"&$debian_version&"-last")
+					else
+						$release_number = FindReleaseFromCodeName( "debianlivegnome"&$debian_version&"-last")
+					EndIf
 				EndIf
 			ElseIf StringInStr($shortname, "toutou") Then
 				; Toutou Linux
 				$release_number = FindReleaseFromCodeName( "toutou-last")
-			ElseIf StringInStr($shortname, "Mandriva") Then
-				; Mandriva
-				$release_number = FindReleaseFromCodeName( "mandriva-last")
+			ElseIf StringInStr($shortname, "mandri") OR StringInStr($shortname, "driva") Then
+				; OpenMandriva
+				$release_number = FindReleaseFromCodeName( "openmandriva-last")
 			ElseIf StringInStr($shortname, "doudou") Then
 				; Doudou Linux
 				$release_number = FindReleaseFromCodeName( "doudoulinux-last")
@@ -378,8 +385,8 @@ Func Check_source_integrity($linux_live_file)
 				$release_number = FindReleaseFromCodeName( "chakra-last")
 			ElseIf StringInStr($shortname, "manjaro") Then
 				; Manjaro
-				if StringInStr($shortname, "mate") Then
-					$release_number = FindReleaseFromCodeName( "manjaro-mate-last")
+				if StringInStr($shortname, "xfce") Then
+					$release_number = FindReleaseFromCodeName( "manjaro-xfce-last")
 				Else
 					$release_number = FindReleaseFromCodeName( "manjaro-openbox-last")
 				EndIf
@@ -396,10 +403,12 @@ Func Check_source_integrity($linux_live_file)
 					$release_number = FindReleaseFromCodeName( "sabayonK-last")
 				elseif StringInStr($shortname, "_G") OR StringInStr($shortname, "Gnome") Then
 					$release_number = FindReleaseFromCodeName( "sabayonG-last")
-				elseif StringInStr($shortname, "LXDE") Then
-					$release_number = FindReleaseFromCodeName( "sabayonL-last")
+				;elseif StringInStr($shortname, "LXDE") Then
+				;	$release_number = FindReleaseFromCodeName( "sabayonL-last")
 				elseif StringInStr($shortname, "Xfce") Then
 					$release_number = FindReleaseFromCodeName( "sabayonX-last")
+				elseif StringInStr($shortname, "MATE") Then
+					$release_number = FindReleaseFromCodeName( "sabayonM-last")
 				else
 					$release_number = FindReleaseFromCodeName( "sabayonK-last")
 				EndIf
@@ -418,9 +427,6 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "antix") OR StringInStr($shortname, "MEPIS") Then
 				; Antix MEPIS variants
 				$release_number = FindReleaseFromCodeName( "antix-last")
-			ElseIf StringInStr($shortname, "peasy") Then
-				; Easy Peasy
-				$release_number = FindReleaseFromCodeName( "easypeasy-last")
 			ElseIf StringInStr($shortname, "solus") Then
 				; SolusOS
 				$release_number = FindReleaseFromCodeName( "solusos-last")
@@ -464,9 +470,6 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "Pinguy") Then
 				; PinguyOS
 				$release_number = FindReleaseFromCodeName( "pinguyos-last")
-			ElseIf StringInStr($shortname, "macbuntu") Then
-				; MacBuntu
-				$release_number = FindReleaseFromCodeName( "macbuntu-last")
 			ElseIf StringInStr($shortname, "avira") Then
 				; Avira Antivir
 				$release_number = FindReleaseFromCodeName( "antivir-last")
@@ -488,9 +491,6 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "zorin") Then
 				; Zorin OS
 				$release_number = FindReleaseFromCodeName( "zorin-last")
-			ElseIf StringInStr($shortname, "xpud") Then
-				; xPUD
-				$release_number = FindReleaseFromCodeName( "xpud-last")
 			ElseIf StringInStr($shortname, "meego") Then
 				; Meego
 				$release_number = FindReleaseFromCodeName( "meego-last")
@@ -518,10 +518,12 @@ Func Check_source_integrity($linux_live_file)
 				$clean_name=StringReplace($shortname,".iso","")
 				$clean_name=StringReplace($clean_name,".x86_64","")
 				; VMware vSphere Hypervisor (ESXi)
-				if  StringInStr($clean_name, "5.0") > 0 Then
-					$release_number = FindReleaseFromCodeName( "esxi-5.0")
+				if  StringInStr($clean_name, "5.5") > 0 Then
+					$release_number = FindReleaseFromCodeName( "esxi5.5-last")
 				Elseif StringInStr($clean_name, "5.1") > 0 Then
-					$release_number = FindReleaseFromCodeName( "esxi-last")
+					$release_number = FindReleaseFromCodeName( "esxi5.1-last")
+				Elseif  StringInStr($clean_name, "5.0") > 0 Then
+					$release_number = FindReleaseFromCodeName( "esxi5.0-last")
 				Else
 					$release_number = FindReleaseFromCodeName( "esxi4-last")
 				EndIf
@@ -537,9 +539,6 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "macpup") Then
 				; MacPup
 				$release_number = FindReleaseFromCodeName( "macpup-last")
-			ElseIf StringInStr($shortname, "puppy") Or StringInStr($shortname, "pup-") Or StringInStr($shortname, "wary") OR  StringInStr($shortname, "lupu-")  Then
-				; Puppy Linux
-				$release_number = FindReleaseFromCodeName( "puppy-last")
 			ElseIf StringInStr($shortname, "vector") OR StringInStr($shortname, "VL6") OR StringInStr($shortname, "VL7") Then
 				; VectorLinux
 				$release_number = FindReleaseFromCodeName( "vector-last")
@@ -595,9 +594,30 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "pure") Then
 				; Pure OS
 				$release_number = FindReleaseFromCodeName( "pureos-last")
+			ElseIf StringInStr($shortname, "kali") Then
+				; Kali
+				$release_number = FindReleaseFromCodeName( "kali-last")
+			ElseIf StringInStr($shortname, "lxle") Then
+				; LXLE
+				$release_number = FindReleaseFromCodeName( "lxle-last")
+			ElseIf StringInStr($shortname, "watt") Then
+				; Watt OS
+				$release_number = FindReleaseFromCodeName( "wattos-last")
+			ElseIf StringInStr($shortname, "puppy") Or StringInStr($shortname, "pup-") Or StringInStr($shortname, "wary") OR  StringInStr($shortname, "lupu-") OR  StringInStr($shortname, "precise-") Then
+				; Puppy Linux
+				if StringInStr($shortname, "precise-") Then
+					; Puppy Ubuntu variants
+					$release_number = FindReleaseFromCodeName( "puppyU-last")
+				Else
+					$release_number = FindReleaseFromCodeName( "puppy-last")
+				EndIf
 			ElseIf StringInStr($shortname, "win") OR StringInStr($shortname, "microsoft") OR StringInStr($shortname, "seven") OR StringInStr($shortname, "vista") OR StringInStr($shortname, "eight") Then
-				; Windows 7
-				if StringInStr($shortname, "2008") and StringInStr($shortname, "R2") Then
+
+				if StringInStr($shortname, "2012") and StringInStr($shortname, "R2") Then
+					$release_number = FindReleaseFromCodeName( "windows2012r2")
+				Elseif StringInStr($shortname, "2012") Then
+					$release_number = FindReleaseFromCodeName( "windows2012")
+				Elseif StringInStr($shortname, "2008") and StringInStr($shortname, "R2") Then
 					$release_number = FindReleaseFromCodeName( "windows2008r2")
 				Elseif StringInStr($shortname, "2008") Then
 					$release_number = FindReleaseFromCodeName( "windows2008")
@@ -605,8 +625,10 @@ Func Check_source_integrity($linux_live_file)
 					$release_number = FindReleaseFromCodeName( "windowsvista")
 				Elseif  StringInStr($shortname, "windows7") OR StringInStr($shortname, "seven") OR StringInStr($shortname, "win7") Then
 					$release_number = FindReleaseFromCodeName( "windows7")
-				Else
+				Elseif  StringInStr($shortname, "windows8") OR StringInStr($shortname, "eight") OR StringInStr($shortname, "win8") Then
 					$release_number = FindReleaseFromCodeName( "windows8")
+				Else
+					$release_number = FindReleaseFromCodeName( "windows8.1")
 				EndIf
 			Else
 				; Any Linux, except those known not to work in Live mode
