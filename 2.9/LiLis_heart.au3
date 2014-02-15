@@ -183,8 +183,8 @@ Func Download_virtualBox()
 
 	UpdateStatus("Setting up virtualization software")
 	$no_internet = 0
-	$virtualbox_size = IniRead($updates_ini,"VirtualBox","filesize","ERROR")
-	If $virtualbox_size="ERROR" Then
+	$virtualbox_size = IniRead($updates_ini,"VirtualBox","filesize",0)
+	If $virtualbox_size=0 Then
 		SendReport("END-Download_virtualBox : could not check update size")
 		Return 2
 	EndIf
@@ -276,8 +276,11 @@ Func Uncompress_ISO_on_key($iso_file)
 
 	; Just in case ...
 	If $install_size < 5 Then $install_size = 730
-
-	Run7zip('"' & @ScriptDir & '\tools\7z.exe" x "' & $iso_file & '" -x![BOOT] -r -aoa -o' & $usb_letter, $install_size)
+	$uncompress_timer = TimerInit()
+	Run7zip('"' & @ScriptDir & '\tools\7z.exe" x "' & $iso_file & '" -x![BOOT]* -r -y -aoa -o' & $usb_letter, $install_size)
+	$uncompress_duration_sec = Round(TimerDiff($uncompress_timer)/1000,2)
+	$uncompress_speed = Round($install_size/$uncompress_duration_sec,1)
+	SendReport("ISO of "&$install_size&" MB uncompressed in approximately "&HumanTime($uncompress_duration_sec)&" @ "&$uncompress_speed&" MB/sec")
 	SendReport("End-Uncompress_ISO_on_key")
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -367,8 +370,7 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Func isolinux2syslinux($syslinux_path)
-
-
+	SendReport("Start-isolinux2syslinux on path :"&$syslinux_path)
 	; Replacing references to isolinux/ by syslinux/ in *.cfg files
 	$search = FileFindFirstFile($syslinux_path&"*.cfg")
 	If $search <> -1 Then
@@ -399,6 +401,7 @@ Func isolinux2syslinux($syslinux_path)
 		FileClose($search)
 	EndIf
 	FileCopy($syslinux_path&"isolinux.cfg",$syslinux_path&"syslinux.cfg")
+	SendReport("End-isolinux2syslinux")
 EndFunc
 
 
@@ -507,51 +510,54 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func Create_boot_menu()
-	If IniRead($usb_letter, "Advanced", "skip_boot_text", "no") = "yes" Then Return 0
+	If ReadSetting("Advanced","skip_boot_text") = "yes" Then Return 0
 	SendReport("Start-Create_boot_menu")
 	if StringInStr($release_supported_features,"default") = 0 Then
 		If $release_variant ="CentOS" Then
 			SendReport("IN-Create_boot_menu for CentOS")
-			CentOS_WriteTextCFG($usb_letter)
+			CentOS_WriteTextCFG()
 		Elseif $release_distribution = "Fedora" Then
 			if $release_variant = "Mandriva" Then
 				SendReport("IN-Create_boot_menu for Mandriva")
-				Mandriva_WriteTextCFG($usb_letter)
+				Mandriva_WriteTextCFG()
 			Else
 				SendReport("IN-Create_boot_menu for Fedora")
-				Fedora_WriteTextCFG($usb_letter,$release_number)
+				Fedora_WriteTextCFG()
 			EndIf
 		Elseif $release_variant = "TinyCore" Then
 			SendReport("IN-Create_boot_menu for TinyCore")
-			TinyCore_WriteTextCFG($usb_letter)
+			TinyCore_WriteTextCFG()
 		Elseif $release_variant = "ReactOS" Then
 			SendReport("IN-Create_boot_menu for ReactOS")
-			ReactOS_WriteTextCFG($usb_letter)
+			ReactOS_WriteTextCFG()
 		Elseif $release_variant = "Aptosid" Then
 			SendReport("IN-Create_boot_menu for Aptosid")
-			Aptosid_WriteTextCFG($usb_letter)
+			Aptosid_WriteTextCFG()
 		Elseif $release_variant = "Sidux" Then
 			SendReport("IN-Create_boot_menu for Sidux")
-			Sidux_WriteTextCFG($usb_letter)
+			Sidux_WriteTextCFG()
 		Elseif $release_variant="XBMC" Then
 			SendReport("IN-Create_boot_menu for XBMC")
-			XBMC_WriteTextCFG($usb_letter,$release_number)
+			XBMC_WriteTextCFG()
 		Elseif $release_variant = "backtrack" Then
 			SendReport("IN-Create_boot_menu for BackTrack")
-			BackTrack_WriteTextCFG($usb_letter,$release_number)
+			BackTrack_WriteTextCFG()
 		Elseif $release_distribution = "ubuntu" Then
 			SendReport("IN-Create_boot_menu for Ubuntu")
-			Ubuntu_WriteTextCFG($usb_letter,$release_number)
+			Ubuntu_WriteTextCFG()
 		Elseif $release_distribution = "debian" Then
 			SendReport("IN-Create_boot_menu for Debian")
-			Debian_WriteTextCFG($usb_letter,$release_number)
+			Debian_WriteTextCFG()
 		Elseif $release_variant="Crunchbang" Then
 			SendReport("IN-Create_boot_menu for CrunchBang")
-			Crunchbang_WriteTextCFG($usb_letter,$release_number)
+			Crunchbang_WriteTextCFG()
 		EndIf
 	Elseif $release_variant="CDLinux" Then
 		SendReport("IN-Create_boot_menu for CDLinux")
-		CDLinux_WriteTextCFG($usb_letter,$release_number)
+		CDLinux_WriteTextCFG()
+	Elseif $release_variant="kali" Then
+		SendReport("IN-Create_boot_menu for Kali")
+		Kali_WriteTextCFG()
 	Elseif $release_variant = "opensuse" Then
 		If $release_variant_version = "11.3" Then
 			SendReport("IN-Create_boot_menu for OpenSuse : Setting MBR ID (without trailing zeroes)")
@@ -569,7 +575,7 @@ Func Create_boot_menu()
 
 	Else
 		SendReport("IN-Create_boot_menu for Regular Linux")
-		Default_WriteTextCFG($usb_letter)
+		Default_WriteTextCFG()
 	EndIf
 	SendReport("End-Create_boot_menu")
 EndFunc
@@ -583,8 +589,6 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 #cs
 	Description : Hide files if user choose to
-	Input :
-		$usb_letter = Letter of the drive (pre-formated like "E:" )
 	Output :
 		0 = sucess
 		1 = error see @error
@@ -593,7 +597,7 @@ EndFunc
 Func Hide_live_files()
 	If ReadSetting("Advanced", "skip_hiding") = "yes" Then return 0
 	SendReport("Start-Hide_live_files")
-
+	Global $files_in_source
 	UpdateStatus("Hiding files")
 	HideFilesInDir($files_in_source)
 	HideFile($usb_letter & "\syslinux\")
@@ -981,7 +985,7 @@ Func Check_virtualbox_download()
 		RunWait3('"' & @ScriptDir & '\tools\7z.exe" x -y "' & @ScriptDir & "\tools\" & $downloaded_virtualbox_filename,@ScriptDir & "\tools\")
 		if IniRead(@ScriptDir&"\tools\VirtualBox\Portable-VirtualBox\linuxlive\settings.ini","General","pack_version","ERROR")<> "ERROR" Then
 			FileDelete(@ScriptDir & "\tools\" & $downloaded_virtualbox_filename)
-			$virtualbox_realsize=IniRead($updates_ini,"VirtualBox","realsize",$virtualbox_default_realsize)
+			$virtualbox_size=IniRead($updates_ini,"VirtualBox","realsize",$virtualbox_size)
 		EndIf
 	Else
 		UpdateStatus(Translate("VirtualBox archive is corrupted"))
@@ -1123,11 +1127,12 @@ EndFunc
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Func CreateUninstaller()
+	If ReadSetting( "Advanced", "skip_uninstaller") = "yes" Then Return 0
 	SendReport("Start-CreateUninstaller")
 	Global $files_in_source
 	$description = ReleaseGetDescription($release_number)
 
-	if (Ubound($files_in_source)=0) Then
+	if Not IsArray($files_in_source) Then
 		SendReport("End-CreateUninstaller : list of files is not an array !")
 		return "ERROR"
 	EndIf
@@ -1243,38 +1248,26 @@ EndFunc   ;==>DeleteFilesInDir
 #ce
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Func Setup_RAM_for_VM()
-	SendReport("Start-Setup_RAM_for_VM")
+Func Setup_VBOX_for_VM()
+	If ReadSetting( "Advanced", "skip_vbox_setup") = "yes" Then Return 0
+	SendReport("Start-Setup_VBOX_for_VM")
 	$linuxlive_settings_file = $usb_letter&"\VirtualBox\Portable-VirtualBox\data\.VirtualBox\Machines\LinuxLive\LinuxLive.vbox"
 
 	if Not FileExists($linuxlive_settings_file) Then
-		UpdateLog("End-Setup_RAM_for_VM : Warning, Could not automatically set RAM (File "&$linuxlive_settings_file&" does not exist)")
+		UpdateLog("End-Setup_VBOX_for_VM : Warning, Could not automatically set RAM (File "&$linuxlive_settings_file&" does not exist)")
 	EndIf
 
-    $file = FileOpen ($linuxlive_settings_file, 128)
-	if $file = -1 Then
-		UpdateLog("End-Setup_RAM_for_VM : Warning, Could not automatically set RAM (Unable to open file "&$linuxlive_settings_file&" in read mode )")
-		Return 0
-	EndIf
-	$line    = FileRead ($file)
-	FileClose ($file)
+	; Replacing RAM value with recommended setting =======================================
+	$recommended_ram = ReleaseGetVBoxRAM($release_number)
+	FileReplaceBetween($linuxlive_settings_file,'Memory RAMSize="','"',$recommended_ram)
 
-	$old_value = _StringBetween ($line, 'Memory RAMSize="', '"')
 
-	If NOt @error AND isArray($old_value) AND $old_value[0] > 0 Then
-		$recommended_ram = ReleaseGetVBoxRAM($release_number)
-		UpdateStatus(Translate("Setting the memory to the recommended value")&" ( "& $recommended_ram&Translate("MB") & " )")
-		SendReport("IN-Setup_RAM_for_VM (Recommended settings found :"&$recommended_ram&" )")
-		$new_line=StringReplace ($line, 'Memory RAMSize="' & $old_value[0] & '"', 'Memory RAMSize="' & $recommended_ram & '"')
-		$file = FileOpen ($linuxlive_settings_file, 2)
-		if $file = -1 Then
-			UpdateLog("End-Setup_RAM_for_VM : Warning, Could not automatically set RAM (Unable to open file "&$linuxlive_settings_file&" in write mode )")
-			Return 0
-		EndIf
-		FileWrite ($file, $new_line)
-		FileClose ($file)
-	EndIf
-	SendReport("End-Setup_RAM_for_VM : RAM has been successfully set")
+	; Replacing Storage controller with recommended setting =======================================
+	$type_of_disk = ReleaseGetVBoxStorageController($release_number)
+	FileReplaceBetween($linuxlive_settings_file,'name="LILI-DISK" type="','"',$type_of_disk)
+
+	$number_of_ports= GetDefaultVBOXStorageCtrlPortCount($type_of_disk)
+	FileReplaceBetween($linuxlive_settings_file,'name="LILI-DISK" type="'&$type_of_disk&'" PortCount="','"',$number_of_ports)
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

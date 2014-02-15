@@ -1,15 +1,3 @@
-#cs ----------------------------------------------------------------------------
-
- AutoIt Version: 3.3.0.0
- Author:         myName
-
- Script Function:
-	Template AutoIt script.
-
-#ce ----------------------------------------------------------------------------
-
-; Script Start - Add your code below here
-
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////// Updates management                            ///////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -20,14 +8,31 @@ Func GetLastUpdateIni()
 
 	FileDelete($updates_ini)
 	; Downloading the info for updates
-	$server_response = INetGet($check_updates_url & "?current="&$current_compatibility_list_version,$updates_ini,3)
+	if (ReadSetting( "Updates", "check_for_beta_versions") = "yes") Then
+		$append_query="&include_beta=1"
+	Else
+		$append_query=""
+	EndIf
+	;$server_response = INetGet($check_updates_url & "?&current_version="&$software_version&$append_query,$updates_ini,3)
+	$server_response = INetGet($check_updates_url & "?from_version="&$software_version&$append_query,$updates_ini,3)
 
 	If Not @error Then
 		$last_stable=IniRead($updates_ini,"Software","last_stable","")
-		$last_stable_update=IniRead($updates_ini,"Software","last_stable_update","")
+		;$last_stable_update=IniRead($updates_ini,"Software","last_stable_update","")
 		$last_beta=IniRead($updates_ini,"Software","last_beta","")
-		$last_beta_update=IniRead($updates_ini,"Software","last_beta_update","")
-		$what_is_new=StringReplace(IniRead($updates_ini,"Software","what_is_new",""),"/#/",@CRLF&"-> ")
+		;$last_beta_update=IniRead($updates_ini,"Software","last_beta_update","")
+		$what_is_new=StringReplace(IniRead($updates_ini,"Software","what_is_new",""),"/#/",@CRLF&"  ")
+
+		$features_count=IniRead($updates_ini,"Software","features_count","")
+		$improvements_count=IniRead($updates_ini,"Software","improvements_count","")
+		$fixed_bugs_count=IniRead($updates_ini,"Software","fixed_bugs_count","")
+		$known_bugs_count=IniRead($updates_ini,"Software","known_bugs_count","")
+		$new_distributions_count=IniRead($updates_ini,"Software","new_distributions_count","")
+		$new_isos_count=IniRead($updates_ini,"Software","new_isos_count","")
+		$features=StringReplace(IniRead($updates_ini,"Software","features",""),"/#/",@CRLF&"  ")
+		$improvements=StringReplace(IniRead($updates_ini,"Software","improvements",""),"/#/",@CRLF&"  ")
+		$bugfixes=StringReplace(IniRead($updates_ini,"Software","bugfixes",""),"/#/",@CRLF&"  ")
+		$new_distributions=StringReplace(IniRead($updates_ini,"Software","new_distributions",""),"/#/",@CRLF&"  ")
 
 		$virtualbox_pack=IniRead($updates_ini,"VirtualBox","version","")
 		$virtualbox_in_pack=IniRead($updates_ini,"VirtualBox","vbox_version","")
@@ -36,7 +41,7 @@ Func GetLastUpdateIni()
 			UpdateLog("Checking for update, update.ini downloaded but format is incorrect !")
 			Return 0
 		Else
-			UpdateLog("Checking for update, LiLi's server answer = Last stable : "&$last_stable&" ("&$last_stable_update&") / Last Beta : "&$last_beta&" ("&$last_beta_update&") / Last Virtualbox : "&$virtualbox_pack&" ("&$virtualbox_in_pack&")")
+			UpdateLog("Checking for update, LiLi's server answer = Last stable : "&$last_stable&" / Last Beta : "&$last_beta&" / Last Virtualbox : "&$virtualbox_pack&" ("&$virtualbox_in_pack&")")
 			Return 1
 		EndIf
 	Else
@@ -48,69 +53,34 @@ EndFunc
 
 
 ; Check for LiLi's updates
-Func CheckForMajorUpdate()
-		if $last_stable="" OR $last_beta="" Then Return 0
+Func CheckForSoftwareUpdate()
+	if $last_stable="" OR $last_beta="" Then Return 0
 
-	; Checking for major software update
-	if (ReadSetting( "Updates", "check_for_beta_versions") = "yes") AND VersionCompare($last_beta, $software_version) = 1  And Not $last_beta ="" Then
+	$DISPLAY_VERSION=GetDisplayVersion()
+
+	; Checking for software update
+	if (ReadSetting( "Updates", "check_for_beta_versions") = "yes") AND VersionCompare($last_beta, $DISPLAY_VERSION) = 1  And Not $last_beta ="" Then
 		UpdateLog("New beta version available")
-		$return = MsgBox(68, Translate("There is a new Beta version available"), Translate("Your LiLi's version is not up to date")&"." & @CRLF & @CRLF & Translate("Last beta version is") & " : " & $last_beta & @CRLF & Translate("Your version is") & " : " & $software_version & @CRLF & @CRLF & Translate("Do want to download it")&" ?")
+		$return = MsgBox(68, Translate("There is a new Beta version available"), Translate("Your LiLi's version is not up to date")&"." & @CRLF & @CRLF & Translate("Last beta version is") & " : " & $last_beta & @CRLF & Translate("Your version is") & " : " & $software_version & @CRLF & @CRLF & Translate("Do you want to download it")&" ?")
 		If $return = 6 Then
 			ShellExecute("http://www.linuxliveusb.com/more-downloads")
 			GUI_Exit()
 		EndIf
 		Return 1
-	ElseIf Not $last_stable = 0 And Not $last_stable ="" And VersionCompare($last_stable, $software_version) = 1 Then
-		UpdateLog("New major stable version available")
-		$return = MsgBox(68, Translate("There is a new version available"), Translate("Your LiLi's version is not up to date") &"."& @CRLF & @CRLF & Translate("Last version is") & " : " & $last_stable & @CRLF & Translate("Your version is") & " : " & $software_version & @CRLF & @CRLF & Translate("Do want to download it")&" ?")
+	ElseIf Not $last_stable = 0 And Not $last_stable ="" And VersionCompare($last_stable, $DISPLAY_VERSION) = 1 Then
+		UpdateLog("New stable version available")
+		$return = MsgBox(68, Translate("There is a new version available"), Translate("Your LiLi's version is not up to date") &"."& @CRLF & @CRLF & Translate("Last version is") & " : " & $last_stable & @CRLF & Translate("Your version is") & " : " & $software_version & @CRLF & @CRLF & Translate("Do you want to download it")&" ?")
 		If $return = 6 Then
 			ShellExecute("http://www.linuxliveusb.com/update")
 			GUI_Exit()
 		EndIf
 		Return 1
 	Else
-		UpdateLog("Current major software version is up to date")
+		UpdateLog("Current software version is up to date")
 		Return 0
 	EndIf
 EndFunc   ;==>Check_for_updates
 
-; Check for compatibility list updates (called in Automatic_Bug_Report.au3 in second process)
-Func CheckForMinorUpdate()
-
-		if isBeta() Then Return 0
-
-		; Compare with the current version
-		if VersionCodeForCompatList($current_compatibility_list_version) < VersionCodeForCompatList($last_stable_update) AND MajorVersionCode($current_compatibility_list_version)=MajorVersionCode($last_stable_update) Then
-			UpdateLog("Minor update is available")
-			$return = MsgBox(68, Translate("There is a new version available"), Translate("Your LiLi's version is not up to date") &"."& @CRLF & @CRLF & Translate("Your version is") & " : " & $software_version & @CRLF & Translate("Last version is") & " : " & $last_stable  & @CRLF & @CRLF & Translate("Do want to download it")&" ?")
-			If $return = 6 Then
-				ShellExecute("http://www.linuxliveusb.com/update")
-				GUI_Exit()
-			EndIf
-			Return 1
-			#cs LiLi 2.9 => no more AutoUpdate
-
-			; There is a new version => Downloading it to new_compatibility_list.ini
-			InetGet($check_updates_url&"compatibility_lists/"&$last_stable_update, @ScriptDir &"\tools\settings\new_compatibility_list.ini",3)
-
-			; if the file downloaded is the same size it means the download should be good => replace the old version by the new one
-			if InetGetSize($check_updates_url&"compatibility_lists/"&$last_stable_update,3) = FileGetSize(@ScriptDir &"\tools\settings\new_compatibility_list.ini") AND FileGetSize(@ScriptDir &"\tools\settings\new_compatibility_list.ini") > 0 Then
-				FileMove($compatibility_ini,@ScriptDir &"\tools\settings\old_compatibility_list.ini",1)
-				FileMove(@ScriptDir &"\tools\settings\new_compatibility_list.ini",$compatibility_ini,1)
-				; Send a message to the main process to force reloading the file
-				;SendReportToMain("compatibility_updated")
-				MsgBox(64, "LinuxLive USB Creator", Translate("The compatibility list has been updated")&"."&@CRLF&@CRLF&Translate("These linuxes are now supported")&" :"&@CRLF&@CRLF&$what_is_new)
-				return 1
-			Else
-				UpdateLog("WARNING : Could not download new compatibility list version")
-				return 0
-			EndIf
-			#ce
-		Else
-			UpdateLog("Current minor software version is up to date")
-			Return 0
-		EndIf
-	EndFunc
 
 Func CheckForVirtualBoxUpdate()
 	; Setting VirtualBox size
@@ -118,19 +88,42 @@ Func CheckForVirtualBoxUpdate()
 	$lastupdate_vbox_version=IniRead($updates_ini,"VirtualBox","version","0.0.0.0")
 	if $current_vbox_version==$lastupdate_vbox_version Then
 		; Downloaded version is equal to the one described in VirtualBox.ini => using real size set in VirtualBox.ini
-		$virtualbox_realsize=IniRead($updates_ini,"VirtualBox","realsize",$virtualbox_default_realsize)
-		SendReport("VirtualBox folder exists, version is "&$current_vbox_version&" and is the latest. Its size is "&$virtualbox_realsize&"MB")
+		$virtualbox_size=IniRead($updates_ini,"VirtualBox","realsize",$virtualbox_size)
+		SendReport("VirtualBox folder exists, version is "&$current_vbox_version&" and is the latest. Its size is "&$virtualbox_size&"MB")
 	Elseif FileExists(@ScriptDir&"\tools\VirtualBox\") Then
 		; No match, computing size directly
-		$virtualbox_realsize =Round(DirGetSize(@ScriptDir&"\tools\VirtualBox\")/(1024*1024))
-		SendReport("VirtualBox folder exists but does not match version of last update ( "&$current_vbox_version&"!="&$lastupdate_vbox_version&" ). Its size is "&$virtualbox_realsize&"MB")
+		$virtualbox_size =Round(DirGetSize(@ScriptDir&"\tools\VirtualBox\")/(1024*1024))
+		SendReport("VirtualBox folder exists but does not match version of last update ( "&$current_vbox_version&"!="&$lastupdate_vbox_version&" ). Its size is "&$virtualbox_size&"MB")
 	Else
 		; No match and no downloaded version, default size is set to default size
-		$virtualbox_realsize=$virtualbox_default_realsize
-		SendReport("No VirtualBox folder. Default size is "&$virtualbox_realsize&"MB")
+		SendReport("No VirtualBox folder. Default size is "&$virtualbox_size&"MB")
 	EndIf
 EndFunc
 
+Func GetLastAvailableVersion()
+
+	$DISPLAY_VERSION=GetDisplayVersion()
+
+	; Get the latest version available (taking into account whether the user want to see betas too)
+	if (ReadSetting( "Updates", "check_for_beta_versions") = "yes") AND $last_stable <> "" AND $last_beta <> "" Then
+		If VersionCompare($last_stable, $last_beta) = 1 Then
+			$last_version = $last_stable
+		Else
+			$last_version = $last_beta
+		EndIf
+	Elseif $last_stable <> "" Then
+		$last_version = $last_stable
+	Else
+		$last_version = $DISPLAY_VERSION
+	EndIf
+
+	; Last version has to be more recent than the one you have ...
+	if VersionCompare($last_version,$DISPLAY_VERSION) = 1 Then
+		Return $last_version
+	Else
+		Return $DISPLAY_VERSION
+	EndIf
+EndFunc
 
 ; Compare 2 versions
 ;	0 =  Versions are equals
@@ -148,7 +141,8 @@ EndFunc   ;==>VersionCompare
 
 ; Transform a label to a number
 Func SortVersionLabel($version_label)
-	Switch StringLower($version_label)
+	; Without spaces and lower case
+	Switch StringStripWS(StringLower($version_label),8)
 		Case "alpha"
 			Return 0
 		Case "beta"
@@ -161,48 +155,70 @@ Func SortVersionLabel($version_label)
 			Return 4
 		Case "rc1"
 			Return 5
+		Case "releasecandidate1"
+			Return 5
 		Case "rc2"
 			Return 6
+		Case "releasecandidate2"
+			Return 6
 		Case "rc3"
+			Return 7
+		Case "releasecandidate3"
 			Return 7
 		Case Else
 			Return 8
 	EndSwitch
 EndFunc   ;==>SortVersionLabel
 
-; Transform a version name to a version code to be compared up to 3 digits like "2.3.1 Beta"
+; Transform a version name to a version code to be compared up to 3 digits like "2.3.1 Beta" or "3" or "2.3"
 Func VersionCode($version)
-	$parse_version = StringSplit($version, " ")
-	$version_number = StringReplace($parse_version[1], ".", "")
-	If StringLen($version_number) = 2 Then $version_number &= "0"
-	If $parse_version[0] >= 2 Then
-		$version_number &= SortVersionLabel($parse_version[2])
+	$parse_version = StringSplit($version, " ",3)
+
+	$numbers = StringSplit($parse_version[0], ".",3)
+	$version_number=""
+
+	; Each digit can go up to 99
+	For $number IN $numbers
+		if $number < 10 Then
+			$version_number &= "0"&$number
+		Else
+			$version_number &= $number
+		EndIf
+	Next
+
+	if Ubound($numbers) = 1 Then
+		; 3 => 30000
+		$version_number &= "0000"
+	Elseif Ubound($numbers) = 2 Then
+		; 2.9 => 20900
+		$version_number &= "00"
+	EndIf
+
+	If Ubound($parse_version) >= 2 Then
+		; It must be a beta => will need a code to compare
+		$version_number &= SortVersionLabel($parse_version[1])
 	Else
+		; It must be a stable => code is 8
 		$version_number &= "8"
 	EndIf
 	Return Int($version_number)
 EndFunc   ;==>VersionCode
 
 Func isBeta()
-	If StringInStr($software_version, "RC") Or StringInStr($software_version, "Beta") Or StringInStr($software_version, "Alpha") Then
+	If StringInStr($software_version, "RC") Or StringInStr($software_version, "Beta") Or StringInStr($software_version, "Alpha") Or StringInStr($software_version, "Rele") Then
 		Return 1
 	Else
 		Return 0
 	EndIf
 EndFunc   ;==>isBeta
 
-Func GetFullVersion()
+Func GetDisplayVersion()
 	Global $current_compatibility_list_version
 	if isBeta() Then
 		return $software_version
 	Else
 		$current_compatibility_list_version = IniRead($compatibility_ini, "Compatibility_List", "Version", $software_version & ".0")
-		$compat_version = VersionCodeForCompatList($current_compatibility_list_version)
-		if $compat_version > 0 Then
-			return $software_version&" Update "&$compat_version
-		Else
-			return $software_version
-		EndIf
+		return $current_compatibility_list_version
 	EndIf
 EndFunc
 

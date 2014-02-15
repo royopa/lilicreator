@@ -296,7 +296,7 @@ If IniRead (@ScriptDir&"\data\settings\settings.ini", "update", "key", "NotFound
 EndIf
 
 ; Thibaut : use Hybrid Mode if available
-;HybridMode()
+HybridMode()
 
 If NOT (FileExists (@ScriptDir&"\app32") OR FileExists (@ScriptDir&"\app64")) Then
   Global $Checkbox100, $Checkbox110, $Checkbox130;, $Checkbox120

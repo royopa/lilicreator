@@ -1,32 +1,85 @@
+#cs/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////// About this software                           ///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Author           : Thibaut Lauzière
+License          : GPL v3.0
+Website          : http://www.linuxliveusb.com
+Compiled with    : AutoIT v3.3.10.2
+
+///////////////////////////////// Descriptions of AU3 files                      ///////////////////////////////////////////////////////////////////////////////
+
+	LiLi USB Creator.au3 : To compile. Contains initialization of GUI, Variables and Includes. Used AdLib loops to manage hovering
+	Automatic_Bug_Report.au3 : Second process for error and crash handling based on _Error Handler.au3 of jennico, @MrCreatoR and MadExcept
+	Boot_Menus.au3 : Manage the different boot menus for each Linux distributions
+	Checking_And_Recognizing.au3 : Check hash and try to match with a supported Linux based on Hash, filename and keywords
+	Disks.au3 : Manage disks operations such as free space calculations, fetching physical disk numbers / Partition Signature / MBR Signature
+	External_Tools.au3 : Run external tools (7zip, syslinux, bootsect, fat32format, mke2fs.exe) and get results. Also contains generic run functions
+	Files.au3 : Files operations (Delete, Hide, Move) + SmartClean feature + AutoDetection of Syslinux version
+	Graphics.au3 : Contains some low-level GDI+ graphic functions  + ProgressBars based on Prog@ndy work but integrated in AdLib
+	GUI_Actions.au3 : Actions of each buttons
+	Languages.au3 : Locales and translation management
+	LiLis_heart.au3 : Functions creating the Live USB such as Format, Uncompress, Clean, converting isolinux config to syslinux, renaming and hide files ....
+	Logs_And_Status.au3 :  Manage logging/reporting and traffic lights
+	Options_Menu.au3 : contain the Options Menu (Menu.kxf is the Koda file for options menu)
+	Releases.au3 : functions to parse and cache the compatibility list (list of supported linux) and get each value. Also fills the combo-box.
+	Settings.au3 : Read and Write settings. Abstraction layer to read/write from registry or from file depending on lili's mode (portable or standard)
+	Statistics.au3 : Send anonymous usage statistics to Universal Analytics (can be disabled by users with skip_stats advanced value)
+	Updates.au3 : check for software updates + functions to compare version numbers
+	WinHTTP.au3 : Manage POST request for sending crash logs (based on trancexx and ProgAndy work)
+
+///////////////////////////////// Descriptions of structure                      ///////////////////////////////////////////////////////////////////////////////
+
+	bonus : contains MD5, SHA1 and CRC32 easy hashers
+	logs : contains maximum 1 month of comprehensive logs and crash reports
+	sources : contains all the sources
+	tools :
+		-> boot-menus : some pre-created boot menus
+		-> img : images for all the GUI
+		-> languages : ini files containing translations
+		-> settings :
+			-> black_list.ini : black listing of distributions not working for sure with lili
+			-> common_mirrors.ini : most common mirrors used in compatibility list (to avoid repeating same values 200 times)
+			-> compatibility_list.ini : contains the list of compatible ISO (with extended details such as MD5 Hash, Name, Filename, Release date, mirrors ....)
+			-> settings.ini : settings of LiLi (duplicated in registry when not in portable mode)
+			-> updates.ini : latest update description file automatically downloaded from LiLi's servers
+		-> syslinux modules : all modules for each syslinux version (because they need to be replaced with the good one) in each Live USB
+		-> VirtualBox (optional) : contains the latest Portable-VirtualBox pack uncompressed
+		-> All the other files : external tools and licences
+
+///////////////////////////////// Compilation                                    ///////////////////////////////////////////////////////////////////////////////
+
+	Copy all the sources AU3 files from "sources" folder to LiLi's root folder (one folder up)
+	Install the right AutoIT version mentionned in this header
+	(Recommended) Install the complete SciTE Editor
+	To be able to see Console logging in real time : Browse to "C:\Program Files (x86)\AutoIt3\SciTE\SciTE.exe" / Right-Click -> Properties -> Compatibility -> Run as Admin
+	Open "LiLi USB Creator.au3" and press F5 to give it a go
+
+#ce/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 #NoTrayIcon
 #RequireAdmin
+
+; Required for the Automatic Bug Reporting process
+#pragma compile(AutoItExecuteAllowed, True)
+
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
-#AutoIt3Wrapper_icon=tools\img\lili.ico
-#AutoIt3Wrapper_Compression=0
+#AutoIt3Wrapper_Icon=tools\img\lili.ico
 #AutoIt3Wrapper_UseUpx=n
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.9.88.54
+#AutoIt3Wrapper_Res_Fileversion=2.9.88.80
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_SaveSource=y
+#AutoIt3Wrapper_Res_requestedExecutionLevel=requireAdministrator
 #AutoIt3Wrapper_Res_Field=AutoIt Version|%AutoItVer%
 #AutoIt3Wrapper_Res_Field=Compile Date|%date% %time%
 #AutoIt3Wrapper_Res_Field=Site|http://www.linuxliveusb.com
+#AutoIt3Wrapper_Add_Constants=n
 #AutoIt3Wrapper_AU3Check_Parameters=-w 4
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
-
-; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-; ///////////////////////////////// About this software                           ///////////////////////////////////////////////////////////////////////////////
-; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-; Author           : Thibaut Lauzière (Slÿm)
-; Author's Website : www.slym.fr
-; e-Mail           : contact@linuxliveusb.com
-; License          : GPL v3.0
-; Download         : http://www.linuxliveusb.com
-; Support          : http://www.linuxliveusb.com/bugs/
-; Compiled with    : AutoIT v3.3.8.0
 
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////// Software constants and variables              ///////////////////////////////////////////////////////////////////////////////
@@ -34,6 +87,7 @@
 
 ; Global constants
 Global Const $software_version = "2.9 Alpha"
+Global $DISPLAY_VERSION = ""
 Global $lang_folder = @ScriptDir & "\tools\languages\"
 Global $lang_ini
 Global $verbose_logging
@@ -41,11 +95,11 @@ Global Const $settings_ini = @ScriptDir & "\tools\settings\settings.ini"
 Global Const $compatibility_ini = @ScriptDir & "\tools\settings\compatibility_list.ini"
 Global Const $updates_ini = @ScriptDir & "\tools\settings\updates.ini"
 Global Const $blacklist_ini = @ScriptDir & "\tools\settings\black_list.ini"
-Global Const $lilidownloader_ini = @ScriptDir & "\tools\settings\lili-downloader.ini"
+Global Const $common_mirrors_ini = @ScriptDir&"\tools\settings\common_mirrors.ini"
 Global Const $log_dir = @ScriptDir & "\logs\"
 Global $logfile = $log_dir & @YEAR & "-" & @MON & "-" & @MDAY & ".log"
 Global Const $check_updates_url = "https://www.linuxliveusb.com/updates/"
-Global Const $virtualbox_default_realsize = 140
+Global $virtualbox_size = 140 ; default size but will update automatically
 Global Const $max_persistent_size = 4090
 
 ; Auto-Clean feature (relative to the usb drive path)
@@ -53,10 +107,12 @@ Global Const $autoclean_file = "Remove_LiLi.bat"
 Global Const $autoclean_settings = "SmartClean.ini"
 
 ; Global that will be set up later
-Global $lang, $anonymous_id
+Global $lang, $lang_code, $anonymous_id
 
 ; Updater Variables
-Global $last_stable, $last_stable_update, $last_beta, $last_beta_update, $what_is_new
+Global $last_stable="", $last_beta="", $what_is_new=""
+
+Global $DEBUG_TIMER
 
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////// Gui Buttons and Label                         ///////////////////////////////////////////////////////////////////////////////
@@ -131,8 +187,9 @@ Global $for_winactivate
 Global $current_download, $temp_filename
 Global $ping_result = ""
 
-Global $selected_drive, $virtualbox_check, $virtualbox_size, $virtualbox_realsize, $downloaded_virtualbox_filename,$recommended_ram
+Global $selected_drive, $virtualbox_check, $downloaded_virtualbox_filename,$recommended_ram
 Global $persistence_file = ""
+Global $initrd_file, $vmlinuz_file
 Global $STEP1_OK, $STEP2_OK, $STEP3_OK
 Global $MD5_ISO, $version_in_file
 Global $variante
@@ -242,6 +299,7 @@ EndIf
 #include "GuiListView.au3"
 #include "GuiImageList.au3"
 #include "WinApi.au3"
+#include "WinAPIFiles.au3"
 #include "GDIPlus.au3"
 #include "Constants.au3"
 #include "ProgressConstants.au3"
@@ -259,10 +317,10 @@ EndIf
 #include "String.au3"
 #include "File.au3"
 #include "INet.au3"
+#include "Date.au3"
 #include "WinHTTP.au3"
 #include "Crypt.au3"
 
-#include "GUICtrlOnHover.au3"
 
 ; LiLi's components
 #include "Languages.au3"
@@ -270,28 +328,28 @@ EndIf
 #include "Settings.au3"
 #include "Files.au3"
 #include "Logs_And_Status.au3"
+#include "Statistics.au3"
 #include "Automatic_Bug_Report.au3"
 #include "Graphics.au3"
 #include "External_Tools.au3"
 #include "Disks.au3"
 #include "Boot_Menus.au3"
 #include "Checking_And_Recognizing.au3"
-#include "Statistics.au3"
 #include "Releases.au3"
 #include "LiLis_heart.au3"
 #include "GUI_Actions.au3"
 #include "Options_Menu.au3"
+#include "ITaskBarList.au3"
 
 
-$current_compatibility_list_version = IniRead($compatibility_ini, "Compatibility_List", "Version", $software_version & ".0")
-$full_version = GetFullVersion()
+$DISPLAY_VERSION = GetDisplayVersion()
 
 ;SplashImageOn("LiLi Splash Screen", @ScriptDir & "\tools\img\logo.jpg",344, 107, -1, -1, 1)
 $splash_gui = GUICreate("Loading LiLi", 348, 130, -1, -1, $WS_POPUP)
 GUISetFont($font_size)
 GUISetBkColor(0x000000)
 GUICtrlCreatePic(@ScriptDir & "\tools\img\logo.jpg", 2, 2, 344, 107)
-$splash_status = GUICtrlCreateLabel("   " & Translate("Starting LinuxLive USB Creator") & " " & $full_version, 2, 109, 344, 19)
+$splash_status = GUICtrlCreateLabel("   " & Translate("Starting LinuxLive USB Creator") & " " & $DISPLAY_VERSION, 2, 109, 344, 19)
 GUICtrlSetBkColor($splash_status, 0xFFFFFF)
 GUISetState(@SW_SHOW)
 
@@ -330,26 +388,18 @@ _SetReceiverFunction("ReceiveFromSecondary")
 $verbose_logging = ReadSetting("General", "verbose_logging")
 If $verbose_logging = "yes" Then InitLog()
 
-SendReport("Starting LiLi USB Creator " & $full_version)
+SendReport("Starting LiLi USB Creator " & $DISPLAY_VERSION)
 
 
 If ReadSetting("Updates", "check_for_updates") = "yes" Then
 
 	If GetLastUpdateIni() = 1 Then
-		; Checking for new Major version
-		GUICtrlSetData($splash_status, "   " & Translate("Checking for new major version"))
-		CheckForMajorUpdate()
-
-		; Checking for new Minor version (=compatibility list update)
-		GUICtrlSetData($splash_status, "   " & Translate("Checking for new minor version"))
-		If CheckForMinorUpdate() = 1 Then
-			$full_version = GetFullVersion()
-			GUICtrlSetData($splash_status, "   " & Translate("Successfully updated to version " & $full_version))
-			Sleep(2000)
-		EndIf
+		; Checking for updates
+		GUICtrlSetData($splash_status, "   " & Translate("Checking for main software updates"))
+		CheckForSoftwareUpdate()
 
 		; Checking for new Portable-VirtualBox version
-		GUICtrlSetData($splash_status, "   " & Translate("Checking for new Portable-VirtualBox version"))
+		GUICtrlSetData($splash_status, "   " & Translate("Checking for Portable-VirtualBox updates"))
 		CheckForVirtualBoxUpdate()
 
 	EndIf
@@ -362,10 +412,17 @@ Get_Compatibility_List()
 $prefetched_linux_list = Print_For_ComboBox()
 $prefetched_linux_list_full = Print_For_ComboBox_Full()
 
+If _Crypt_Startup() Then
+	SendReport("Crypto Library started up successfully")
+Else
+	SendReport("[ERROR] : Crypto Library did not start !!! (errorcode : "&@error&")")
+EndIf
+
+
 If _GDIPlus_Startup() Then
 	SendReport("GDI+ started up successfully")
 Else
-	SendReport("ERROR : GDI+ did not start !!!")
+	SendReport("[ERROR] : GDI+ did not start !!! (errorcode : "&@error&")")
 EndIf
 
 GUICtrlSetData($splash_status, "   " & Translate("Loading interface"))
@@ -404,11 +461,13 @@ GUISetOnEvent($GUI_EVENT_MINIMIZE, "GUI_Minimize")
 GUISetOnEvent($GUI_EVENT_RESTORE, "GUI_Restore")
 GUISetOnEvent($GUI_EVENT_MAXIMIZE, "GUI_Restore")
 
-GUIRegisterMsg ($WM_DROPFILES, "GUI_Dropped_File")
 GUIRegisterMsg($WM_LBUTTONDOWN, "moveGUI")
+GUIRegisterMsg ($WM_DROPFILES, "GUI_Dropped_File")
 
 SetBitmap($GUI, $PNG_GUI, 255)
 GUIRegisterMsg($WM_NCHITTEST, "WM_NCHITTEST")
+
+_ITaskBar_CreateTaskBarObj()
 
 $CONTROL_GUI = GUICreate("LinuxLive USB Creator", 450, 750, 5, 7, $WS_POPUP, BitOR($WS_EX_LAYERED, $WS_EX_MDICHILD), $GUI)
 GUISetFont($font_size)
@@ -430,59 +489,40 @@ GUICtrlSetFont(-1, $font_size + 1.5, 400, 0, "Tahoma")
 ; Clickable parts of images
 $EXIT_AREA = GUICtrlCreateLabel("", 335 + $offsetx0, -20 + $offsety0, 20, 20)
 GUICtrlSetCursor(-1, 0)
-;GUICtrlSetOnEvent(-1, "GUI_Exit")
-_GUICtrl_OnHoverRegister($EXIT_AREA, "_Hover_Control","_Leave_Hover_Control","_Clicked_Down","_Clicked_Up")
-
+GUICtrlSetOnEvent(-1, "GUI_Exit")
 $MIN_AREA = GUICtrlCreateLabel("", 305 + $offsetx0, -20 + $offsety0, 20, 20)
 GUICtrlSetCursor(-1, 0)
-;GUICtrlSetOnEvent(-1, "GUI_Minimize")
-_GUICtrl_OnHoverRegister($MIN_AREA, "_Hover_Control","_Leave_Hover_Control","_Clicked_Down","_Clicked_Up")
-
+GUICtrlSetOnEvent(-1, "GUI_Minimize")
 $REFRESH_AREA = GUICtrlCreateLabel("", 300 + $offsetx0, 145 + $offsety0, 20, 20)
 GUICtrlSetCursor(-1, 0)
-;GUICtrlSetOnEvent(-1, "GUI_Refresh_Drives")
-_GUICtrl_OnHoverRegister($REFRESH_AREA, "_Hover_Control","_Leave_Hover_Control","_Clicked_Down","_Clicked_Up")
-
+GUICtrlSetOnEvent(-1, "GUI_Refresh_Drives")
 $ISO_AREA = GUICtrlCreateLabel("", 38 + $offsetx0, 231 + $offsety0, 75, 75)
 GUICtrlSetCursor(-1, 0)
-;GUICtrlSetOnEvent(-1, "GUI_Choose_ISO_From_GUI")
-_GUICtrl_OnHoverRegister($ISO_AREA, "_Hover_Control","_Leave_Hover_Control","_Clicked_Down","_Clicked_Up")
-
+GUICtrlSetOnEvent(-1, "GUI_Choose_ISO_From_GUI")
 $CD_AREA = GUICtrlCreateLabel("", 146 + $offsetx0, 231 + $offsety0, 75, 75)
 GUICtrlSetCursor(-1, 0)
-;GUICtrlSetOnEvent(-1, "GUI_Choose_CD")
-_GUICtrl_OnHoverRegister($CD_AREA, "_Hover_Control","_Leave_Hover_Control","_Clicked_Down","_Clicked_Up")
-
+GUICtrlSetOnEvent(-1, "GUI_Choose_CD")
 $DOWNLOAD_AREA = GUICtrlCreateLabel("", 260 + $offsetx0, 230 + $offsety0, 75, 75)
 GUICtrlSetCursor(-1, 0)
-;GUICtrlSetOnEvent(-1, "GUI_Download")
-_GUICtrl_OnHoverRegister($DOWNLOAD_AREA, "_Hover_Control","_Leave_Hover_Control","_Clicked_Down","_Clicked_Up")
-
-
+GUICtrlSetOnEvent(-1, "GUI_Download")
 $LAUNCH_AREA = GUICtrlCreateLabel("", 35 + $offsetx0, 600 + $offsety0, 22, 43)
 GUICtrlSetCursor(-1, 0)
-;GUICtrlSetOnEvent(-1, "GUI_Launch_Creation")
-_GUICtrl_OnHoverRegister($LAUNCH_AREA, "_Hover_Control","_Leave_Hover_Control","_Clicked_Down","_Clicked_Up")
-
+GUICtrlSetOnEvent(-1, "GUI_Launch_Creation")
 $HELP_STEP1_AREA = GUICtrlCreateLabel("", 335 + $offsetx0, 105 + $offsety0, 20, 20)
 GUICtrlSetCursor(-1, 0)
-;GUICtrlSetOnEvent(-1, "GUI_Help_Step1")
-_GUICtrl_OnHoverRegister($HELP_STEP1_AREA, "_Hover_Control","_Leave_Hover_Control","_Clicked_Down","_Clicked_Up")
-
+GUICtrlSetOnEvent(-1, "GUI_Help_Step1")
 $HELP_STEP2_AREA = GUICtrlCreateLabel("", 335 + $offsetx0, 201 + $offsety0, 20, 20)
 GUICtrlSetCursor(-1, 0)
-;GUICtrlSetOnEvent(-1, "GUI_Help_Step2")
-_GUICtrl_OnHoverRegister($HELP_STEP2_AREA, "_Hover_Control","_Leave_Hover_Control","_Clicked_Down","_Clicked_Up")
-
+GUICtrlSetOnEvent(-1, "GUI_Help_Step2")
 $HELP_STEP3_AREA = GUICtrlCreateLabel("", 335 + $offsetx0, 339 + $offsety0, 20, 20)
 GUICtrlSetCursor(-1, 0)
-;GUICtrlSetOnEvent(-1, "GUI_Help_Step3")
-_GUICtrl_OnHoverRegister($HELP_STEP3_AREA, "_Hover_Control","_Leave_Hover_Control","_Clicked_Down","_Clicked_Up")
-
+GUICtrlSetOnEvent(-1, "GUI_Help_Step3")
 $HELP_STEP4_AREA = GUICtrlCreateLabel("", 335 + $offsetx0, 451 + $offsety0, 20, 20)
 GUICtrlSetCursor(-1, 0)
-;GUICtrlSetOnEvent(-1, "GUI_Help_Step4")
-_GUICtrl_OnHoverRegister($HELP_STEP4_AREA, "_Hover_Control","_Leave_Hover_Control","_Clicked_Down","_Clicked_Up")
+GUICtrlSetOnEvent(-1, "GUI_Help_Step4")
+;$HELP_STEP5_AREA = GUICtrlCreateLabel("", 335 + $offsetx0, 565 + $offsety0, 20, 20)
+;GUICtrlSetCursor(-1, 0)
+;GUICtrlSetOnEvent(-1, "GUI_Help_Step5")
 
 GUISetBkColor(0x121314)
 
@@ -513,7 +553,7 @@ Step3_Check("bad")
 SendReport("Creating GUI (buttons)")
 
 ; Hovering Buttons
-;AdlibRegister("Control_Hover", 150)
+AdlibRegister("Control_Hover", 150)
 
 ; Text for step 2
 GUICtrlCreateLabel(Translate("STEP 2 : CHOOSE A SOURCE"), 28 + $offsetx0, 204 + $offsety0, 400, 30)
@@ -637,8 +677,7 @@ Refresh_DriveList()
 GUICtrlSetData($splash_status, "   " & Translate("Logging system configuration"))
 InitLog()
 
-; Sending anonymous statistics
-SendStats()
+SendInitialStats()
 
 GUIRegisterMsg($WM_PAINT, "DrawAll")
 WinActivate($for_winactivate)
@@ -648,7 +687,6 @@ GUISetState($GUI_SHOW, $CONTROL_GUI)
 ;GUICtrlSetData($splash_status,"   "&Translate("Checking for updates"))
 ;SendReport("check_for_updates")
 
-;SplashOff()
 GUIDelete($splash_gui)
 Sleep(100)
 GUISetState(@SW_SHOW, $GUI)
@@ -679,74 +717,9 @@ While 1
 		GUICtrlSetData($combo, GUICtrlRead($combo))
 		$combo_updated = 1
 	EndIf
-
+	Sleep(1000)
+	;DrawAll()
 WEnd
-
-Func _Hover_Control($iCtrlID, $iParam)
-	; Hovered
-	Switch $iCtrlID
-		Case $EXIT_AREA
-			$EXIT_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $EXIT_OVER, 0, 0, 20, 20, 335 + $offsetx0, -20 + $offsety0, 20, 20)
-		Case $MIN_AREA
-			$MIN_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $MIN_OVER, 0, 0, 20, 20, 305 + $offsetx0, -20 + $offsety0, 20, 20)
-		Case $ISO_AREA
-			If $step2_display_menu = 0 Then $DRAW_ISO = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $ISO_HOVER_PNG, 0, 0, 75, 75, 38 + $offsetx0, 231 + $offsety0, 75, 75)
-		Case $CD_AREA
-			If $step2_display_menu = 0 Then $DRAW_CD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $CD_HOVER_PNG, 0, 0, 75, 75, 146 + $offsetx0, 231 + $offsety0, 75, 75)
-		Case $DOWNLOAD_AREA
-			If $step2_display_menu = 0 Then $DRAW_DOWNLOAD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $DOWNLOAD_HOVER_PNG, 0, 0, 75, 75, 260 + $offsetx0, 230 + $offsety0, 75, 75)
-		Case $LAUNCH_AREA
-			$DRAW_LAUNCH = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $LAUNCH_HOVER_PNG, 0, 0, 22, 43, 35 + $offsetx0, 600 + $offsety0, 22, 43)
-		Case $BACK_AREA
-			If $step2_display_menu >= 1 Then $DRAW_BACK_HOVER = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $BACK_HOVER_PNG, 0, 0, 32, 32, 5 + $offsetx0, 300 + $offsety0, 32, 32)
-	EndSwitch
-EndFunc
-
-
-Func _Leave_Hover_Control($iCtrlID, $iParam)
-	; Not hovered (On *Leave* Hover process)
-	Switch $iCtrlID
-		Case $EXIT_AREA
-			$EXIT_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $EXIT_NORM, 0, 0, 20, 20, 335 + $offsetx0, -20 + $offsety0, 20, 20)
-		Case $MIN_AREA
-			$MIN_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $MIN_NORM, 0, 0, 20, 20, 305 + $offsetx0, -20 + $offsety0, 20, 20)
-		Case $ISO_AREA
-			If $step2_display_menu = 0 Then $DRAW_ISO = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $ISO_PNG, 0, 0, 75, 75, 38 + $offsetx0, 231 + $offsety0, 75, 75)
-		Case $CD_AREA
-			If $step2_display_menu = 0 Then $DRAW_CD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $CD_PNG, 0, 0, 75, 75, 146 + $offsetx0, 231 + $offsety0, 75, 75)
-		Case $DOWNLOAD_AREA
-			If $step2_display_menu = 0 Then $DRAW_DOWNLOAD = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $DOWNLOAD_PNG, 0, 0, 75, 75, 260 + $offsetx0, 230 + $offsety0, 75, 75)
-		Case $LAUNCH_AREA
-			$DRAW_LAUNCH = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $LAUNCH_PNG, 0, 0, 22, 43, 35 + $offsetx0, 600 + $offsety0, 22, 43)
-		Case $BACK_AREA
-			If $step2_display_menu >= 1 Then $DRAW_BACK = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $BACK_PNG, 0, 0, 32, 32, 5 + $offsetx0, 300 + $offsety0, 32, 32)
-		EndSwitch
-EndFunc
-
-Func _Clicked_Down($iCtrlID)
-	; Do nothing
-EndFunc
-
-Func _Clicked_Up($iCtrlID)
-	Switch $iCtrlID
-		Case $EXIT_AREA
-			GUI_Exit()
-		Case $MIN_AREA
-			GUI_Minimize()
-		Case $ISO_AREA
-			GUI_Choose_ISO_From_GUI()
-		Case $CD_AREA
-			GUI_Choose_CD()
-		Case $DOWNLOAD_AREA
-			GUI_Download()
-		Case $LAUNCH_AREA
-			GUI_Launch_Creation()
-		Case $BACK_AREA
-			GUI_Back_Download()
-		Case $REFRESH_AREA
-			GUI_Refresh_Drives()
-	EndSwitch
-EndFunc
 
 Func MoveGUI($hW)
 	_SendMessage($GUI, $WM_SYSCOMMAND, 0xF012, 0)
@@ -807,9 +780,7 @@ Func Redraw_Traffic_Lights()
 EndFunc   ;==>Redraw_Traffic_Lights
 
 
-#cs
 Func Control_Hover()
-
 	Local $CursorCtrl
 	If WinActive("LinuxLive USB Creator") Or WinActive("LiLi USB Creator") Then
 		$CursorCtrl = GUIGetCursorInfo()
@@ -834,7 +805,9 @@ Func Control_Hover()
 			Switch $CursorCtrl[4]
 				Case $EXIT_AREA
 					$EXIT_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $EXIT_OVER, 0, 0, 20, 20, 335 + $offsetx0, -20 + $offsety0, 20, 20)
-					If $CursorCtrl[2] = 1 Then GUI_Exit()
+					If $CursorCtrl[2] = 1 Then
+						GUI_Exit()
+					EndIf
 				Case $MIN_AREA
 					$MIN_BUTTON = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $MIN_OVER, 0, 0, 20, 20, 305 + $offsetx0, -20 + $offsety0, 20, 20)
 					If $CursorCtrl[2] = 1 Then GUI_Minimize()
@@ -857,17 +830,11 @@ Func Control_Hover()
 	EndIf
 	_CALLBACKQUEUE()
 EndFunc   ;==>Control_Hover
-#ce
+
 
 ; Received a message from the secondary lili's process
 Func ReceiveFromSecondary($message)
-	; Compatibility list has been updated => force reloading
-	If $message = "compatibility_updated" Then
-		; initialize list of compatible releases (load the compatibility_list.ini)
-		Get_Compatibility_List()
-		$prefetched_linux_list = Print_For_ComboBox()
-		UpdateLog("Compatibility list has been successfully updated")
-	ElseIf StringLeft($message, 5) = "ping-" Then
+	If StringLeft($message, 5) = "ping-" Then
 		$ping_result = $message
 	Else
 		UpdateLog("Received message from secondary process (" & $message & ")")

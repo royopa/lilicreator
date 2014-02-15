@@ -64,6 +64,7 @@ EndFunc
 ; Clickable parts of images
 Func GUI_Exit()
 	Global $current_download
+		SendCloseStats()
 		SendReport("Start-GUI_Exit")
 		InetClose($current_download)
 		If $foo Then ProcessClose($foo)
@@ -91,6 +92,7 @@ Func GUI_Exit()
 		_GDIPlus_ImageDispose($BACK_PNG)
 		_GDIPlus_ImageDispose($BACK_HOVER_PNG)
 		_GDIPlus_Shutdown()
+		_Crypt_Shutdown()
 		SendReport("End-GUI_Exit")
 		Exit
 EndFunc   ;==>GUI_Exit
@@ -247,13 +249,31 @@ EndFunc
 Func GUI_Choose_ISO($source_file)
 	SendReport("Start-GUI_Choose_ISO")
 	if $source_file==0 Then
-		$source_file = FileOpenDialog(Translate("Please choose an ISO image of LinuxLive CD"), "", "ISO / IMG / ZIP (*.iso;*.img;*.zip)", 1)
+		$source_file = FileOpenDialog(Translate("Please choose an ISO image of LinuxLive CD"), "", "ISO / IMG / ZIP (*.iso;*.img;*.zip)", 1,"",$CONTROL_GUI)
+		; FileOpenDialog is slow to return sometimes
 	EndIf
+
+
+	if get_extension($source_file) = "zip" Then
+		; This will check if it's a ZIP file containing only an ISO
+		InitializeFilesInISO($source_file)
+		if isArray($files_in_source) Then
+			If Ubound($files_in_source)=1 AND get_extension($files_in_source[0])= "iso" Then
+				SendReport("The ZIP file contains only an ISO => it will be uncompressed")
+				MsgBox(64,Translate("Please read"),Translate("This ZIP file contains only an ISO. Please unzip it and retry with this ISO instead."))
+				Return 0
+			EndIf
+		EndIf
+	EndIf
+
+
+	SendEventStats("Source","select-iso",get_extension($source_file)&" as source")
 
 	If @error Then
 		if IsString($file_set) Then
 			Return ""
 		Else
+
 			SendReport("IN-ISO_AREA (no iso)")
 			MsgBox(4096, "", Translate("No file selected"))
 			$file_set = 0;
@@ -269,6 +289,7 @@ EndFunc   ;==>GUI_Choose_ISO
 
 Func GUI_Choose_CD()
 	SendReport("Start-GUI_Choose_CD")
+	SendEventStats("Source","select-cd","CD/folder as source")
 	#cs
 		TODO : Recode support for CD
 		MsgBox(16, "Sorry", "Sorry but CD Support is broken. Please use ISO or Download button.")
@@ -370,8 +391,7 @@ Func GUI_Show_Back_Button()
 	$BACK_AREA = GUICtrlCreateLabel("", 5 + $offsetx0, 300 + $offsety0, 32, 32)
 	$DRAW_BACK = _GDIPlus_GraphicsDrawImageRectRect($ZEROGraphic, $BACK_PNG, 0, 0, 32, 32, 5 + $offsetx0, 300 + $offsety0, 32, 32)
 	GUICtrlSetCursor($BACK_AREA, 0)
-	;GUICtrlSetOnEvent($BACK_AREA, "GUI_Back_Download")
-	_GUICtrl_OnHoverRegister($BACK_AREA, "_Hover_Control","_Leave_Hover_Control","_Clicked_Down","_Clicked_Up")
+	GUICtrlSetOnEvent($BACK_AREA, "GUI_Back_Download")
 EndFunc
 
 Func GUI_Hide_Back_Button()
@@ -468,6 +488,7 @@ EndFunc   ;==>GUI_Select_Linux
 Func GUI_Download_Automatically()
 	$selected_linux = GUICtrlRead($combo_linux)
 	SendReport("Start-GUI_Download_Automatically (Downloading : "&$selected_linux&" )")
+	SendEventStats("Source","download-auto","Downloading ISO (Automatic)")
 	$release_in_list = FindReleaseFromDescription($selected_linux)
 	DownloadRelease($release_in_list, 1)
 	SendReport("End-GUI_Download_Automatically")
@@ -476,6 +497,7 @@ EndFunc   ;==>GUI_Download_Automatically
 Func GUI_Download_Manually()
 	$selected_linux = GUICtrlRead($combo_linux)
 	SendReport("Start-GUI_Download_Manually (Downloading "&$selected_linux&" )")
+	SendEventStats("Source","download-auto","Downloading ISO (Manually)")
 	$release_in_list = FindReleaseFromDescription($selected_linux)
 	if ReleaseGetMirrorStatus($release_in_list)> 0 Then
 		DownloadRelease($release_in_list, 0)
@@ -501,24 +523,26 @@ Func DownloadRelease($release_in_list, $automatic_download)
 	_ProgressSetImages($progress_bar, @ScriptDir & "\tools\img\progress_green.jpg", @ScriptDir & "\tools\img\progress_background.jpg")
 	_ProgressSetFont($progress_bar, "", -1, -1, 0x000000, 0)
 
+	_ITaskBar_SetProgressState($GUI, 2)
+
 	$label_step2_status = GUICtrlCreateLabel(Translate("Looking for the fastest mirror"), 38 + $offsetx0, 231 + $offsety0 + 50, 300, 80)
 	GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
 	GUICtrlSetColor(-1, 0xFFFFFF)
 	UpdateStatusStep2("Looking for the fastest mirror")
 
-	For $i = $R_MIRROR1 To $R_MIRROR10
-		$mirror = $releases[$release_in_list][$i]
-		If StringStripWS($mirror, 8) <> "" Then $available_mirrors = $available_mirrors + 1
-	Next
+	$available_mirrors = ReleaseGetMirrorStatus($release_in_list)
+
+	SendReport($available_mirrors&" mirrors are available for testing")
 
 	if IsArray($_Progress_Bars) Then _Paint_Bars_Procedure2()
 
-	For $i = $R_MIRROR1 To $R_MIRROR10
-		$mirror = $releases[$release_in_list][$i]
-		If StringStripWS($mirror, 8) <> "" Then
-			_ProgressSet($progress_bar, $tested_mirrors * 100 / $available_mirrors)
+	For $i=0 To 9
+		$mirror = ReleaseGetMirror($release_in_list,$i)
+		If $mirror <> "" Then
+			$percent_tested = Round($tested_mirrors * 100 / $available_mirrors,0)
+			_ProgressSet($progress_bar, $percent_tested)
 			_ProgressSetText($progress_bar, Translate("Testing mirror") & " : " & URLToHostname($mirror))
-
+			_ITaskBar_SetProgressValue($GUI, $percent_tested)
 			; Old Method
 			;$temp_latency = Ping(URLToHostname($mirror))
 			;$command="ping-"&$mirror
@@ -535,7 +559,7 @@ Func DownloadRelease($release_in_list, $automatic_download)
 			$temp_size = InetGetSize($mirror,3)
 			$ping_latency=TimerDiff($timer_init)
 			$temp_size = Round($temp_size / 1048576)
-			If $temp_size < 5 Or $temp_size > 5000 Then
+			If $temp_size < 5 Or $temp_size > 8000 Then
 				$temp_latency = 10000
 			Else
 				$temp_latency=Int($ping_latency)
@@ -556,19 +580,20 @@ Func DownloadRelease($release_in_list, $automatic_download)
 	Next
 
 	SendReport("Before _ArrayMin on latencies")
-	$arraymin = _ArrayMin($latency, 1, $R_MIRROR1, $R_MIRROR10)
+	$arraymin = _ArrayMin($latency, 1, 0, 9)
 	SendReport("After _ArrayMin on latencies")
+
+	_ProgressSet($progress_bar, 100)
+	_ITaskBar_SetProgressState($GUI)
 
 	If $arraymin = 10000 Then
 		UpdateStatusStep2(Translate("No online mirror found") & " !" & @CRLF & Translate("Please check your internet connection or try with another linux"))
-		_ProgressSet($progress_bar, 100)
 		Sleep(3000)
 	Else
-		_ProgressSet($progress_bar, 100)
 		SendReport("Before _ArrayMinIndex on latencies")
-		$arrayminindex = _ArrayMinIndex($latency, 1, $R_MIRROR1, $R_MIRROR10)
+		$arrayminindex = _ArrayMinIndex($latency, 1, 0, 9)
 		SendReport("After _ArrayMinIndex on latencies")
-		$best_mirror = $releases[$release_in_list][$arrayminindex]
+		$best_mirror = ReleaseGetMirror($release_in_list,$arrayminindex)
 		If $automatic_download = 0 Then
 			; Download manually
 			UpdateStatusStep2("Select this file as the source when download will be completed")
@@ -580,30 +605,23 @@ Func DownloadRelease($release_in_list, $automatic_download)
 
 			Do
 				$download_folder = FileSelectFolder ( "Please select destination folder for this download", "",-1,"",$CONTROL_GUI)
-				if Not @error AND StringInStr(FileGetAttrib($download_folder),"D")>0 then ExitLoop
+				if @error OR StringInStr(FileGetAttrib($download_folder),"D")>0 then ExitLoop
 			Until 0
 
 			;AND StringInStr($download_folder,":")>0
 
-			$destination_filename = $download_folder&"\"&$filename
-			_ProgressDelete($progress_bar)
-			; Launch download
-			If ReadSetting( "Advanced", "force_old_downloadmethod") <> "yes" Then
-				SendReport("Downloading Linux to "&$download_folder&"\"&$filename&" using new method")
-				DownloadDistribution($best_mirror,$destination_filename)
-				Monitor_Download_State($destination_filename,$iso_size)
+			$temp_filename = $download_folder&"\"&$filename&".lili-download"
+			SendReport("Downloading Linux to "&$download_folder&"\"&$filename)
+
+			$current_download = InetGet($best_mirror, $temp_filename, 3, 1)
+			If InetGetInfo($current_download, 4)=0 Then
+				UpdateStatusStep2(Translate("Downloading") & " " & $filename & @CRLF & Translate("from") & " " & URLToHostname($best_mirror))
+				Download_State()
 			Else
-				SendReport("Downloading Linux to "&$download_folder&"\"&$filename&" using old method")
-				$current_download = InetGet($best_mirror, $temp_filename, 3, 1)
-				If InetGetInfo($current_download, 4)=0 Then
-					UpdateStatusStep2(Translate("Downloading") & " " & $filename & @CRLF & Translate("from") & " " & URLToHostname($best_mirror))
-					Download_State()
-				Else
-					UpdateStatusStep2(Translate("Error while trying to download") & @CRLF & Translate("Please check your internet connection or try with another linux"))
-					Sleep(3000)
-					_ProgressDelete($progress_bar)
-					GUI_Back_Download()
-				EndIf
+				UpdateStatusStep2(Translate("Error while trying to download") & @CRLF & Translate("Please check your internet connection or try with another linux"))
+				Sleep(3000)
+				_ProgressDelete($progress_bar)
+				GUI_Back_Download()
 			EndIf
 		EndIf
 	EndIf
@@ -617,7 +635,7 @@ Func DisplayMirrorList($latency_table, $release_in_list)
 
 	; Create GUI
 	Opt("GUIOnEventMode", 0)
-	;AdlibUnRegister("Control_Hover")
+	AdlibUnRegister("Control_Hover")
 	$gui_mirrors = GUICreate("Select the mirror", 350, 250)
 	$hListView = GUICtrlCreateListView("  " & Translate("Latency") & "  |  " & Translate("Server Name") & "  | ", 0, 0, 350, 200)
 	_GUICtrlListView_SetColumnWidth($hListView, 0, 80)
@@ -627,13 +645,13 @@ Func DisplayMirrorList($latency_table, $release_in_list)
 	$launch_it = GUICtrlCreateButton(Translate("Launch in my browser"), 180, 210, 150, 30)
 
 
-	Local $latency_server[$R_MIRROR10 - $R_MIRROR1 + 1][3]
-	For $i = $R_MIRROR1 To $R_MIRROR10
-		$mirror = $releases[$release_in_list][$i]
+	Local $latency_server[10][3]
+	For $i = 0 To 9
+		$mirror = ReleaseGetMirror($release_in_list,$i)
 		If $mirror <> "NotFound" AND $mirror <> "" Then
-			$latency_server[$i - $R_MIRROR1][0] = $latency_table[$i]
-			$latency_server[$i - $R_MIRROR1][1] = URLToHostname($mirror)
-			$latency_server[$i - $R_MIRROR1][2] = $mirror
+			$latency_server[$i][0] = $latency_table[$i]
+			$latency_server[$i][1] = URLToHostname($mirror)
+			$latency_server[$i][2] = $mirror
 		EndIf
 	Next
 
@@ -647,10 +665,10 @@ Func DisplayMirrorList($latency_table, $release_in_list)
 
 	; Add items
 	$item = 0
-	For $i = $R_MIRROR1 To $R_MIRROR10
-		If $latency_server[$i - $R_MIRROR1][2] Then
-			$latency = $latency_server[$i - $R_MIRROR1][0]
-			GUICtrlCreateListViewItem($latency & " | " & $latency_server[$i - $R_MIRROR1][1] & " |" & $latency_server[$i - $R_MIRROR1][2], $hListView)
+	For $i = 0 To 9
+		If $latency_server[$i][2] Then
+			$latency = $latency_server[$i][0]
+			GUICtrlCreateListViewItem($latency & " | " & $latency_server[$i][1] & " |" & $latency_server[$i][2], $hListView)
 			If $latency < 60 Then
 				_GUICtrlListView_SetItemGroupID($hListView, $item, 1)
 				_GUIImageList_Add($hImage, _GUICtrlListView_CreateSolidBitMap($hListView, 0x00FF00, 16, 16))
@@ -700,58 +718,11 @@ Func DisplayMirrorList($latency_table, $release_in_list)
 	wend
 	Opt("GUIOnEventMode", 1)
 	GUIDelete($gui_mirrors)
-	;AdlibRegister("Control_Hover", 150)
+	AdlibRegister("Control_Hover", 150)
 	GUIRegisterMsg($WM_PAINT, "DrawAll")
 	WinActivate($for_winactivate)
 	GUISetState($GUI_SHOW, $CONTROL_GUI)
 EndFunc   ;==>DisplayMirrorList
-
-
-Func Monitor_Download_State($destination_filename,$total_size)
-	SendReport("Start-Monitor_Download_State")
-	Global $current_download
-	Local $begin, $oldgetbytesread, $estimated_time = ""
-
-	if IsArray($_Progress_Bars) Then _Paint_Bars_Procedure2()
-
-	$begin = TimerInit()
-	$oldgetbytesread = 0
-
-	$iso_size_mb = RoundForceDecimal($total_size / (1024 * 1024))
-	Do
-		$download_status = IniRead($lilidownloader_ini,"CurrentDownload","status","")
-		SendReport("Download status = "&$download_status)
-		if StringInStr($download_status,"downloading")>0 Then
-			SendReport("Downloaded "&StringTrimLeft($download_status,12)&"b")
-			$percent_downloaded = Round((100 * StringTrimLeft($download_status,9) / $total_size),0)
-			_ProgressSet($progress_bar, $percent_downloaded)
-			$newgetbytesread = StringTrimLeft(IniRead($lilidownloader_ini,"CurrentDownload","status",""),12)
-			#cs
-			$dif = TimerDiff($begin)
-
-			If $dif > 1000 Then
-				$bytes_per_ms = ($newgetbytesread - $oldgetbytesread) / $dif
-				$estimated_time = HumanTime(($total_size - $newgetbytesread) / (1000 * $bytes_per_ms))
-				$begin = TimerInit()
-				$oldgetbytesread = $newgetbytesread
-			EndIf
-			#ce
-			_ProgressSetText($progress_bar, $percent_downloaded & "% ( " & RoundForceDecimal($newgetbytesread / (1024 * 1024)) & " / " & $iso_size_mb & " " & "MB" & " ) " & $estimated_time)
-		EndIf
-		Sleep(100)
-	Until $download_status = "error" OR  $download_status = "completed" OR FileExists($destination_filename)
-
-	_ProgressSet($progress_bar, 100)
-	_ProgressSetText($progress_bar, "100% ( " & Round($iso_size / (1024 * 1024)) & " / " & Round($iso_size / (1024 * 1024)) & " " & "MB" & " )")
-
-	UpdateStatusStep2(Translate("Download complete") & @CRLF & Translate("Check will begin shortly"))
-	Sleep(3000)
-	_ProgressDelete($progress_bar)
-	GUI_Hide_Step2_Download_Menu()
-
-	Check_source_integrity($destination_filename)
-	SendReport("End-Download_State")
-EndFunc
 
 Func Download_State()
 	SendReport("Start-Download_State")
@@ -764,10 +735,11 @@ Func Download_State()
 	$oldgetbytesread = InetGetInfo($current_download, 0)
 
 	$iso_size_mb = RoundForceDecimal($iso_size / (1024 * 1024))
-
+	_ITaskBar_SetProgressState($GUI, 2)
 	Do
 		$percent_downloaded = Int((100 * InetGetInfo($current_download, 0) / $iso_size))
 		_ProgressSet($progress_bar, $percent_downloaded)
+		_ITaskBar_SetProgressValue($GUI, $percent_downloaded)
 		$dif = TimerDiff($begin)
 		$newgetbytesread = InetGetInfo($current_download, 0)
 		If $dif > 1000 Then
@@ -783,7 +755,7 @@ Func Download_State()
 	FileMove($temp_filename,$file_set)
 	_ProgressSet($progress_bar, 100)
 	_ProgressSetText($progress_bar, "100% ( " & Round($iso_size / (1024 * 1024)) & " / " & Round($iso_size / (1024 * 1024)) & " " & "MB" & " )")
-
+	_ITaskBar_SetProgressState($GUI)
 	UpdateStatusStep2(Translate("Download complete") & @CRLF & Translate("Check will begin shortly"))
 	Sleep(3000)
 	_ProgressDelete($progress_bar)
@@ -939,21 +911,21 @@ Func GUI_Launch_Creation()
 
 	if Not FileExists($usb_letter&"\") Then
 		MsgBox(64,Translate("Please read"),Translate("Please insert your USB key back or select another one")&".")
+		GUICtrlSetState($combo,$GUI_ENABLE)
 		Return ""
 	EndIf
 
 	; to avoid to create the key twice in a row
 	if $already_create_a_key >0 Then
 		$return = MsgBox(33,Translate("Please read"),Translate("You have already created a key")&"."&@CRLF&Translate("Are you sure that you want to recreate one")&" ?")
+		GUICtrlSetState($combo,$GUI_ENABLE)
 		if $return == 2 Then Return ""
 	EndIf
 
 	SendReport("Start-GUI_Launch_Creation")
 	InitLog()
+
 	; Disable the controls and re-enable after creation
-
-
-
 	; force cleaning old status (little bug fix)
 	UpdateStatus("")
 	Sleep(200)
@@ -976,13 +948,23 @@ Func GUI_Launch_Creation()
 		$annuler = MsgBox(49, Translate("Please read") & "!!!", Translate("Are you sure you want to format this disk and lose your data") &" ?"& @CRLF & @CRLF & "       " & Translate("Label") & " : ( " & $usb_letter & " ) " & DriveGetLabel($usb_letter) & @CRLF & "       " & Translate("Size") & " : " & Round(DriveSpaceTotal($usb_letter) / 1024, 1) & " " & Translate("GB") & @CRLF & "       " & Translate("Formatted in") & " : " & DriveGetFileSystem($usb_letter) & @CRLF)
 		If $annuler = 1 Then
 			Format_FAT32()
+		Else
+			GUICtrlSetState($combo,$GUI_ENABLE)
 		EndIf
+
 	EndIf
 
 	; Starting creation if not cancelled
 	If $annuler <> 2 Then
 
 		UpdateStatus("Step 1 to 3 OK")
+
+		$options_stats=""
+		$options_stats &= (GUICtrlRead($virtualbox) == $GUI_CHECKED) ? "&cd5=Yes" : "&cd5=No"
+		$options_stats &= (GUICtrlRead($hide_files) == $GUI_CHECKED) ? "&cd6=Yes" : "&cd6=No"
+		SendEventStats("General","create-usb","Create Live USB",$options_stats)
+
+		$usb_creation_timer=TimerInit()
 
 		; Cleaning old installs only if needed
 		If $file_set_mode <> "img" Then
@@ -1016,7 +998,7 @@ Func GUI_Launch_Creation()
 
 			CreateUninstaller()
 
-			If (GUICtrlRead($hide_files) == $GUI_CHECKED) Then Hide_live_files()
+			If GUICtrlRead($hide_files) == $GUI_CHECKED Then Hide_live_files()
 
 			If GUICtrlRead($virtualbox) == $GUI_CHECKED And $virtualbox_check >= 1 Then
 
@@ -1028,7 +1010,7 @@ Func GUI_Launch_Creation()
 				Install_virtualbox_on_key()
 
 				UpdateStatus("Applying VirtualBox settings")
-				Setup_RAM_for_VM()
+				Setup_VBOX_for_VM()
 
 				;Run($usb_letter & "\Portable-VirtualBox\Launch_usb.exe", @ScriptDir, @SW_HIDE)
 
@@ -1046,27 +1028,18 @@ Func GUI_Launch_Creation()
 		if ReadSetting("General","unique_ID")<>"SVN" AND ReadSetting("Advanced","skip_finalhelp")="no" Then
 			ShellExecute("http://www.linuxliveusb.com/help/guide/using-lili", "", "", "", 7)
 		EndIf
-
-		; If beta version, asking for feedback
-		If isBeta() AND ReadSetting("Advanced","skip_feedback_for_beta")="no" Then
-			Ask_For_Feedback()
-		EndIf
-
+		$usb_creation_duration = Round(TimerDiff($usb_creation_timer))
+		SendCreationSpeedStats($usb_creation_duration)
+		SendReport("Live USB Created in "&HumanTime(Round($usb_creation_duration/1000)))
 	Else
 		UpdateStatus("Please validate step 1 to 3")
+		SendEventStats("General","create-usb-validation-failed","Steps 1 to 3 not validated")
+		GUICtrlSetState($combo,$GUI_ENABLE)
 	EndIf
 	SendReport("End-GUI_Launch_Creation")
 	GUICtrlSetState($combo,$GUI_ENABLE)
 EndFunc   ;==>GUI_Launch_Creation
 
-
-Func Ask_For_Feedback()
-	$return = MsgBox(65, Translate("Help me to improve LiLi"), Translate("This is a Beta or Release Candidate version")&"."&@CRLF&Translate("Click OK to leave a feedback or click Cancel to close this window"))
-	If $return = 1 Then
-		WriteSetting("Advanced","skip_feedback_for_beta","yes")
-		ShellExecute("http://www.linuxliveusb.com/feedback/?version="&$software_version, "", "", "", 7)
-	EndIf
-EndFunc   ;==>Ask_For_Feedback
 
 Func GUI_Events()
 	SendReport("Start-GUI_Events (GUI_CtrlID=" & @GUI_CtrlId & " )")

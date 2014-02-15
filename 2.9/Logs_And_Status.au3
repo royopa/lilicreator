@@ -4,22 +4,14 @@
 
 Func InitLog()
 	DirCreate($log_dir)
-	FlushLog()
 	$system_config = LogSystemConfig()
+	DeleteOldLogs("1-month")
 	SendReport($system_config)
 EndFunc   ;==>InitLog
 
 Func LogSystemConfig()
 
 	Local $space = -1
-
-	; Little fix for AutoIT 3.3.0.0
-	$os_version_long= RegRead("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ProductName")
-	if Not @error AND ( StringInStr($os_version_long,"Seven") OR StringInStr($os_version_long,"Windows 7")) Then
-		$os_version=$os_version_long
-	Else
-		$os_version=@OSVersion
-	EndIf
 
 	$mem = MemGetStats()
 	if IsArray($mem) AND Ubound($mem) > 2 Then
@@ -38,19 +30,28 @@ Func LogSystemConfig()
 		$line &= @CRLF & "Wine Detected : "&$realOS[1]
 	EndIf
 
-	$line &= @CRLF & "OS Type : " & @OSType
-	$line &= @CRLF & "OS Version : " & $os_version
-	$line &= @CRLF & "OS Build : " & @OSBuild
-	$line &= @CRLF & "OS Service Pack : " & @OSServicePack
+	$line &= @CRLF & "OS Version : " & OSName() &  " (OS Name : "&RegRead("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ProductName")&" - SP : "&@OSServicePack&" - Build "&@OSBuild&" - Type : "&@OSType&")"
 	$line &= @CRLF & "OS Language :  " & HumanOSLang(@OSLang) & " ("& @OSLang&")"
 	$line &= @CRLF & "User Language : " & HumanOSLang(@MUILang) & " ("& @MUILang&")"
+	$line &= @CRLF & "Keyboard : " & @KBLayout
 	$line &= @CRLF & "Font size : " & $font_size
 	$line &= @CRLF & "Architecture : " & @OSArch
 	$line &= @CRLF & "Memory : " & $mem_stats
 
-	$line &= @CRLF & "Keyboard : " & @KBLayout
+
 	$line &= @CRLF & "Resolution : " & @DesktopWidth & "x" & @DesktopHeight
 	$line &= @CRLF & "Proxy settings : " & ProxySettingsReport()
+
+	If ReadSetting( "Updates", "check_for_updates") = "yes" Then
+		If ReadSetting( "Updates", "check_for_beta_versions") = "yes" Then
+			$updatetypes="Stable and Beta versions"
+		Else
+			$updatetypes="Stable versions only"
+		EndIf
+		$line &= @CRLF & "Check for updates : Enabled ("&$updatetypes&")"
+	Else
+		$line &= @CRLF & "Check for updates : Disabled"
+	EndIf
 
 	If StringTrimLeft($usb_letter,2) <> "->" Then
 		$line &= @CRLF & "Select partition : " & $usb_letter
@@ -60,8 +61,9 @@ Func LogSystemConfig()
 	EndIf
 
 	If $file_set_mode = "iso" Then
-		$line &= @CRLF & "Selected ISO : " &path_to_name($file_set)
-		$line &= @CRLF & "Recognized as : "&$release_description&"("&$release_codename&")"
+		$line &= @CRLF & "Selected ISO : " &path_to_name($file_set)&" ("& HumanSize(FileGetSize($file_set))&")"
+		$line &= @CRLF & "Recognized as : "&$release_description&" ("&$release_codename&")"
+		$line &= @CRLF & "Supported features : "&$release_supported_features
 		$line &= @CRLF & "Recognition method : "&$release_recognition_method
 		$line &= @CRLF & "ISO Hash : " & $MD5_ISO
 
@@ -133,10 +135,6 @@ Func UpdateStatusStep2($status)
 	EndIf
 EndFunc   ;==>UpdateStatusStep2
 
-Func FlushLog()
-	FileDelete($logfile)
-EndFunc
-
 Func UpdateLog($status)
 	_FileWriteLog($logfile, $status) ; No translation in logs
 EndFunc   ;==>UpdateLog
@@ -150,9 +148,54 @@ Func UpdateStatusNoLog($status)
 EndFunc   ;==>UpdateStatusNoLog
 
 Func SendReport($report)
-	If $verbose_logging = "yes" Then UpdateLog($report)
+	UpdateLog($report)
 	_SendData($report, "lili-Reporter")
 EndFunc   ;==>SendReport
+
+Func SendReportNoLog($report)
+	_SendData($report, "lili-Reporter")
+EndFunc
+
+Func DebugTimer($function_name)
+	SendReport($function_name&" - "&Round(TimerDiff($DEBUG_TIMER))&"ms")
+	$DEBUG_TIMER=TimerInit()
+EndFunc
+
+
+Func DeleteOldLogs($retention)
+	$retention_date = ConvertRetentionToNumber($retention)
+	$search = FileFindFirstFile($log_dir & "*.log")
+
+	If $search = -1 Then
+		Return 0
+	EndIf
+	$deleted_logs=0
+	While 1
+		$file = FileFindNextFile($search)
+		If @error Then ExitLoop
+		$t = FileGetTime($log_dir & $file)
+		$diff = _DateDiff('D', $retention_date, $t[0] & "/" & $t[1] & "/" & $t[2])
+		If $diff < 0 Then
+			FileDelete($log_dir & $file)
+			$deleted_logs +=1
+		EndIf
+	WEnd
+	FileClose($search)
+EndFunc   ;==>DeleteOldLogs
+
+Func ConvertRetentionToNumber($retention)
+	$retention_split = StringSplit($retention, "-", 3)
+	If $retention_split[1] = "year" Or $retention_split[1] = "years" Then
+		$retention_date = _DateAdd('Y', -$retention_split[0], _NowCalcDate())
+	ElseIf $retention_split[1] = "month" Or $retention_split[1] = "month" Then
+		$retention_date = _DateAdd('M', -$retention_split[0], _NowCalcDate())
+	ElseIf $retention_split[1] = "weeks" Or $retention_split[1] = "week" Then
+		$retention_date = _DateAdd('w', -$retention_split[0], _NowCalcDate())
+	Else
+		$retention_date = _DateAdd('D', -$retention_split[0], _NowCalcDate())
+	EndIf
+	Return $retention_date
+EndFunc   ;==>ConvertRetentionToNumber
 
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ; ///////////////////////////////// Checking steps states                      ///////////////////////////////////////////////////////////////////////////////
