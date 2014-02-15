@@ -199,7 +199,7 @@ Func GUI_Options_Menu()
 			Case $licence
 				ShellExecute("http://www.linuxliveusb.com/about/license")
 			Case $donate
-				ShellExecute("https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=8297661")
+				ShellExecute("http://www.linuxliveusb.com/donations")
 			Case $language_list
 				$language_selected=GUICtrlRead($language_list)
 				if $language_selected="Automatic" OR StringInStr($language_selected,"—")>0 Then

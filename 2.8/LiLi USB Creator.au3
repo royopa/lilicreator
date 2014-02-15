@@ -1,12 +1,16 @@
 #NoTrayIcon
 #RequireAdmin
+
+; Required for the Automatic Bug Reporting process
+#pragma compile(AutoItExecuteAllowed, True)
+
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_icon=tools\img\lili.ico
 #AutoIt3Wrapper_Compression=0
 #AutoIt3Wrapper_UseUpx=n
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.8.88.51
+#AutoIt3Wrapper_Res_Fileversion=2.8.88.53
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_SaveSource=y
@@ -128,6 +132,7 @@ Global $ping_result = ""
 
 Global $selected_drive, $virtualbox_check, $virtualbox_size, $virtualbox_realsize, $downloaded_virtualbox_filename,$recommended_ram
 Global $persistence_file = ""
+Global $initrd_file, $vmlinuz_file
 Global $STEP1_OK, $STEP2_OK, $STEP3_OK
 Global $MD5_ISO, $version_in_file
 Global $variante
