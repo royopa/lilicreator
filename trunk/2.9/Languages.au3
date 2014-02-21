@@ -20,6 +20,7 @@ Func _Language()
 		$use_source=@OSLang
 	EndIf
 
+; Find codes in http://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
 	Select
 		Case StringInStr("0409,0809,0c09,1009,1409,1809,1c09,2009,2409,2809,2c09,3009,3409", $use_source)
 			$lang_found = "English"
@@ -51,6 +52,9 @@ Func _Language()
 		Case StringInStr("041a", $use_source)
 			$lang_found = "Croatian"
 			$lang_code="hr"
+		Case StringInStr("0406", $use_source)
+			$lang_found = "Danish"
+			$lang_code="da"
 		Case StringInStr("0418", $use_source)
 			$lang_found = "Romanian"
 			$lang_code="ro"
@@ -84,6 +88,9 @@ Func _Language()
 		Case StringInStr("0421", $use_source)
 			$lang_found = "Indonesian"
 			$lang_code="id"
+		Case StringInStr("043e", $use_source)
+			$lang_found = "Malay"
+			$lang_code="ms"
 		Case StringInStr("0422", $use_source)
 			$lang_found = "Ukrainian"
 			$lang_code="uk"
