@@ -86,7 +86,7 @@ Compiled with    : AutoIT v3.3.10.2
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ; Global constants
-Global Const $software_version = "2.9 Alpha"
+Global Const $software_version = "2.9 Beta"
 Global $DISPLAY_VERSION = ""
 Global $lang_folder = @ScriptDir & "\tools\languages\"
 Global $lang_ini
