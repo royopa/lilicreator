@@ -267,7 +267,7 @@ Func GUI_Choose_ISO($source_file)
 	EndIf
 
 
-	SendEventStats("Source","select-iso",get_extension($source_file)&" as source")
+	SendAppviewStats(get_extension($source_file)&" as source")
 
 	If @error Then
 		if IsString($file_set) Then
@@ -289,7 +289,7 @@ EndFunc   ;==>GUI_Choose_ISO
 
 Func GUI_Choose_CD()
 	SendReport("Start-GUI_Choose_CD")
-	SendEventStats("Source","select-cd","CD/folder as source")
+	SendAppviewStats("CD/folder as source")
 	#cs
 		TODO : Recode support for CD
 		MsgBox(16, "Sorry", "Sorry but CD Support is broken. Please use ISO or Download button.")
@@ -488,7 +488,7 @@ EndFunc   ;==>GUI_Select_Linux
 Func GUI_Download_Automatically()
 	$selected_linux = GUICtrlRead($combo_linux)
 	SendReport("Start-GUI_Download_Automatically (Downloading : "&$selected_linux&" )")
-	SendEventStats("Source","download-auto","Downloading ISO (Automatic)")
+	SendAppviewStats("Downloading ISO (Automatic)")
 	$release_in_list = FindReleaseFromDescription($selected_linux)
 	DownloadRelease($release_in_list, 1)
 	SendReport("End-GUI_Download_Automatically")
@@ -497,7 +497,7 @@ EndFunc   ;==>GUI_Download_Automatically
 Func GUI_Download_Manually()
 	$selected_linux = GUICtrlRead($combo_linux)
 	SendReport("Start-GUI_Download_Manually (Downloading "&$selected_linux&" )")
-	SendEventStats("Source","download-auto","Downloading ISO (Manually)")
+	SendAppviewStats("Downloading ISO (Manually)")
 	$release_in_list = FindReleaseFromDescription($selected_linux)
 	if ReleaseGetMirrorStatus($release_in_list)> 0 Then
 		DownloadRelease($release_in_list, 0)
@@ -962,7 +962,7 @@ Func GUI_Launch_Creation()
 		$options_stats=""
 		$options_stats &= (GUICtrlRead($virtualbox) == $GUI_CHECKED) ? "&cd5=Yes" : "&cd5=No"
 		$options_stats &= (GUICtrlRead($hide_files) == $GUI_CHECKED) ? "&cd6=Yes" : "&cd6=No"
-		SendEventStats("General","create-usb","Create Live USB",$options_stats)
+		SendAppviewStats("Create Live USB",$options_stats)
 
 		$usb_creation_timer=TimerInit()
 
@@ -1033,7 +1033,7 @@ Func GUI_Launch_Creation()
 		SendReport("Live USB Created in "&HumanTime(Round($usb_creation_duration/1000)))
 	Else
 		UpdateStatus("Please validate step 1 to 3")
-		SendEventStats("General","create-usb-validation-failed","Steps 1 to 3 not validated")
+		SendAppviewStats("Steps 1 to 3 not validated")
 		GUICtrlSetState($combo,$GUI_ENABLE)
 	EndIf
 	SendReport("End-GUI_Launch_Creation")

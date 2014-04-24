@@ -14,6 +14,10 @@ Func SendCreationSpeedStats($duration)
 	SendReportNoLog("stats-t=timing&utv=usb-creation-time&utc=General&utt="&$duration&"&utl=USB%20Creation%20Speed")
 EndFunc
 
+Func SendAppviewStats($content_description,$customdata="")
+	SendReportNoLog("stats-t=appview&cd="&_URIEncode($content_description)&$customdata)
+EndFunc
+
 Func SendEventStats($event_category,$event_action,$event_label,$customdata="")
 	SendReportNoLog("stats-t=event&ec="&$event_category&"&ea="&$event_action&"&el="&_URIEncode($event_label)&$customdata)
 EndFunc
