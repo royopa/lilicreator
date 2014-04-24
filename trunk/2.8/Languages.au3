@@ -98,10 +98,14 @@ Func _Language()
 			$lang_found = "Croatian"
 		Case StringInStr("0418", $use_source)
 			$lang_found = "Romanian"
+		Case StringInStr("0406", $use_source)
+			$lang_found = "Danish"
 		Case StringInStr("0405", $use_source)
 			$lang_found = "Czech"
 		Case StringInStr("040e", $use_source)
 			$lang_found = "Hungarian"
+		Case StringInStr("043e", $use_source)
+			$lang_found = "Malay"
 		Case StringInStr("0411", $use_source)
 			$lang_found = "Japanese"
 		Case StringInStr("042b", $use_source)

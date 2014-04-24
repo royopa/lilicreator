@@ -10,6 +10,7 @@ Func _Language()
 	If $force_lang <> "" And (FileExists($lang_folder & $force_lang & ".ini") Or $force_lang = "English") Then
 		$lang_ini = $lang_folder & $force_lang & ".ini"
 		$font_size=IniRead($lang_ini,$force_lang,"font_size",$font_size)
+		$lang_code = "forced-"&$force_lang
 		SendReport("End-_Language (Force Lang=" & $force_lang & ")")
 		Return $force_lang
 	EndIf
