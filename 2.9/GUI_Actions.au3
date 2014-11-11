@@ -161,7 +161,7 @@ EndFunc   ;==>GUI_Restore
 Func GUI_Choose_Drive()
 	SendReport("Start-GUI_Choose_Drive")
 	USBInitializeVariables(StringLeft(GUICtrlRead($combo), 2))
-	If ($usb_isvalid_filesystem And $usb_space_after_lili_MB > 0) Then
+	If ( ($usb_isvalid_filesystem And $usb_space_after_lili_MB > 0) OR GUICtrlRead($formater) == $GUI_CHECKED ) Then
 		; State is OK ( FAT32 or FAT format and 700MB+ free)
 		Step1_Check("good")
 
@@ -251,39 +251,36 @@ Func GUI_Choose_ISO($source_file)
 	if $source_file==0 Then
 		$source_file = FileOpenDialog(Translate("Please choose an ISO image of LinuxLive CD"), "", "ISO / IMG / ZIP (*.iso;*.img;*.zip)", 1,"",$CONTROL_GUI)
 		; FileOpenDialog is slow to return sometimes
-	EndIf
-
-
-	if get_extension($source_file) = "zip" Then
-		; This will check if it's a ZIP file containing only an ISO
-		InitializeFilesInISO($source_file)
-		if isArray($files_in_source) Then
-			If Ubound($files_in_source)=1 AND get_extension($files_in_source[0])= "iso" Then
-				SendReport("The ZIP file contains only an ISO => it will be uncompressed")
-				MsgBox(64,Translate("Please read"),Translate("This ZIP file contains only an ISO. Please unzip it and retry with this ISO instead."))
-				Return 0
+		If @error Then
+			if IsString($file_set) Then
+				Return ""
+			Else
+				SendReport("IN-ISO_AREA (no iso)")
+				MsgBox(4096, "", Translate("No file selected"))
+				$file_set = 0;
+				Step2_Check("bad")
+				GUI_Show_Step2_Default_Menu()
 			EndIf
+		Else
+			$file_set = $source_file
+			if get_extension($source_file) = "zip" Then
+				; This will check if it's a ZIP file containing only an ISO
+				InitializeFilesInISO($source_file)
+				if isArray($files_in_source) Then
+					If Ubound($files_in_source)=1 AND get_extension($files_in_source[0])= "iso" Then
+						SendReport("The ZIP file contains only an ISO => it will be uncompressed")
+						MsgBox(64,Translate("Please read"),Translate("This ZIP file contains only an ISO")&"."&Translate("Please unzip it and retry with this ISO instead")&".")
+						Return 0
+					EndIf
+				EndIf
+			EndIf
+			$release_arch = AutoDetectArchitecture($file_set)
+			Check_source_integrity($file_set)
 		EndIf
 	EndIf
-
 
 	SendAppviewStats(get_extension($source_file)&" as source")
 
-	If @error Then
-		if IsString($file_set) Then
-			Return ""
-		Else
-
-			SendReport("IN-ISO_AREA (no iso)")
-			MsgBox(4096, "", Translate("No file selected"))
-			$file_set = 0;
-			Step2_Check("bad")
-			GUI_Show_Step2_Default_Menu()
-		EndIf
-	Else
-		$file_set = $source_file
-		Check_source_integrity($file_set)
-	EndIf
 	SendReport("End-GUI_Choose_ISO")
 EndFunc   ;==>GUI_Choose_ISO
 
@@ -523,7 +520,7 @@ Func DownloadRelease($release_in_list, $automatic_download)
 	_ProgressSetImages($progress_bar, @ScriptDir & "\tools\img\progress_green.jpg", @ScriptDir & "\tools\img\progress_background.jpg")
 	_ProgressSetFont($progress_bar, "", -1, -1, 0x000000, 0)
 
-	_ITaskBar_SetProgressState($GUI, 2)
+	;_ITaskBar_SetProgressState($GUI, 2)
 
 	$label_step2_status = GUICtrlCreateLabel(Translate("Looking for the fastest mirror"), 38 + $offsetx0, 231 + $offsety0 + 50, 300, 80)
 	GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
@@ -542,7 +539,7 @@ Func DownloadRelease($release_in_list, $automatic_download)
 			$percent_tested = Round($tested_mirrors * 100 / $available_mirrors,0)
 			_ProgressSet($progress_bar, $percent_tested)
 			_ProgressSetText($progress_bar, Translate("Testing mirror") & " : " & URLToHostname($mirror))
-			_ITaskBar_SetProgressValue($GUI, $percent_tested)
+			;_ITaskBar_SetProgressValue($GUI, $percent_tested)
 			; Old Method
 			;$temp_latency = Ping(URLToHostname($mirror))
 			;$command="ping-"&$mirror
@@ -584,7 +581,7 @@ Func DownloadRelease($release_in_list, $automatic_download)
 	SendReport("After _ArrayMin on latencies")
 
 	_ProgressSet($progress_bar, 100)
-	_ITaskBar_SetProgressState($GUI)
+	;_ITaskBar_SetProgressState($GUI)
 
 	If $arraymin = 10000 Then
 		UpdateStatusStep2(Translate("No online mirror found") & " !" & @CRLF & Translate("Please check your internet connection or try with another linux"))
@@ -735,11 +732,11 @@ Func Download_State()
 	$oldgetbytesread = InetGetInfo($current_download, 0)
 
 	$iso_size_mb = RoundForceDecimal($iso_size / (1024 * 1024))
-	_ITaskBar_SetProgressState($GUI, 2)
+	;_ITaskBar_SetProgressState($GUI, 2)
 	Do
 		$percent_downloaded = Int((100 * InetGetInfo($current_download, 0) / $iso_size))
 		_ProgressSet($progress_bar, $percent_downloaded)
-		_ITaskBar_SetProgressValue($GUI, $percent_downloaded)
+		;_ITaskBar_SetProgressValue($GUI, $percent_downloaded)
 		$dif = TimerDiff($begin)
 		$newgetbytesread = InetGetInfo($current_download, 0)
 		If $dif > 1000 Then
@@ -755,7 +752,7 @@ Func Download_State()
 	FileMove($temp_filename,$file_set)
 	_ProgressSet($progress_bar, 100)
 	_ProgressSetText($progress_bar, "100% ( " & Round($iso_size / (1024 * 1024)) & " / " & Round($iso_size / (1024 * 1024)) & " " & "MB" & " )")
-	_ITaskBar_SetProgressState($GUI)
+	;_ITaskBar_SetProgressState($GUI)
 	UpdateStatusStep2(Translate("Download complete") & @CRLF & Translate("Check will begin shortly"))
 	Sleep(3000)
 	_ProgressDelete($progress_bar)
@@ -948,6 +945,13 @@ Func GUI_Launch_Creation()
 		$annuler = MsgBox(49, Translate("Please read") & "!!!", Translate("Are you sure you want to format this disk and lose your data") &" ?"& @CRLF & @CRLF & "       " & Translate("Label") & " : ( " & $usb_letter & " ) " & DriveGetLabel($usb_letter) & @CRLF & "       " & Translate("Size") & " : " & Round(DriveSpaceTotal($usb_letter) / 1024, 1) & " " & Translate("GB") & @CRLF & "       " & Translate("Formatted in") & " : " & DriveGetFileSystem($usb_letter) & @CRLF)
 		If $annuler = 1 Then
 			Format_FAT32()
+			; Rechecking USB format
+			USBInitializeVariables(StringLeft(GUICtrlRead($combo), 2))
+			if NOT $usb_isvalid_filesystem Then
+				UpdateStatus(Translate("Your device could not be formatted")&"."&@CRLF&Translate("Please close all open applications then try again")&".")
+				GUICtrlSetState($combo,$GUI_ENABLE)
+				return -1
+			EndIf
 		Else
 			GUICtrlSetState($combo,$GUI_ENABLE)
 		EndIf
@@ -1007,8 +1011,8 @@ Func GUI_Launch_Creation()
 				; maybe check downloaded file ?
 
 				; Next step : installing vbox on the key
-				Install_virtualbox_on_key()
 
+				Install_virtualbox_on_key()
 				UpdateStatus("Applying VirtualBox settings")
 				Setup_VBOX_for_VM()
 

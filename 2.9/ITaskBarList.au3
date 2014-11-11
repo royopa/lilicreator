@@ -5,6 +5,7 @@
 ; Language ......: English
 ; Description ...: Functions to assist in using the ITaskBarList Interface.
 ; Author(s) .....: Brian J Christy (Beege)
+; http://www.autoitscript.com/forum/topic/111018-itaskbarlist-udf-rewrite-for-beta-all-methods-included/#entry779084
 ; ===============================================================================================================================
 
 ; #CURRENT# =====================================================================================================================
@@ -80,7 +81,7 @@ Global $g_ITBL_oErrorHandler
 GUIRegisterMsg($WM_COMMAND, '__WM_Command')
 GUIRegisterMsg(_WinAPI_RegisterWindowMessage("TaskbarButtonCreated"), "__TaskbarButtonCreated")
 OnAutoItExitRegister('__TaskbarExit')
-;ClipPut(_CreateUDFHeader())
+
 #endregion Initiations
 
 #region Public Functions

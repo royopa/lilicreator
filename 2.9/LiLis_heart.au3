@@ -24,7 +24,15 @@ Func Format_FAT32()
 		Else
 			UpdateLog("Drive is bigger than 32GB ("&$usb_size_GB&"GB) and force_3rdparty_format="&ReadSetting( "Advanced", "force_3rdparty_format")&"-> LiLi will use the Third party format utility")
 		EndIf
-		FAT32Format($usb_letter,"MyLinuxLive")
+		$format_try=0
+		Do
+			SendReport("Trying to format (retry #"&$format_try&")")
+			$format_result = FAT32Format($usb_letter,"MyLinuxLive")
+			$format_try+=1
+			Sleep(5000)
+		Until ($format_result>=0 OR $format_try=5)
+
+		If ($format_result=-1 AND $format_try>=5 ) Then SendReport("End-Format_FAT32 : ERROR, Could not format disk even after 5 retries")
 	EndIf
 
 	SendReport("End-Format_FAT32")
@@ -449,7 +457,7 @@ Func Rename_and_move_files()
 			$syslinux_path = $usb_letter & "\BOOT\SYSLINUX\"
 		Elseif FileExists($usb_letter & "\HBCD\isolinux.cfg") Then
 			$syslinux_path = $usb_letter & "\HBCD\"
-		Elseif FileExists($usb_letter & "\boot\i386\loader\isolinux.cfg") AND (ReleaseGetVariant($release_number)="opensuse" OR StringInStr(ReleaseGetSupportedFeatures($release_number),"opensuse-mbrid")>0 )Then
+		Elseif FileExists($usb_letter & "\boot\i386\loader\isolinux.cfg") AND (ReleaseGetVariant($release_number)="opensuse" OR StringInStr(ReleaseGetSupportedFeatures($release_number),"opensuse-mbrid")>0 ) Then
 			FileDelete($usb_letter&"\syslinux.cfg")
 			DirMove($usb_letter & "\boot\i386\loader", $usb_letter & "\boot\syslinux",1)
 			$syslinux_path = $usb_letter & "\boot\syslinux\"
@@ -514,8 +522,13 @@ Func Create_boot_menu()
 	SendReport("Start-Create_boot_menu")
 	if StringInStr($release_supported_features,"default") = 0 Then
 		If $release_variant ="CentOS" Then
-			SendReport("IN-Create_boot_menu for CentOS")
-			CentOS_WriteTextCFG()
+			if $release_variant_version > 6.6 Then
+				SendReport("IN-Create_boot_menu for CentOS 6.6 and previous")
+				CentOS_WriteTextCFG()
+			Else
+				SendReport("IN-Create_boot_menu for CentOS 7.0 and later (using Fedora menu)")
+				Fedora_WriteTextCFG()
+			EndIf
 		Elseif $release_distribution = "Fedora" Then
 			if $release_variant = "Mandriva" Then
 				SendReport("IN-Create_boot_menu for Mandriva")
@@ -803,7 +816,9 @@ Func Install_boot_sectors($hide_it)
 		; Windows mode
 		If FileExists($usb_letter & "\boot\bootsect.exe") Then
 			SendReport("IN-Install_boot_sectors : Found bootsect.exe, installing windows boot sectors")
+			; Could not implement retries because bootsect does not return anything on STDIN/STDOUT ?!!
 			InstallWindowsBootSectors($usb_letter)
+
 			SendReport("End-Install_boot_sectors")
 			return 0
 		Else
@@ -826,35 +841,41 @@ Func Install_boot_sectors($hide_it)
 	If FileExists($usb_letter & "\HBCD\syslinux.cfg") Then
 		SendReport("IN-Install_boot_sectors :  Hiren's boot CD detected, using syslinux folder HBCD\ ")
 		$syslinux_menu_folder = "/HBCD"
-	Else
-		$syslinux_menu_folder = 0
-	EndIf
-
-	If FileExists($usb_letter & "\slax\boot\syslinux.cfg") Then
+	ElseIf FileExists($usb_letter & "\slax\boot\syslinux.cfg") Then
 		SendReport("IN-Install_boot_sectors :  Slax > 7 detected, using syslinux folder slax\boot\ ")
 		$syslinux_menu_folder = "/slax/boot"
 	Else
 		$syslinux_menu_folder = 0
 	EndIf
 
-	$syslinux_version = AutoDetectSyslinuxVersion()
 
 	; Selecting syslinux version
-	if StringInStr($release_supported_features,"syslinux4") > 0 Then
-		SendReport("IN-Install_boot_sectors :  Syslinux version forced to v4 (found = v"&$syslinux_version&")")
-		$syslinux_version = 4
+	if StringInStr($release_supported_features,"syslinux6") > 0 Then
+		$fallback_version = 6
+	Elseif StringInStr($release_supported_features,"syslinux5") > 0 Then
+		$fallback_version = 5
+	Elseif StringInStr($release_supported_features,"syslinux4") > 0 Then
+		$fallback_version = 4
 	Elseif StringInStr($release_supported_features,"syslinux3") > 0 Then
-		SendReport("IN-Install_boot_sectors :  Syslinux version forced to v3 (found = v"&$syslinux_version&")")
-		$syslinux_version = 3
+		$fallback_version = 3
 	Else
-		SendReport("IN-Install_boot_sectors :  Using syslinux version "&$syslinux_version)
+		$fallback_version=4
+	EndIf
+
+	SendReport("IN-Install_boot_sectors :  Using syslinux fallback version : v"&$fallback_version)
+
+	if StringInStr($release_supported_features,"force-syslinux") >0 Then
+		; Not just a fallback version but a forced version instead
+		$found_syslinux_version = AutoDetectSyslinuxVersion(4)
+		SendReport("IN-Install_boot_sectors :  Syslinux version forced to v"&$fallback_version&" (found = v"&$found_syslinux_version&")")
+		$syslinux_version=$fallback_version
+	Else
+		$syslinux_version = AutoDetectSyslinuxVersion($fallback_version)
 	EndIf
 
 	; Syslinux 3.X or superior
-	if $syslinux_version >= 3 Then
-		InstallSyslinux($syslinux_version,$syslinux_menu_folder)
-	Else
-		InstallSyslinux(3,$syslinux_menu_folder)
+	if $syslinux_version < 3 Then
+		$syslinux_version = 3
 	EndIf
 
 
@@ -862,12 +883,19 @@ Func Install_boot_sectors($hide_it)
 		$syslinux_folder=$usb_letter & "\boot\syslinux\"
 	Elseif FileExists($usb_letter & "\syslinux\syslinux.cfg") Then
 		$syslinux_folder=$usb_letter & "\syslinux\"
+	Elseif FileExists($usb_letter & "\hbcd\syslinux.cfg") Then
+		$syslinux_folder=$usb_letter & "\hbcd\"
+	Elseif FileExists($usb_letter & "\slax\boot\syslinux.cfg") Then
+		$syslinux_folder=$usb_letter & "\slax\boot\"
 	Elseif FileExists($usb_letter & "\syslinux.cfg") Then
 		$syslinux_folder=$usb_letter & "\"
 	Else
 		SendReport("IN-Install_boot_sectors :  syslinux.cfg disappeared ?!!, trying with folder = "&$usb_letter & "\syslinux\")
 		$syslinux_folder=$usb_letter & "\syslinux\"
 	EndIf
+
+	; Copying syslinux modules before creating boot sectors or it will not find mboot.c32 (reactos)
+	SendReport("IN-Install_boot_sectors : checking syslinux modules to copy/keep")
 
 	$modules_to_keep=""
 	$modules_to_copy=""
@@ -888,9 +916,10 @@ Func Install_boot_sectors($hide_it)
 		$modules_to_copy_array=StringSplit($modules_to_copy,"|",3)
 		FOR $modulename_to_copy IN $modules_to_copy_array
 			FileCopy2(@ScriptDir&"\tools\syslinux-modules\v"&$syslinux_version&"\"&$modulename_to_copy,$syslinux_folder,9)
+			; Hiding modules when in the root folder
+			If ( ($syslinux_folder=($usb_letter&"\")) AND ( $hide_it == $GUI_CHECKED)) Then HideFile($usb_letter&"\"&$modulename_to_copy)
 		Next
 	EndIf
-
 	; Replacing Syslinux modules by the good ones
 	$search = FileFindFirstFile($syslinux_folder&"*.c32")
 	; Check if the search was successful
@@ -914,6 +943,8 @@ Func Install_boot_sectors($hide_it)
 					If FileExists($new_module) Then
 						SendReport("IN-Install_boot_sectors : Replacing syslinux "&$syslinux_version&" module "&$module&" by the matching one")
 						FileCopy2($new_module,$syslinux_folder)
+						; Hiding modules when in the root folder
+						If ( ($syslinux_folder=($usb_letter&"\")) AND ( $hide_it == $GUI_CHECKED)) Then HideFile($usb_letter&"\"&$module)
 					Else
 						SendReport("IN-Install_boot_sectors : WARNING, Could not replace syslinux "&$syslinux_version&" module "&$module&" by the matching one")
 					EndIf
@@ -924,6 +955,19 @@ Func Install_boot_sectors($hide_it)
 		Endif
 	EndIf
 	FileClose($search)
+
+
+
+
+	$bootsectors_try=0
+	Do
+		SendReport("Trying to install syslinux boot sectors (retry #"&$bootsectors_try&")")
+		$bootsectors_result = InstallSyslinux($syslinux_version,$syslinux_menu_folder)
+		$bootsectors_try+=1
+		Sleep(5000)
+	Until ($bootsectors_result>=0 OR $bootsectors_try=5)
+
+	if ($bootsectors_result=-1 AND $bootsectors_try>=5 ) Then SendReport("End-Install_boot_sectors : ERROR, Could not install syslinux boot sectors even after 5 retries")
 
 	;RunWait3('"' & @ScriptDir & '\tools\syslinux.exe" -maf -d ' & $usb_letter & '\syslinux ' & $usb_letter, @ScriptDir, @SW_HIDE)
 	If ( $hide_it <> $GUI_CHECKED) Then ShowFile($usb_letter & '\ldlinux.sys')
@@ -1015,8 +1059,6 @@ Func Install_virtualbox_on_key()
 	SendReport("Start-Install_virtualbox_on_key")
 	Local $downloaded_version,$installed_version
 
-
-
 	if FileExists(@ScriptDir&"\tools\VirtualBox\Portable-VirtualBox\linuxlive\settings.ini") Then
 		$cached_version=IniRead(@ScriptDir&"\tools\VirtualBox\Portable-VirtualBox\linuxlive\settings.ini","General","pack_version","3.0.0.0")
 		$installed_version=IniRead($usb_letter&"\VirtualBox\Portable-VirtualBox\linuxlive\settings.ini","General","pack_version","0")
@@ -1034,7 +1076,7 @@ Func Install_virtualbox_on_key()
 		SendReport("END-Install_virtualbox_on_key (Warning : settings.ini not found, error while uncompressing ?)")
 		Return "1"
 	EndIf
-
+	VBox_CloseWarning()
 	; Cleaning previous install of VBox
 	UpdateStatus("Updating Portable-VirtualBox pack")
 	DirRemove2($usb_letter & "\VirtualBox\", 1)
@@ -1145,6 +1187,8 @@ Func CreateUninstaller()
 	AddToSmartClean($usb_letter,"ldlinux.sys")
 	AddToSmartClean($usb_letter,"syslinux")
 	AddToSmartClean($usb_letter,"syslinux.cfg")
+	AddToSmartClean($usb_letter,"ldlinux.c32")
+	AddToSmartClean($usb_letter,"mboot.c32")
 	AddToSmartClean($usb_letter,"syslinux.cfg.lili-bak")
 
 	if ReleaseGetVariant($release_number)="pmagic" Then
@@ -1251,23 +1295,17 @@ EndFunc   ;==>DeleteFilesInDir
 Func Setup_VBOX_for_VM()
 	If ReadSetting( "Advanced", "skip_vbox_setup") = "yes" Then Return 0
 	SendReport("Start-Setup_VBOX_for_VM")
-	$linuxlive_settings_file = $usb_letter&"\VirtualBox\Portable-VirtualBox\data\.VirtualBox\Machines\LinuxLive\LinuxLive.vbox"
-
-	if Not FileExists($linuxlive_settings_file) Then
-		UpdateLog("End-Setup_VBOX_for_VM : Warning, Could not automatically set RAM (File "&$linuxlive_settings_file&" does not exist)")
-	EndIf
+	VBox_CloseWarning()
 
 	; Replacing RAM value with recommended setting =======================================
-	$recommended_ram = ReleaseGetVBoxRAM($release_number)
-	FileReplaceBetween($linuxlive_settings_file,'Memory RAMSize="','"',$recommended_ram)
+	VBox_SetRam(ReleaseGetVBoxRAM($release_number))
 
 
 	; Replacing Storage controller with recommended setting =======================================
-	$type_of_disk = ReleaseGetVBoxStorageController($release_number)
-	FileReplaceBetween($linuxlive_settings_file,'name="LILI-DISK" type="','"',$type_of_disk)
+	VBox_SetStorageController(ReleaseGetVBoxStorageController($release_number))
 
-	$number_of_ports= GetDefaultVBOXStorageCtrlPortCount($type_of_disk)
-	FileReplaceBetween($linuxlive_settings_file,'name="LILI-DISK" type="'&$type_of_disk&'" PortCount="','"',$number_of_ports)
+	; Setting OS Type (mandatory for x64 OSes)
+	VBox_SetOSType($release_arch)
 EndFunc
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

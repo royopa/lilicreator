@@ -5,7 +5,7 @@
 Author           : Thibaut Lauzière
 License          : GPL v3.0
 Website          : http://www.linuxliveusb.com
-Compiled with    : AutoIT v3.3.10.2
+Compiled with    : AutoIT v3.3.12.0
 
 ///////////////////////////////// Descriptions of AU3 files                      ///////////////////////////////////////////////////////////////////////////////
 
@@ -25,6 +25,7 @@ Compiled with    : AutoIT v3.3.10.2
 	Releases.au3 : functions to parse and cache the compatibility list (list of supported linux) and get each value. Also fills the combo-box.
 	Settings.au3 : Read and Write settings. Abstraction layer to read/write from registry or from file depending on lili's mode (portable or standard)
 	Statistics.au3 : Send anonymous usage statistics to Universal Analytics (can be disabled by users with skip_stats advanced value)
+	VirtualBox.au3 : Manage Portable-VirtualBox settings
 	Updates.au3 : check for software updates + functions to compare version numbers
 	WinHTTP.au3 : Manage POST request for sending crash logs (based on trancexx and ProgAndy work)
 
@@ -69,7 +70,7 @@ Compiled with    : AutoIT v3.3.10.2
 #AutoIt3Wrapper_UseUpx=n
 #AutoIt3Wrapper_Res_Comment=Enjoy !
 #AutoIt3Wrapper_Res_Description=Easily create a Linux Live USB
-#AutoIt3Wrapper_Res_Fileversion=2.9.88.80
+#AutoIt3Wrapper_Res_Fileversion=2.9.88.82
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=Y
 #AutoIt3Wrapper_Res_LegalCopyright=CopyLeft Thibaut Lauziere a.k.a Slÿm
 #AutoIt3Wrapper_Res_SaveSource=y
@@ -86,7 +87,7 @@ Compiled with    : AutoIT v3.3.10.2
 ; ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ; Global constants
-Global Const $software_version = "2.9 Beta"
+Global Const $software_version = "2.9"
 Global $DISPLAY_VERSION = ""
 Global $lang_folder = @ScriptDir & "\tools\languages\"
 Global $lang_ini
@@ -230,6 +231,8 @@ Global $release_description=""
 Global $release_mirrors=""
 Global $release_mirrors_status=0
 Global $release_recognition_method=""
+Global $release_detectedarch="32-bit"
+Global $release_arch="32-bit"
 
 $selected_drive = "->"
 $file_set = 0
@@ -339,7 +342,10 @@ EndIf
 #include "LiLis_heart.au3"
 #include "GUI_Actions.au3"
 #include "Options_Menu.au3"
-#include "ITaskBarList.au3"
+#include "VirtualBox.au3"
+; Too early => crashes on Vista
+; #include "ITaskBarList.au3"
+
 
 
 $DISPLAY_VERSION = GetDisplayVersion()
@@ -467,7 +473,7 @@ GUIRegisterMsg ($WM_DROPFILES, "GUI_Dropped_File")
 SetBitmap($GUI, $PNG_GUI, 255)
 GUIRegisterMsg($WM_NCHITTEST, "WM_NCHITTEST")
 
-_ITaskBar_CreateTaskBarObj()
+;_ITaskBar_CreateTaskBarObj()
 
 $CONTROL_GUI = GUICreate("LinuxLive USB Creator", 450, 750, 5, 7, $WS_POPUP, BitOR($WS_EX_LAYERED, $WS_EX_MDICHILD), $GUI)
 GUISetFont($font_size)

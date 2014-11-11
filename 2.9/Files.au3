@@ -255,7 +255,7 @@ Func InitializeFilesInCD($searchdir)
 	$files_in_source = $files
 EndFunc   ;==>InitializeFilesInCD
 
-Func AutoDetectSyslinuxVersion()
+Func AutoDetectSyslinuxVersion($fallback_version)
 	if FileExists($usb_letter&"\boot\syslinux\syslinux.bin") Then
 		$isolinux_bin = $usb_letter&"\boot\syslinux\syslinux.bin"
 	ElseIf FileExists($usb_letter&"\syslinux\syslinux.bin") Then
@@ -266,6 +266,10 @@ Func AutoDetectSyslinuxVersion()
 		$isolinux_bin = $usb_letter&"\boot\isolinux\syslinux.bin"
 	ElseIf FileExists($usb_letter&"\syslinux.bin") Then
 		$isolinux_bin = $usb_letter&"\syslinux.bin"
+	ElseIf FileExists($usb_letter&"\hbcd\syslinux.bin") Then
+		$isolinux_bin = $usb_letter&"\hbcd\syslinux.bin"
+	ElseIf FileExists($usb_letter&"\hbcd\isolinux.bin") Then
+		$isolinux_bin = $usb_letter&"\hbcd\isolinux.bin"
 	Elseif FileExists($usb_letter&"\boot\syslinux\isolinux.bin") Then
 		$isolinux_bin = $usb_letter&"\boot\syslinux\isolinux.bin"
 	ElseIf FileExists($usb_letter&"\syslinux\isolinux.bin") Then
@@ -279,14 +283,14 @@ Func AutoDetectSyslinuxVersion()
 	ElseIf FileExists($usb_letter&"\isolinux.bin") Then
 		$isolinux_bin = $usb_letter&"\isolinux.bin"
 	Else
-		UpdateLog("Could not detect syslinux version (no isolinux.bin or syslinux.bin found), default to v3")
-		Return 3
+		UpdateLog("WARNING : Could not detect syslinux version (no isolinux.bin or syslinux.bin found), default to v"&$fallback_version)
+		Return $fallback_version
 	EndIf
-	Return DetectSyslinuxVersionInBin($isolinux_bin)
+	Return DetectSyslinuxVersionInBin($isolinux_bin,$fallback_version)
 EndFunc
 
 
-Func DetectSyslinuxVersionInBin($file)
+Func DetectSyslinuxVersionInBin($file,$fallback_version)
 	If StringInStr($file,"syslinux.bin") Then
 		$detection_mode = "SYSLINUX"
 	Else
@@ -309,7 +313,12 @@ Func DetectSyslinuxVersionInBin($file)
 		Return $major_revision
 	Else
 		UpdateLog("Syslinux version could not be detected in file "&$file& " => Falling back to the old method")
-		Return DetectSyslinuxVersionInBinold($file)
+		$detected_version=DetectSyslinuxVersionInBinold($file)
+		if $detected_version == 0 Then
+			return $fallback_version
+		Else
+			return $detected_version
+		EndIf
 	EndIf
 EndFunc
 
@@ -321,8 +330,13 @@ Func DetectSyslinuxVersionInBinold($file)
 	EndIf
 	$content = FileRead($filehandle)
 	FileClose($filehandle)
-
-	if StringInStr($content,"49534F4C494E555820342E",2)>0 Then
+	if StringInStr($content,"49534F4C494E555820362E",2)>0 Then
+		UpdateLog("Syslinux 6.X detected in file "&$file)
+		Return 6
+	Elseif StringInStr($content,"49534F4C494E555820352E",2)>0 Then
+		UpdateLog("Syslinux 5.X detected in file "&$file)
+		Return 5
+	Elseif StringInStr($content,"49534F4C494E555820342E",2)>0 Then
 		UpdateLog("Syslinux 4.X detected in file "&$file)
 		Return 4
 	Elseif StringInStr($content,"49534F4C494E555820332E",2)>0 Then

@@ -314,6 +314,13 @@ EndFunc
 
 Func ReleaseInitializeVariables($release_in_list)
 	if $release_in_list <=0 Then Return "NotFound"
+	Global $release_arch = AutoDetectArchitecture($file_set)
+	if ($release_arch = "64-bit") Then
+		$append_to_description=" (64-bit)"
+	Else
+		$append_to_description=""
+	EndIf
+
 	Global $release_number=$release_in_list
 	Global $release_codename=ReleaseGetCodename($release_number)
 	Global $release_name=ReleaseGetDescription($release_number)
@@ -329,7 +336,7 @@ Func ReleaseInitializeVariables($release_in_list)
 	Global $release_download_page=ReleaseGetDownloadPage($release_number)
 	Global $release_download_size=ReleaseGetDownloadSize($release_number)
 	Global $release_install_size=ReleaseGetInstallSize($release_number)
-	Global $release_description=ReleaseGetDescription($release_number)
+	Global $release_description=ReleaseGetDescription($release_number)&$append_to_description
 	Global $release_mirrors=ReleaseGetMirrors($release_number)
 	Global $release_mirrors_status=ReleaseGetMirrorStatus($release_number)
 EndFunc
@@ -365,6 +372,18 @@ Func ReleaseGetVBoxRAM($release_in_list)
 			if IsArray($vboxram) AND $vboxram[0]=2 Then Return $vboxram[2]
 		EndIf
 	Next
+	Return "384"
+EndFunc
+
+Func ReleaseGetVBoxOSType($release_in_list)
+	$features=ReleaseGetSupportedFeatures($release_in_list)
+	$feature_list = StringSplit($features,",")
+	For $feature IN $feature_list
+		if StringInStr($feature,"vboxostype-") Then
+			$vboxostype=StringSplit($feature,"-")
+			if IsArray($vboxostype) AND $vboxostype[0]=2 Then Return $vboxostype[2]
+		EndIf
+	Next
 	Return "256"
 EndFunc
 
@@ -394,22 +413,6 @@ Func ReleaseGetVBoxStorageController($release_in_list)
 	EndIf
 EndFunc
 
-Func GetDefaultVBOXStorageCtrlPortCount($controller)
-	if $controller = "PIIX4" Then
-		Return 2
-	Elseif $controller = "ICH6" Then
-		Return 2
-	Elseif $controller = "PIIX3" Then
-		Return 2
-	Elseif $controller = "LsiLogicSas" Then
-		Return 8
-	Elseif $controller = "AHCI" Then
-		Return 16
-	Else
-		; For LsiLogic / BusLogic / SCSI
-		Return 16
-	EndIf
-EndFunc
 
 Func URLToHostname($url)
 	if StringInStr($url,"/") >= 3 Then
