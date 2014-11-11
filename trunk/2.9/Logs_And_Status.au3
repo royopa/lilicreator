@@ -53,16 +53,22 @@ Func LogSystemConfig()
 		$line &= @CRLF & "Check for updates : Disabled"
 	EndIf
 
-	If StringTrimLeft($usb_letter,2) <> "->" Then
-		$line &= @CRLF & "Select partition : " & $usb_letter
+	If StringInStr($usb_letter,"->") == 0 Then
+		$line &= @CRLF & "Selected partition : " & $usb_letter
 		$line &= @CRLF & "Filesystem : " & $usb_filesystem
+		If ReadSetting( "Advanced", "skip_partitiontable_reporting") = "no" Then
+			$line &= @CRLF & "Type of table : " & _WinAPI_GetDrivePartitionTableType($usb_letter)
+		EndIf
 		$line &= @CRLF & "Free space on key : " & Round($usb_space_free) & "MB"
 		$line &= @CRLF & "Previous install : "&PreviousInstallReport()
+	Else
+		$line &= @CRLF & "Selected partition : None"
 	EndIf
 
 	If $file_set_mode = "iso" Then
 		$line &= @CRLF & "Selected ISO : " &path_to_name($file_set)&" ("& HumanSize(FileGetSize($file_set))&")"
 		$line &= @CRLF & "Recognized as : "&$release_description&" ("&$release_codename&")"
+		$line &= @CRLF & "Using architecture : "&$release_arch&" (found : "&$release_detectedarch&")"
 		$line &= @CRLF & "Supported features : "&$release_supported_features
 		$line &= @CRLF & "Recognition method : "&$release_recognition_method
 		$line &= @CRLF & "ISO Hash : " & $MD5_ISO

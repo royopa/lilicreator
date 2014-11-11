@@ -218,7 +218,7 @@ Func _WinAPI_GetDriveSignature($sDrive)
 	if $hDrive = 0 Then Return "ERROR"
 
 	Local $Ret = DllCall("kernel32.dll", "int", "DeviceIoControl", "hwnd", $hDrive, "dword", 0x00070050, "ptr", 0, "dword", 0, "ptr", DllStructGetPtr($_DRIVE_LAYOUT), "dword", DllStructGetSize($_DRIVE_LAYOUT), "dword*", 0, "ptr", 0)
-	If __CheckErrorCloseHandle($Ret, $hDrive) Then Return SetError(@error, @extended, -1)
+	If __CheckErrorCloseHandle($Ret, $hDrive) Then Return "ERROR"
 
 	Switch DllStructGetData($_DRIVE_LAYOUT, "PartitionStyle")
 		Case 0 ; MBR
@@ -239,6 +239,30 @@ Func _WinAPI_GetDriveSignature($sDrive)
 			; Use this code to format GUID like that : {11139dac-cc66-3247-be07-28480bbf}
 			; Return '{' & StringLeft($GUID, 8) & '-' & StringMid($GUID, 9, 4) & '-' & StringMid($GUID, 13, 4) & '-' & StringMid($GUID, 17, 4) & '-' & StringRight($GUID, 8) & '}'
 		Case 2 ; RAW (no signature / no letter ...)
+			Return "RAW"
+		Case Else
+			Return "ERROR"
+	EndSwitch
+EndFunc
+
+Func _WinAPI_GetDrivePartitionTableType($sDrive)
+	; Needs WinAPI.au3
+	; Based on work from KaFu and JFX (http://www.autoitscript.com/forum/topic/136907-need-help-with-ioctl-disk-get-drive-layout-ex/)
+	$_DRIVE_LAYOUT = DllStructCreate('dword PartitionStyle; dword PartitionCount; byte union[40]; byte PartitionEntry[8192]')
+	$hDrive = _WinAPI_CreateFileEx('\\.\' & $sDrive, 2,0)
+	if $hDrive = 0 Then Return "ERROR"
+
+	Local $Ret = DllCall("kernel32.dll", "int", "DeviceIoControl", "hwnd", $hDrive, "dword", 0x00070050, "ptr", 0, "dword", 0, "ptr", DllStructGetPtr($_DRIVE_LAYOUT), "dword", DllStructGetSize($_DRIVE_LAYOUT), "dword*", 0, "ptr", 0)
+	If __CheckErrorCloseHandle($Ret, $hDrive) Then Return "ERROR"
+
+	Switch DllStructGetData($_DRIVE_LAYOUT, "PartitionStyle")
+		Case 0 ; MBR
+			Return "MBR"
+		Case 1 ; GPT
+			Return "GPT"
+		Case 2 ; RAW
+			Return "RAW"
+		Case Else ; RAW (no signature / no letter ...)
 			Return "ERROR"
 	EndSwitch
 EndFunc
@@ -402,10 +426,10 @@ Func FAT32Format($drive,$label)
 
 	if StringInStr($lines,"Done") Then
 		SendReport("End-FAT32Format ( Success )")
-		Return 1
+		Return 0
 	Else
 		SendReport("End-FAT32Format ( Error, see logs )")
-		Return "ERROR"
+		Return -1
 	EndIf
 EndFunc   ;==>RunWait3
 

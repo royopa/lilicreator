@@ -201,7 +201,7 @@ EndFunc
 
 Func ReactOS_WriteTextCFG()
 	; Option 9 to create the folder if does not exist
-	FileCopy2(@ScriptDir&"\tools\boot-menus\reactos-syslinux.cfg",$usb_letter&"\syslinux\syslinux.cfg",9)
+	FileCopy2(@ScriptDir&"\tools\boot-menus\reactos-syslinux.cfg",$usb_letter&"\syslinux.cfg",9)
 EndFunc
 
 ; Modify boot menu for Arch Linux (applied to every default Linux) but will modify only if Arch Linux detected
@@ -568,7 +568,7 @@ Func Debian_WriteTextCFG()
 				 & @LF & "menu hidden" _
 				 & @LF & "menu hiddenrow 6"
 
-		$boot_text &= Debian_BootMenu("mint")
+		$boot_text &= MintDebian_BootMenu()
 
 		UpdateLog("Creating syslinux.cfg file for Mint :" & @CRLF & $boot_text)
 		FileOverWrite($usb_letter & "\syslinux\syslinux.cfg",$boot_text)
@@ -708,25 +708,25 @@ Func Ubuntu_BootMenu($seed_name)
 	Return $boot_text
 EndFunc
 
-Func Debian_BootMenu($variant)
+Func MintDebian_BootMenu()
 	Local $kbd_code,$boot_text="",$append_debian
 	$kbd_code = GetKbdCode()
 	$lang_code = GetLangCode()
 
-	$append_debian="boot=live config initrd=/casper/"&$initrd_file&" live-media-path=/casper quiet splash --"
+	$append_debian="boot=live config initrd=/live/"&$initrd_file&" live-media-path=/live quiet splash --"
 	If FileExists($usb_letter&"\live-rw") Then
 		$boot_text = @LF& "label persist" & @LF & "menu label ^" & Translate("Persistent Mode") _
-			& @LF & "  kernel /casper/" & $vmlinuz_file _
+			& @LF & "  kernel /live/" & $vmlinuz_file _
 			& @LF & "  append  " & $kbd_code & $lang_code & " persistent "&$append_debian
 	EndIf
 
 	$boot_text&= @LF & "label live" _
 		& @LF & "  menu label ^" & Translate("Live Mode") _
-		& @LF & "  kernel /casper/"&$vmlinuz_file _
+		& @LF & "  kernel /live/"&$vmlinuz_file _
 		& @LF & "  append   " & $kbd_code & $lang_code & $append_debian _
 		& @LF & "label check" _
 		& @LF & "  menu label ^" & Translate("File Integrity Check") _
-		& @LF & "  kernel /casper/"&$vmlinuz_file _
+		& @LF & "  kernel /live/"&$vmlinuz_file _
 		& @LF & "  append   " & $kbd_code & $lang_code & " integrity-check "&StringReplace($append_debian,"quiet splash","") _
 		& @LF & "label memtest" _
 		& @LF & "  menu label ^" & Translate("Memory Test") _

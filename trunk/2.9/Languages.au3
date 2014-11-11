@@ -32,9 +32,15 @@ Func _Language()
 		Case StringInStr("040a,080a,0c0a,100a,140a,180a,1c0a,200a,240a,280a,2c0a,300a,340a,380a,3c0a,400a,440a,480a,4c0a,500a", $use_source)
 			$lang_found = "Spanish"
 			$lang_code="es"
+		Case StringInStr("0425", $use_source)
+			$lang_found = "Estonian"
+			$lang_code = "et"
 		Case StringInStr("0407,0807,0c07,1007,1407", $use_source)
 			$lang_found = "German"
 			$lang_code="de"
+		Case StringInStr("0429", $use_source)
+			$lang_found = "Persian"
+			$lang_code="fa" ; == Farsi of Iran
 		Case StringInStr("0416", $use_source)
 			$lang_found = "Portuguese (Brazilian)"
 			$lang_code="pt"
@@ -47,6 +53,9 @@ Func _Language()
 		Case StringInStr("0414,0814", $use_source)
 			$lang_found = "Norwegian"
 			$lang_code="no"
+		Case StringInStr("0403", $use_source)
+			$lang_found = "Catalan"
+			$lang_code="ca-es"
 		Case StringInStr("0404,0804,0c04,1004,1404", $use_source)
 			$lang_found = "Chinese"
 			$lang_code="zh-cn"

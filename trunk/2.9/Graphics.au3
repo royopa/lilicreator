@@ -5,6 +5,7 @@
 ; For Drag and Drop
 ;Global Const $WM_DROPFILES = 0x233
 Global $gaDropFiles[1]
+Global $ghGDIPdll
 
 Func WM_NCHITTEST($hWnd, $iMsg, $iwParam, $ilParam)
 	If ($hWnd = $GUI) And ($iMsg = $WM_NCHITTEST) Then

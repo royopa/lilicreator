@@ -317,6 +317,9 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "gnewsense") Then
 				; gNewSense Based
 				$temp_index = FindReleaseFromCodeName( "gnewsense-last")
+			ElseIf StringInStr($shortname, "tails") Then
+				; Tails
+				$temp_index = FindReleaseFromCodeName( "tails-last")
 			ElseIf StringInStr($shortname, "clonezilla") Then
 				; Clonezilla
 				$temp_index = FindReleaseFromCodeName( "clonezilla-last")
@@ -531,6 +534,9 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "Gnome_3") Then
 				; Gnome 3
 				$temp_index = FindReleaseFromCodeName( "gnome3-last")
+			ElseIf StringInStr($shortname, "pear") Then
+				; Pear Linux
+				$temp_index = FindReleaseFromCodeName( "pearlinux-last")
 			ElseIf StringInStr($shortname, "macpup") Then
 				; MacPup
 				$temp_index = FindReleaseFromCodeName( "macpup-last")
@@ -543,7 +549,7 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "cdlinux") Then
 				; CDLinux
 				$temp_index = FindReleaseFromCodeName( "cdlinux-last")
-			ElseIf StringInStr($shortname, "rhel") OR (StringInStr($shortname, "red") AND StringInStr($shortname, "hat"))Then
+			ElseIf StringInStr($shortname, "rhel") OR (StringInStr($shortname, "red") AND StringInStr($shortname, "hat")) Then
 				; Red Hat Enterprise Linux
 				$temp_index = FindReleaseFromCodeName( "rhel-last")
 			ElseIf StringInStr($shortname, "xen") Then
@@ -580,6 +586,12 @@ Func Check_source_integrity($linux_live_file)
 			ElseIf StringInStr($shortname, "react") Then
 				; ReactOS
 				$temp_index = FindReleaseFromCodeName("reactos-last")
+			ElseIf StringInStr($shortname, "porteus") Then
+				; Porteus
+				$temp_index = FindReleaseFromCodeName("porteus-last")
+			ElseIf StringInStr($shortname, "linuxlite") Then
+				; LinuxLite
+				$temp_index = FindReleaseFromCodeName("linuxlite-last")
 			ElseIf StringInStr($shortname, "watt") Then
 				; Watt OS
 				$temp_index = FindReleaseFromCodeName( "wattos-last")
@@ -606,6 +618,8 @@ Func Check_source_integrity($linux_live_file)
 					$temp_index = FindReleaseFromCodeName( "windows7")
 				Elseif  StringInStr($shortname, "windows8") OR StringInStr($shortname, "eight") OR StringInStr($shortname, "win8") Then
 					$temp_index = FindReleaseFromCodeName( "windows8")
+				Elseif  StringInStr($shortname, "windows10") OR StringInStr($shortname, "preview") OR StringInStr($shortname, "win10") Then
+					$temp_index = FindReleaseFromCodeName( "windows10")
 				Else
 					$temp_index = FindReleaseFromCodeName( "windows8.1")
 				EndIf
@@ -717,7 +731,7 @@ Func Check_ISO($FileToHash)
 	_ProgressSetImages($progress_bar, @ScriptDir & "\tools\img\progress_green.jpg", @ScriptDir & "\tools\img\progress_background.jpg")
 	_ProgressSetFont($progress_bar, "", -1, -1, 0x000000, 0)
 
-	_ITaskBar_SetProgressState($GUI, 2)
+	; _ITaskBar_SetProgressState($GUI, 2)
 
 	$label_step2_status = GUICtrlCreateLabel(Translate("Checking file")&" : "&path_to_name($FileToHash), 38 + $offsetx0, 231 + $offsety0 + 50, 300, 80)
 	GUICtrlSetBkColor(-1, $GUI_BKCOLOR_TRANSPARENT)
@@ -732,14 +746,14 @@ Func Check_ISO($FileToHash)
 		$percent_md5 = Round(100 * $i / $iterations)
 		$return1 = _ProgressSet($progress_bar,$percent_md5 )
 		$return2 = _ProgressSetText($progress_bar, $percent_md5&"%" )
-		_ITaskBar_SetProgressValue($GUI, $percent_md5)
+		;_ITaskBar_SetProgressValue($GUI, $percent_md5)
 	Next
 	FileClose($filehandle)
 
 	SendReport("IN-Check_ISO : Closed Crypto Library, hash computed")
 	_ProgressSet($progress_bar,100 )
 	_ProgressSetText($progress_bar, "100%" )
-	_ITaskBar_SetProgressState($GUI)
+	;_ITaskBar_SetProgressState($GUI)
 	Sleep(200)
 	_ProgressDelete($progress_bar)
 	if @error Then
@@ -788,6 +802,68 @@ EndFunc
 Func CleanPathForCache($filepath)
 	; Cleaning leading+ trailing spaces and equal signs
 	Return StringStripWS(StringReplace($filepath,"=","--"),3)
+EndFunc
+
+; Return architecture from filename
+Func AutoDetectArchitecture($filepath)
+	Global $release_detectedarch
+	$release_detectedarch = GetArchitectureFromFilename($filepath)
+	Switch $release_detectedarch
+		Case "32-bit"
+			Return "32-bit"
+		Case "64-bit"
+			Return "64-bit"
+		Case "Both"
+			; Dual arch default to 32 bit
+			Return "32-bit"
+		Case Else
+			; Other default to 32 bit
+			Return "32-bit"
+	EndSwitch
+EndFunc
+
+Func GetArchitectureFromFilename($full_filename)
+	$filename = path_to_name($full_filename)
+	Local $keyword_64[] = ["86_64","64 bit","64_bit","64b","amd64","x64","-64","esxi"]
+	Local $keyword_32[] = ["386","486","586","686","x32","-32","32_bit"]
+	Local $keyword_dual[] = ["x86-amd64-32ul","dual"]
+
+	if AnyStringInStr($keyword_dual,$filename) Then
+		Return "Both"
+	Else
+		$cleaned=StringReplace($filename,"_","")
+		$cleaned=StringReplace($cleaned,"-","")
+		$cleaned=StringReplace($cleaned," ","")
+		if StringInStr($cleaned,"x8664") Then
+			Return "64-bit"
+		Elseif StringInStr($cleaned,"x86") Then
+			Return "32-bit"
+		Else
+			; Last Chance
+			$found_64 = AnyStringInStr($keyword_64,$filename)
+			$found_32 = AnyStringInStr($keyword_32,$filename)
+			if $found_64 AND NOT $found_32 Then
+				Return "64-bit"
+			Elseif NOT $found_64 AND $found_32 Then
+				Return "32-bit"
+			Else
+				Return "Unknown"
+			Endif
+		EndIf
+
+	EndIf
+EndFunc
+
+; return 1 if found , -1 not found
+Func AnyStringInStr($keyword_array,$string)
+	for $keyword in $keyword_array
+		If StringInStr($string,$keyword) Then
+			;ConsoleWrite(@CRLF&"Found '"&$keyword&"' in string")
+			Return true
+		EndIf
+	Next
+	;ConsoleWrite(@CRLF&"No keyword found")
+	Return false
 EndFunc
 #cs
 	Func Check_folder_integrity($folder)
